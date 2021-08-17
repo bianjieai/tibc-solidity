@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: Apache-License
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
 interface IPacket {
     function sendPacket(
         uint64 sequence,
-        string sourceChain,
-        string destChain,
-        string relayChain,
+        string calldata sourceChain,
+        string calldata destChain,
+        string calldata relayChain,
         bytes calldata data
-    )
+    ) external;
 }

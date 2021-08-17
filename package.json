@@ -4,12 +4,21 @@
   "description": "smart contracts for tibc",
   "repository": "https://github.com/bianjieai/tibc-solidity.git",
   "author": "chengwenxi <vincent.ch.cn@gmail.com>",
-  "license": "Apache License",
+  "license": "Apache-2.0",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test"
+  },
   "dependencies": {
-    "openzeppelin-solidity": "v4.2.0",
-    "truffle": "^5.2.5",
-    "truffle-privatekey-provider": "^1.5.0",
-    "truffle-assertions": "0.9.2",
-    "truffle-flattener": "1.4.4"ß
+    "openzeppelin-solidity": "^4.2.0"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.4.4",
+    "hardhat": "^2.6.0",
+    "mocha": "^9.0.3"
   }
 }

@@ -1,7 +1,9 @@
-// SPDX-License-Identifier: Apache-License
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
 import "../02-client/Client.sol";
+import "../../libraries/02-client/Client.sol";
+import "../../libraries/04-packet/Packet.sol";
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IClientState.sol";
 import "../../interfaces/IModule.sol";
@@ -15,105 +17,75 @@ contract Packet is ReentrancyGuard {
 
     function sendPacket(
         uint64 sequence,
-        string sourceChain,
-        string destChain,
-        string relayChain,
+        string calldata sourceChain,
+        string calldata destChain,
+        string calldata relayChain,
         bytes calldata data
-    ) external override nonReentrant {}
+    ) external nonReentrant {}
 
     function recvPacket(
-        uint64 sequence,
-        string port,
-        string sourceChain,
-        string destChain,
-        string relayChain,
-        bytes calldata data,
+        PacketTypes.Packet calldata packet,
         bytes calldata proof,
-        uint64 revisionNumber,
-        uint64 revisionHeight
-    ) external override nonReentrant {
+        ClientTypes.Height calldata height
+    ) external nonReentrant {
         IClientState clientState = IClient(CLIENTMANAGER).getClientState(
-            sourceChain
+            packet.sourceChain
         );
         clientState.verifyPacketCommitment(
-            revisionNumber,
-            revisionHeight,
+            height,
             proof,
-            sourceChain,
-            destChain,
-            sequence,
-            data
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence,
+            packet.data
         );
-        IModule module = modules[port];
-        module.onRecvPacket(
-            sequence,
-            port,
-            sourceChain,
-            destChain,
-            relayChain,
-            data
-        );
+        IModule module = modules[packet.port];
+        module.onRecvPacket(packet);
     }
 
     function acknowledgePacket(
-        uint64 sequence,
-        string port,
-        string sourceChain,
-        string destChain,
-        string relayChain,
-        bytes calldata data,
+        PacketTypes.Packet calldata packet,
         bytes calldata acknowledgement,
-        bytes calldata proof,
-        uint64 revisionNumber,
-        uint64 revisionHeight
-    ) external override nonReentrant {
+        bytes calldata proofAcked,
+        ClientTypes.Height calldata height
+    ) external nonReentrant {
         IClientState clientState = IClient(CLIENTMANAGER).getClientState(
-            destChain
+            packet.destChain
         );
         clientState.verifyPacketAcknowledgement(
-            revisionNumber,
-            revisionHeight,
-            proof,
-            sourceChain,
-            destChain,
-            sequence,
+            height,
+            proofAcked,
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence,
             acknowledgement
         );
-        IModule module = modules[port];
-        module.onAcknowledgementPacket(
-            sequence,
-            port,
-            sourceChain,
-            destChain,
-            relayChain,
-            data,
-            acknowledgement
-        );
+        IModule module = modules[packet.port];
+        module.onAcknowledgementPacket(packet, acknowledgement);
     }
 
     function cleanPacket(
         uint64 sequence,
-        string sourceChain,
-        string destChain,
-        string relayChain
-    ) external override nonReentrant {}
+        string calldata sourceChain,
+        string calldata destChain,
+        string calldata relayChain
+    ) external nonReentrant {}
 
     function recvCleanPacket(
         uint64 sequence,
-        string sourceChain,
-        string destChain,
-        string relayChain,
+        string calldata sourceChain,
+        string calldata destChain,
+        string calldata relayChain,
         bytes calldata proof,
-        uint64 revisionNumber,
-        uint64 revisionHeight
-    ) external override nonReentrant {}
+        ClientTypes.Height calldata height
+    ) external nonReentrant {}
 
     function writeAcknowledgement(
         uint64 sequence,
-        string port,
-        string sourceChain,
-        string destChain,
-        string relayChain,
+        string calldata port,
+        string calldata sourceChain,
+        string calldata destChain,
+        string calldata relayChain,
         bytes calldata data
-    ) internal override nonReentrant {}
+    ) internal nonReentrant {}
 }
