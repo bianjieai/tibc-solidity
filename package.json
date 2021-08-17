@@ -1,0 +1,11 @@
+{
+  "name": "tibc-solidity",
+  "version": "1.0.0",
+  "description": "smart contracts for tibc",
+  "repository": "https://github.com/bianjieai/tibc-solidity.git",
+  "author": "chengwenxi <vincent.ch.cn@gmail.com>",
+  "license": "Apache License",
+  "dependencies": {
+    "openzeppelin-solidity": "v3.4.1"
+  }
+}
