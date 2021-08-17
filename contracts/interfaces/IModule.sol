@@ -9,7 +9,7 @@ interface IModule {
         string calldata destinationChain,
         string calldata relayChain,
         bytes calldata data
-    ) external;
+    ) external returns (bytes memory acknowledgement);
 
     function onAcknowledgementPacket(
         uint64 sequence,
