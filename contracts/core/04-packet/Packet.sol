@@ -1,14 +1,14 @@
-// Apache-License: 2.0
+// SPDX-License-Identifier: Apache-License
 pragma solidity ^0.8.0;
 
 import "../02-client/Client.sol";
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IClientState.sol";
 import "../../interfaces/IModule.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 
 contract Packet is ReentrancyGuard {
-    address public ClientManager;
+    address public CLIENTMANAGER;
 
     // port -> module app implementation address
     mapping(string => IModule) public modules;
@@ -32,8 +32,8 @@ contract Packet is ReentrancyGuard {
         uint64 revisionNumber,
         uint64 revisionHeight
     ) external override nonReentrant {
-        IClientState clientState = IClient(ClientManager).getClientState(
-            chainName
+        IClientState clientState = IClient(CLIENTMANAGER).getClientState(
+            sourceChain
         );
         clientState.verifyPacketCommitment(
             revisionNumber,
@@ -42,14 +42,14 @@ contract Packet is ReentrancyGuard {
             sourceChain,
             destChain,
             sequence,
-            commitmentBytes
+            data
         );
         IModule module = modules[port];
         module.onRecvPacket(
             sequence,
             port,
             sourceChain,
-            destinationChain,
+            destChain,
             relayChain,
             data
         );
@@ -67,8 +67,8 @@ contract Packet is ReentrancyGuard {
         uint64 revisionNumber,
         uint64 revisionHeight
     ) external override nonReentrant {
-        IClientState clientState = IClient(ClientManager).getClientState(
-            chainName
+        IClientState clientState = IClient(CLIENTMANAGER).getClientState(
+            destChain
         );
         clientState.verifyPacketAcknowledgement(
             revisionNumber,
@@ -84,7 +84,7 @@ contract Packet is ReentrancyGuard {
             sequence,
             port,
             sourceChain,
-            destinationChain,
+            destChain,
             relayChain,
             data,
             acknowledgement
