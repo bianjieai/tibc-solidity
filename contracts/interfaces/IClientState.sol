@@ -1,5 +1,8 @@
-// SPDX-License-Identifier: Apache-License
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
+
+import "../libraries/02-client/Client.sol";
+import "../libraries/04-packet/Packet.sol";
 
 interface IClientState {
     function clientType() external view returns (string memory);
@@ -24,31 +27,28 @@ interface IClientState {
     function checkHeaderAndUpdateState(bytes calldata header) external;
 
     function verifyPacketCommitment(
-        uint64 revisionNumber,
-        uint64 revisionHeight,
+        ClientTypes.Height calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
-        string calldata sequence,
+        uint64 sequence,
         bytes calldata commitmentBytes
     ) external;
 
     function verifyPacketAcknowledgement(
-        uint64 revisionNumber,
-        uint64 revisionHeight,
+        ClientTypes.Height calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
-        string calldata sequence,
+        uint64 sequence,
         bytes calldata acknowledgement
     ) external;
 
     function verifyPacketCleanCommitment(
-        uint64 revisionNumber,
-        uint64 revisionHeight,
+        ClientTypes.Height calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
-        string calldata sequence
+        uint64 sequence
     ) external;
 }

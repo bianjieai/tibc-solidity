@@ -1,23 +1,15 @@
-// SPDX-License-Identifier: Apache-License
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
+import "../libraries/04-packet/Packet.sol";
+
 interface IModule {
-    function onRecvPacket(
-        uint64 sequence,
-        string calldata port,
-        string calldata sourceChain,
-        string calldata destinationChain,
-        string calldata relayChain,
-        bytes calldata data
-    ) external returns (bytes memory acknowledgement);
+    function onRecvPacket(PacketTypes.Packet calldata packet)
+        external
+        returns (bytes memory acknowledgement);
 
     function onAcknowledgementPacket(
-        uint64 sequence,
-        string calldata port,
-        string calldata sourceChain,
-        string calldata destinationChain,
-        string calldata relayChain,
-        bytes calldata data,
+        PacketTypes.Packet calldata packet,
         bytes calldata acknowledgement
     ) external;
 }
