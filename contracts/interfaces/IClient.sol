@@ -19,7 +19,10 @@ interface IClient {
 
     function getPrefix() external view returns (uint64);
 
-    function initialize(bytes calldata consensusState) external;
+    function initialize(
+        bytes calldata clientState,
+        bytes calldata consensusState
+    ) external;
 
     function status() external view returns (int8);
 

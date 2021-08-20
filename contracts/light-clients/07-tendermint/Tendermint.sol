@@ -35,7 +35,10 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
 
     function getPrefix() external view override returns (uint64) {}
 
-    function initialize(bytes calldata consensusState) external override {}
+    function initialize(
+        bytes calldata clientState,
+        bytes calldata consensusState
+    ) external override {}
 
     function status() external view override returns (int8) {}
 

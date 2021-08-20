@@ -24,6 +24,10 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
             clientAddress != address(0x0),
             "clientAddress can not be empty"
         );
+
+        IClient client = IClient(clientAddress);
+        client.initialize(clientState, consensusState);
+
         clients[chainName] = clientAddress;
     }
 
