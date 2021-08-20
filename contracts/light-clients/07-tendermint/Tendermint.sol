@@ -2,7 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "../../interfaces/IClient.sol";
-import "./Types.sol";
+import "../../libraries/02-client/Client.sol";
+import "../../libraries/07-tendermint/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 
@@ -16,7 +17,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         transferOwnership(mgrAddr);
     }
 
-    function clientType() external view override returns (string memory) {
+    function clientType() external pure override returns (string memory) {
         return _clientType;
     }
 
@@ -24,7 +25,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         external
         view
         override
-        returns (uint64 revisionNumber, uint64 revisionHeight)
+        returns (ClientTypes.Height memory)
     {}
 
     function validate() external view override returns (bool) {}

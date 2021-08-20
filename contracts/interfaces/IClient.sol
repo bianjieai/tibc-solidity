@@ -9,7 +9,7 @@ interface IClient {
     function getLatestHeight()
         external
         view
-        returns (uint64 revisionNumber, uint64 revisionHeight);
+        returns (ClientTypes.Height memory);
 
     function validate() external view returns (bool);
 
