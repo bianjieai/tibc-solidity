@@ -24,8 +24,26 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
 
         IClient client = IClient(clientAddress);
         client.initialize(clientState, consensusState);
-
+        client.validate();
         clients[chainName] = clientAddress;
+    }
+
+    function updateClient(string calldata chainName, bytes calldata header)
+        external
+        onlyOwner
+        nonReentrant
+    {
+        IClient client = IClient(clients[chainName]);
+        client.checkHeaderAndUpdateState(header);
+    }
+
+    function upgradeClient(
+        string calldata chainName,
+        bytes calldata clientState,
+        bytes calldata consensusState
+    ) external onlyOwner nonReentrant {
+        IClient client = IClient(clients[chainName]);
+        client.upgrade(clientState, consensusState);
     }
 
     function getClient(string calldata chainName)
@@ -35,13 +53,5 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         returns (address)
     {
         return clients[chainName];
-    }
-
-    function updateHeader(string calldata chainName, bytes calldata header)
-        external
-        nonReentrant
-    {
-        IClient client = IClient(clients[chainName]);
-        client.checkHeaderAndUpdateState(header);
     }
 }

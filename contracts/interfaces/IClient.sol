@@ -24,6 +24,9 @@ interface IClient {
         bytes calldata consensusState
     ) external;
 
+    function upgrade(bytes calldata clientState, bytes calldata consensusState)
+        external;
+
     function status() external view returns (int8);
 
     function checkHeaderAndUpdateState(bytes calldata header) external;

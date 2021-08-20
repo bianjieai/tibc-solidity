@@ -41,6 +41,11 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         bytes calldata consensusState
     ) external override {}
 
+    function upgrade(bytes calldata clientState, bytes calldata consensusState)
+        external
+        override
+    {}
+
     function status() external view override returns (int8) {}
 
     function checkHeaderAndUpdateState(bytes calldata header)
