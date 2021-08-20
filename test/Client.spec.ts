@@ -1,8 +1,8 @@
-import { ethers } from "hardhat"
-import { Signer } from "ethers"
+import { ethers } from "hardhat";
+import { Signer } from "ethers";
 import chai from "chai";
 
-import { ClientManager } from '../typechain'
+import { ClientManager } from '../typechain';
 
 const { expect } = chai;
 
