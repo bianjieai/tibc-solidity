@@ -28,8 +28,8 @@ contract Packet is ReentrancyGuard {
         bytes calldata proof,
         ClientTypes.Height calldata height
     ) external nonReentrant {
-        IClient client = IClient(
-            IClientManager(clientManagerAddress).getClient(packet.sourceChain)
+        IClient client = IClientManager(clientManagerAddress).getClient(
+            packet.sourceChain
         );
         client.verifyPacketCommitment(
             height,

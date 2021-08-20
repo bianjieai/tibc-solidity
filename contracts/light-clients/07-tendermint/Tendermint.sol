@@ -8,7 +8,7 @@ import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 
 contract Tendermint is IClient, Ownable, ReentrancyGuard {
-    string private constant ClientType = "tendermint";
+    string private constant CLIENT_TYPE = "tendermint";
 
     Types.ClientState public clientState;
     mapping(uint64 => Types.ConsensusState) public consensusStates;
@@ -18,7 +18,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
     }
 
     function clientType() external pure override returns (string memory) {
-        return ClientType;
+        return CLIENT_TYPE;
     }
 
     function getLatestHeight()

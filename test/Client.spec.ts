@@ -26,7 +26,7 @@ describe('Client', () => {
         let address = await accounts[0].getAddress()
         await clientManager.createClient("irishub", tmClient.address, Buffer.from("0x0"), Buffer.from("0x0"))
 
-        let irishubClient = await clientManager.getClient("irishub")
+        let irishubClient = await clientManager.clients("irishub")
         expect(irishubClient).to.eq(tmClient.address)
     })
 })

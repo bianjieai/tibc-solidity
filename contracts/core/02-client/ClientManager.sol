@@ -8,7 +8,7 @@ import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     // chain_name -> IClient implementation address
-    mapping(string => address) private clients;
+    mapping(string => IClient) public clients;
 
     function createClient(
         string calldata chainName,
@@ -16,7 +16,10 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         bytes calldata clientState,
         bytes calldata consensusState
     ) external onlyOwner {
-        require(clients[chainName] == address(0x0), "chainName already exist");
+        require(
+            address(clients[chainName]) == address(0x0),
+            "chainName already exist"
+        );
         require(
             clientAddress != address(0x0),
             "clientAddress can not be empty"
@@ -25,7 +28,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         IClient client = IClient(clientAddress);
         client.initialize(clientState, consensusState);
         client.validate();
-        clients[chainName] = clientAddress;
+        clients[chainName] = client;
     }
 
     function updateClient(string calldata chainName, bytes calldata header)
@@ -33,7 +36,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         onlyOwner
         nonReentrant
     {
-        IClient client = IClient(clients[chainName]);
+        IClient client = clients[chainName];
         client.checkHeaderAndUpdateState(header);
     }
 
@@ -42,7 +45,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         bytes calldata clientState,
         bytes calldata consensusState
     ) external onlyOwner nonReentrant {
-        IClient client = IClient(clients[chainName]);
+        IClient client = clients[chainName];
         client.upgrade(clientState, consensusState);
     }
 
@@ -50,7 +53,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         public
         view
         override
-        returns (address)
+        returns (IClient)
     {
         return clients[chainName];
     }
