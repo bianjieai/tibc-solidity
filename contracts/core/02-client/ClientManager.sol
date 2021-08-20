@@ -16,10 +16,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         bytes calldata clientState,
         bytes calldata consensusState
     ) external onlyOwner {
-        require(
-            clients[chainName] == address(0x0),
-            "chainName can not be empty"
-        );
+        require(clients[chainName] == address(0x0), "chainName already exist");
         require(
             clientAddress != address(0x0),
             "clientAddress can not be empty"
