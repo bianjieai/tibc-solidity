@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
-import "../02-client/Client.sol";
+import "../02-client/ClientManager.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/04-packet/Packet.sol";
+import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
-import "../../interfaces/IClientState.sol";
 import "../../interfaces/IModule.sol";
 import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 
 contract Packet is ReentrancyGuard {
-    address public CLIENTMANAGER;
+    IClientManager public clientManager;
 
     // port -> module app implementation address
     mapping(string => IModule) public modules;
@@ -28,10 +28,8 @@ contract Packet is ReentrancyGuard {
         bytes calldata proof,
         ClientTypes.Height calldata height
     ) external nonReentrant {
-        IClientState clientState = IClient(CLIENTMANAGER).getClientState(
-            packet.sourceChain
-        );
-        clientState.verifyPacketCommitment(
+        IClient client = clientManager.getClient(packet.sourceChain);
+        client.verifyPacketCommitment(
             height,
             proof,
             packet.sourceChain,
@@ -49,10 +47,8 @@ contract Packet is ReentrancyGuard {
         bytes calldata proofAcked,
         ClientTypes.Height calldata height
     ) external nonReentrant {
-        IClientState clientState = IClient(CLIENTMANAGER).getClientState(
-            packet.destChain
-        );
-        clientState.verifyPacketAcknowledgement(
+        IClient client = clientManager.getClient(packet.destChain);
+        client.verifyPacketAcknowledgement(
             height,
             proofAcked,
             packet.sourceChain,
