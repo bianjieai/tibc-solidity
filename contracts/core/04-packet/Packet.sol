@@ -10,7 +10,7 @@ import "../../interfaces/IModule.sol";
 import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 
 contract Packet is ReentrancyGuard {
-    address public clientManagerAddress;
+    IClientManager public clientManager;
 
     // port -> module app implementation address
     mapping(string => IModule) public modules;
@@ -28,9 +28,7 @@ contract Packet is ReentrancyGuard {
         bytes calldata proof,
         ClientTypes.Height calldata height
     ) external nonReentrant {
-        IClient client = IClientManager(clientManagerAddress).getClient(
-            packet.sourceChain
-        );
+        IClient client = clientManager.getClient(packet.sourceChain);
         client.verifyPacketCommitment(
             height,
             proof,
@@ -49,9 +47,7 @@ contract Packet is ReentrancyGuard {
         bytes calldata proofAcked,
         ClientTypes.Height calldata height
     ) external nonReentrant {
-        IClient client = IClient(
-            IClientManager(clientManagerAddress).getClient(packet.destChain)
-        );
+        IClient client = clientManager.getClient(packet.destChain);
         client.verifyPacketAcknowledgement(
             height,
             proofAcked,
