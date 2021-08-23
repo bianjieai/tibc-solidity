@@ -20,6 +20,13 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         _;
     }
 
+    /* @notice                  this function is intended to be called by owner to create a light client and initialize light client data.
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param clientAddress    light client contract address
+     *  @param clientState      light client status
+     *  @param consensusState   light client consensus status
+     */
     function createClient(
         string calldata chainName,
         address clientAddress,
@@ -40,6 +47,11 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         clients[chainName] = client;
     }
 
+    /* @notice                  this function is called by the relayer, the purpose is to update the state of the light client
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param header           block header of the counterparty chain
+     */
     function updateClient(string calldata chainName, bytes calldata header)
         external
         onlyRelayer(chainName)
@@ -49,6 +61,12 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         client.checkHeaderAndUpdateState(header);
     }
 
+    /* @notice                  this function is called by the owner, the purpose is to update the state of the light client
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param clientState      light client status
+     *  @param consensusState   light client consensus status
+     */
     function upgradeClient(
         string calldata chainName,
         bytes calldata clientState,
@@ -58,6 +76,11 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         client.upgrade(clientState, consensusState);
     }
 
+    /* @notice                  this function is called by the owner, the purpose is to register the relayer address of a light client
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param address          relayer address
+     */
     function registerRelayer(string calldata chainName, address relayer)
         external
         onlyOwner
