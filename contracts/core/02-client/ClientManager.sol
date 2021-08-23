@@ -9,6 +9,16 @@ import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     // chain_name -> IClient implementation address
     mapping(string => IClient) public clients;
+    mapping(string => mapping(address => uint64)) public relayers;
+
+    // check if caller is relayer
+    modifier onlyRelayer(string calldata chainName) {
+        require(
+            relayers[chainName][msg.sender] > 0x0,
+            "caller is not a relayer"
+        );
+        _;
+    }
 
     function createClient(
         string calldata chainName,
@@ -27,13 +37,12 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
 
         IClient client = IClient(clientAddress);
         client.initialize(clientState, consensusState);
-        client.validate();
         clients[chainName] = client;
     }
 
     function updateClient(string calldata chainName, bytes calldata header)
         external
-        onlyOwner
+        onlyRelayer(chainName)
         nonReentrant
     {
         IClient client = clients[chainName];
@@ -47,6 +56,17 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     ) external onlyOwner nonReentrant {
         IClient client = clients[chainName];
         client.upgrade(clientState, consensusState);
+    }
+
+    function registerRelayer(string calldata chainName, address relayer)
+        external
+        onlyOwner
+    {
+        require(
+            relayers[chainName][relayer] == 0x0,
+            "relayer already registered"
+        );
+        relayers[chainName][relayer] = 1;
     }
 
     function getClient(string calldata chainName)

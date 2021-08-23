@@ -2,23 +2,23 @@
 pragma solidity ^0.8.0;
 
 import "../../interfaces/IClient.sol";
+import "../../interfaces/IClientManager.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/07-tendermint/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 
 contract Tendermint is IClient, Ownable, ReentrancyGuard {
-    string private constant CLIENT_TYPE = "tendermint";
+    string public constant clientType = "tendermint";
 
     Types.ClientState public clientState;
     mapping(uint64 => Types.ConsensusState) public consensusStates;
 
+    IClientManager public clientManager;
+
     constructor(address mgrAddr) {
         transferOwnership(mgrAddr);
-    }
-
-    function clientType() external pure override returns (string memory) {
-        return CLIENT_TYPE;
+        clientManager = IClientManager(mgrAddr);
     }
 
     function getLatestHeight()
@@ -26,31 +26,27 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         view
         override
         returns (ClientTypes.Height memory)
-    {}
+    {
+        return clientState.latestHeight;
+    }
 
-    function validate() external view override returns (bool) {}
-
-    function getDelayTime() external view override returns (uint64) {}
-
-    function getDelayBlock() external view override returns (uint64) {}
-
-    function getPrefix() external view override returns (uint64) {}
+    function status() external view override returns (int8) {}
 
     function initialize(
         bytes calldata clientState,
         bytes calldata consensusState
-    ) external override {}
+    ) external override onlyOwner {}
 
     function upgrade(bytes calldata clientState, bytes calldata consensusState)
         external
         override
+        onlyOwner
     {}
-
-    function status() external view override returns (int8) {}
 
     function checkHeaderAndUpdateState(bytes calldata header)
         external
         override
+        onlyOwner
     {}
 
     function verifyPacketCommitment(
