@@ -9,7 +9,24 @@ import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     // chain_name -> IClient implementation address
     mapping(string => IClient) public clients;
+    mapping(string => mapping(address => uint64)) public relayers;
 
+    // check if caller is relayer
+    modifier onlyRelayer(string calldata chainName) {
+        require(
+            relayers[chainName][msg.sender] > 0x0,
+            "caller is not a relayer"
+        );
+        _;
+    }
+
+    /* @notice                  this function is intended to be called by owner to create a light client and initialize light client data.
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param clientAddress    light client contract address
+     *  @param clientState      light client status
+     *  @param consensusState   light client consensus status
+     */
     function createClient(
         string calldata chainName,
         address clientAddress,
@@ -27,19 +44,29 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
 
         IClient client = IClient(clientAddress);
         client.initialize(clientState, consensusState);
-        client.validate();
         clients[chainName] = client;
     }
 
+    /* @notice                  this function is called by the relayer, the purpose is to update the state of the light client
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param header           block header of the counterparty chain
+     */
     function updateClient(string calldata chainName, bytes calldata header)
         external
-        onlyOwner
+        onlyRelayer(chainName)
         nonReentrant
     {
         IClient client = clients[chainName];
         client.checkHeaderAndUpdateState(header);
     }
 
+    /* @notice                  this function is called by the owner, the purpose is to update the state of the light client
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param clientState      light client status
+     *  @param consensusState   light client consensus status
+     */
     function upgradeClient(
         string calldata chainName,
         bytes calldata clientState,
@@ -47,6 +74,22 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     ) external onlyOwner nonReentrant {
         IClient client = clients[chainName];
         client.upgrade(clientState, consensusState);
+    }
+
+    /* @notice                  this function is called by the owner, the purpose is to register the relayer address of a light client
+     *
+     *  @param chainName        the counterparty chain name
+     *  @param address          relayer address
+     */
+    function registerRelayer(string calldata chainName, address relayer)
+        external
+        onlyOwner
+    {
+        require(
+            relayers[chainName][relayer] == 0x0,
+            "relayer already registered"
+        );
+        relayers[chainName][relayer] = 1;
     }
 
     function getClient(string calldata chainName)

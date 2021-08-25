@@ -4,20 +4,10 @@ pragma solidity ^0.8.0;
 import "../libraries/02-client/Client.sol";
 
 interface IClient {
-    function clientType() external view returns (string memory);
-
     function getLatestHeight()
         external
         view
         returns (ClientTypes.Height memory);
-
-    function validate() external view returns (bool);
-
-    function getDelayTime() external view returns (uint64);
-
-    function getDelayBlock() external view returns (uint64);
-
-    function getPrefix() external view returns (uint64);
 
     function initialize(
         bytes calldata clientState,
