@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IClientManager.sol";
 import "../../libraries/02-client/Client.sol";
-import "../../libraries/07-tendermint/Tendermint.sol";
+import "../../libraries/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
-import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract Tendermint is IClient, Ownable, ReentrancyGuard {
     string public constant clientType = "tendermint";
 
     // current light client status
-    Types.ClientState public clientState;
+    ClientState.Data public clientState;
 
     // consensus status of light clients
-    mapping(uint64 => Types.ConsensusState) public consensusStates;
+    mapping(uint64 => ConsensusState.Data) public consensusStates;
 
     // ClientManager contract of light clients
     IClientManager public clientManager;
 
-    constructor(address clientManagerAddr) {
+    constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
         clientManager = IClientManager(clientManagerAddr);
     }
@@ -34,7 +35,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         override
         returns (ClientTypes.Height memory)
     {
-        return clientState.latestHeight;
+        //return clientState.latest_height;
     }
 
     /*  @notice   return the status of the current light client
@@ -48,9 +49,15 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param consensusState   light client consensus status
      */
     function initialize(
-        bytes calldata clientState,
-        bytes calldata consensusState
-    ) external override onlyOwner {}
+        bytes calldata clientStateBz,
+        bytes calldata consensusStateBz
+    ) external override onlyOwner {
+        clientState = ClientState.decode(clientStateBz);
+        ConsensusState.Data memory consData = ConsensusState.decode(
+            consensusStateBz
+        );
+        consensusStates[clientState.latest_height.revision_height] = consData;
+    }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
      *

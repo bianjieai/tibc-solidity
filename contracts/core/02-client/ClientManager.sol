@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
-import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     // chain_name -> IClient implementation address
@@ -12,7 +13,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     mapping(string => mapping(address => uint64)) public relayers;
 
     // check if caller is relayer
-    modifier onlyRelayer(string calldata chainName) {
+    modifier onlyRelayer(string memory chainName) {
         require(
             relayers[chainName][msg.sender] > 0x0,
             "caller is not a relayer"
@@ -92,9 +93,8 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         relayers[chainName][relayer] = 1;
     }
 
-    function getClient(string calldata chainName)
+    function getClient(string memory chainName)
         public
-        view
         override
         returns (IClient)
     {

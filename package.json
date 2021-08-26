@@ -12,7 +12,7 @@
     "typecheck": "yarn compile && yarn test && yarn tsc --noEmit"
   },
   "dependencies": {
-    "openzeppelin-solidity": "^4.2.0"
+    "openzeppelin-solidity": "3.4.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",
