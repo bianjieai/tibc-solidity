@@ -128,8 +128,8 @@ message CanonicalPartSetHeader {
 
 message CanonicalVote {
   SignedMsgType typ = 1; // type alias for byte
-  int64 height = 2;      // canonicalization requires fixed size encoding
-  int64 round = 3;       // canonicalization requires fixed size
+  sfixed64 height = 2;   // canonicalization requires fixed size encoding
+  sfixed64 round = 3;    // canonicalization requires fixed size
   CanonicalBlockID block_id = 4;
   Timestamp timestamp = 5;
   string chain_id = 6;

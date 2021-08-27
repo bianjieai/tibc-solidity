@@ -4718,7 +4718,7 @@ library CanonicalVote {
     /**
      * if `r` is NULL, then only counting the number of fields.
      */
-    (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
+    (int64 x, uint256 sz) = ProtoBufRuntime._decode_sfixed64(p, bs);
     if (isNil(r)) {
       counters[2] += 1;
     } else {
@@ -4745,7 +4745,7 @@ library CanonicalVote {
     /**
      * if `r` is NULL, then only counting the number of fields.
      */
-    (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
+    (int64 x, uint256 sz) = ProtoBufRuntime._decode_sfixed64(p, bs);
     if (isNil(r)) {
       counters[3] += 1;
     } else {
@@ -4921,20 +4921,20 @@ library CanonicalVote {
     if (r.height != 0) {
     pointer += ProtoBufRuntime._encode_key(
       2,
-      ProtoBufRuntime.WireType.Varint,
+      ProtoBufRuntime.WireType.Fixed64,
       pointer,
       bs
     );
-    pointer += ProtoBufRuntime._encode_int64(r.height, pointer, bs);
+    pointer += ProtoBufRuntime._encode_sfixed64(r.height, pointer, bs);
     }
     if (r.round != 0) {
     pointer += ProtoBufRuntime._encode_key(
       3,
-      ProtoBufRuntime.WireType.Varint,
+      ProtoBufRuntime.WireType.Fixed64,
       pointer,
       bs
     );
-    pointer += ProtoBufRuntime._encode_int64(r.round, pointer, bs);
+    pointer += ProtoBufRuntime._encode_sfixed64(r.round, pointer, bs);
     }
     
     pointer += ProtoBufRuntime._encode_key(
@@ -5007,8 +5007,8 @@ library CanonicalVote {
   ) internal pure returns (uint) {
     uint256 e;
     e += 1 + ProtoBufRuntime._sz_enum(TYPES_PROTO_GLOBAL_ENUMS.encode_SignedMsgType(r.typ));
-    e += 1 + ProtoBufRuntime._sz_int64(r.height);
-    e += 1 + ProtoBufRuntime._sz_int64(r.round);
+    e += 1 + 8;
+    e += 1 + 8;
     e += 1 + ProtoBufRuntime._sz_lendelim(CanonicalBlockID._estimate(r.block_id));
     e += 1 + ProtoBufRuntime._sz_lendelim(Timestamp._estimate(r.timestamp));
     e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.chain_id).length);
