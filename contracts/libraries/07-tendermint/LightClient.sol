@@ -25,7 +25,7 @@ library LightClientLib {
         ValidatorSet.Data memory trustedVals,
         SignedHeader.Data memory untrustedHeader,
         ValidatorSet.Data memory untrustedVals,
-        Timestamp.Data memory trustingPeriod,
+        int64 trustingPeriod,
         Timestamp.Data memory nowTime,
         int64 maxClockDrift,
         Fraction.Data memory trustLevel
@@ -72,7 +72,7 @@ library LightClientLib {
         ValidatorSet.Data memory trustedVals,
         SignedHeader.Data memory untrustedHeader,
         ValidatorSet.Data memory untrustedVals,
-        Timestamp.Data memory trustingPeriod,
+        int64 trustingPeriod,
         Timestamp.Data memory nowTime,
         int64 maxClockDrift,
         Fraction.Data memory trustLevel
@@ -123,7 +123,7 @@ library LightClientLib {
         SignedHeader.Data memory trustedHeader,
         SignedHeader.Data memory untrustedHeader,
         ValidatorSet.Data memory untrustedVals,
-        Timestamp.Data memory trustingPeriod,
+        int64 trustingPeriod,
         Timestamp.Data memory nowTime,
         int64 maxClockDrift
     ) internal pure {
@@ -132,7 +132,8 @@ library LightClientLib {
             "headers must be adjacent in height"
         );
 
-        // todo HeaderExpired
+        verifyHeaderExpired(trustedHeader.header.time, trustingPeriod, nowTime);
+
         // verifyNewHeaderAndVals
 
         require(
@@ -227,6 +228,26 @@ library LightClientLib {
         Fraction.Data memory trustLevel
     ) internal pure {
         require(trustLevel.denominator == 0, "trustLevel has zero Denominator");
+    }
+
+    // TODO
+    function verifyNewHeaderAndVals(
+        SignedHeader.Data memory untrustedHeader,
+        ValidatorSet.Data memory untrustedVals,
+        SignedHeader.Data memory trustedHeader,
+        int64 trustingPeriod,
+        Timestamp.Data memory nowTime,
+        int64 maxClockDrift
+    ) internal pure {}
+
+    // TODO
+    function verifyHeaderExpired(
+        Timestamp.Data memory lastTrustTime,
+        int64 trustingPeriod,
+        Timestamp.Data memory nowTime
+    ) internal pure {
+        int64 expirationTime = lastTrustTime.secs + trustingPeriod;
+        require(expirationTime > nowTime.secs, "Header expired");
     }
 
     function genVoteSignBytes(

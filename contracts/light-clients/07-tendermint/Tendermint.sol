@@ -196,9 +196,6 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         trustedHeader.header.next_validators_hash = consensusState
             .next_validators_hash;
 
-        Timestamp.Data memory trustedPeriod;
-        trustedPeriod.secs = clientSate.trusting_period;
-
         Timestamp.Data memory currentTimestamp;
         currentTimestamp.secs = int64(block.timestamp);
 
@@ -212,7 +209,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
             header.trusted_validators,
             header.signed_header,
             header.validator_set,
-            trustedPeriod,
+            clientSate.trusting_period,
             currentTimestamp,
             clientSate.max_clock_drift,
             clientSate.trust_level
