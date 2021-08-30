@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+// PublicKey defines the keys available for use with Tendermint Validators
+message PublicKey {
+  oneof sum {
+    bytes ed25519 = 1;
+    bytes secp256k1 = 2;
+  }
+}

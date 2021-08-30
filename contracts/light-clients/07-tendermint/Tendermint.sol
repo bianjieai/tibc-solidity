@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IClientManager.sol";
 import "../../libraries/02-client/Client.sol";
-import "../../libraries/07-tendermint/Tendermint.sol";
+import "../../libraries/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
-import "openzeppelin-solidity/contracts/security/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract Tendermint is IClient, Ownable, ReentrancyGuard {
     string public constant clientType = "tendermint";
 
     // current light client status
-    Types.ClientState public clientState;
+    ClientState.Data public clientState;
 
     // consensus status of light clients
-    mapping(uint64 => Types.ConsensusState) public consensusStates;
+    mapping(uint64 => ConsensusState.Data) public consensusStates;
 
     // ClientManager contract of light clients
     IClientManager public clientManager;
 
-    constructor(address clientManagerAddr) {
+    constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
         clientManager = IClientManager(clientManagerAddr);
     }
@@ -32,46 +33,84 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         external
         view
         override
-        returns (ClientTypes.Height memory)
+        returns (Height.Data memory)
     {
-        return clientState.latestHeight;
+        return clientState.latest_height;
     }
 
     /*  @notice   return the status of the current light client
      *
      */
+    //TODO
     function status() external view override returns (int8) {}
 
     /*  @notice                 this function is called by the ClientManager contract, the purpose is to initialize light client state
 
-     *  @param clientState      light client status
-     *  @param consensusState   light client consensus status
+     *  @param clientStateBz      light client status
+     *  @param consensusStateBz   light client consensus status
      */
     function initialize(
-        bytes calldata clientState,
-        bytes calldata consensusState
-    ) external override onlyOwner {}
+        bytes calldata clientStateBz,
+        bytes calldata consensusStateBz
+    ) external override onlyOwner {
+        clientState = ClientState.decode(clientStateBz);
+        ConsensusState.Data memory consData = ConsensusState.decode(
+            consensusStateBz
+        );
+        consensusStates[clientState.latest_height.revision_height] = consData;
+    }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
      *
-     *  @param clientState      light client status
-     *  @param consensusState   light client consensus status
+     *  @param clientStateBz      light client status
+     *  @param consensusStateBz   light client consensus status
      */
-    function upgrade(bytes calldata clientState, bytes calldata consensusState)
-        external
-        override
-        onlyOwner
-    {}
+    function upgrade(
+        bytes calldata clientStateBz,
+        bytes calldata consensusStateBz
+    ) external override onlyOwner {
+        clientState = ClientState.decode(clientStateBz);
+        ConsensusState.Data memory consData = ConsensusState.decode(
+            consensusStateBz
+        );
+        consensusStates[clientState.latest_height.revision_height] = consData;
+    }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
      *
-     *  @param header           block header of the counterparty chain
+     *  @param headerBz          block header of the counterparty chain
      */
-    function checkHeaderAndUpdateState(bytes calldata header)
+    function checkHeaderAndUpdateState(bytes calldata headerBz)
         external
         override
         onlyOwner
-    {}
+    {
+        Header.Data memory header = Header.decode(headerBz);
+        // ConsensusState.Data memory tmConsState = consensusStates[
+        //     header.trusted_height.revision_height
+        // ];
+        // TODO check heaer
+        // HeaderLib.checkValidity(header, clientState, tmConsState);
+        if (
+            uint64(header.signed_header.header.height) >
+            clientState.latest_height.revision_height
+        ) {
+            clientState.latest_height.revision_height = uint64(
+                header.signed_header.header.height
+            );
+        }
+
+        ConsensusState.Data storage newConsState;
+        newConsState.timestamp = header.signed_header.header.time;
+        newConsState.root = header.signed_header.header.app_hash;
+        newConsState.next_validators_hash = header
+            .signed_header
+            .header
+            .next_validators_hash;
+        consensusStates[
+            clientState.latest_height.revision_height
+        ] = newConsState;
+    }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
      *
@@ -83,7 +122,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param commitmentBytes  the hash of the cross-chain data packet
      */
     function verifyPacketCommitment(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
@@ -101,7 +140,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param acknowledgement  the hash of the acknowledgement of the cross-chain data packet
      */
     function verifyPacketAcknowledgement(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
@@ -118,10 +157,17 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param sequence         the sequence of cross-chain data packets
      */
     function verifyPacketCleanCommitment(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
         uint64 sequence
     ) external override {}
+
+    function checkValidity(Header.Data memory header) internal {}
+
+    function checkTrustedHeader(
+        Header.Data memory header,
+        ConsensusState.Data memory consensusState
+    ) internal {}
 }
