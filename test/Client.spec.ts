@@ -1,16 +1,16 @@
 import { ethers } from "hardhat";
 import { Signer } from "ethers";
 import chai from "chai";
+import { ClientManager, Tendermint } from '../typechain';
 
-import { ClientManager, Tendermint, ProtobufTest } from '../typechain';
 
+let client = require("./proto/client.js");
 const { expect } = chai;
 
 describe('Client', () => {
     let accounts: Signer[]
     let clientManager: ClientManager
     let tmClient: Tendermint
-    let protobuf: ProtobufTest
 
     before('deploy ClientManager', async () => {
         accounts = await ethers.getSigners();
@@ -20,33 +20,46 @@ describe('Client', () => {
 
         const tmFactory = await ethers.getContractFactory('Tendermint', accounts[0])
         tmClient = (await tmFactory.deploy(clientManager.address)) as Tendermint
-
-        const protobufFactory = await ethers.getContractFactory('ProtobufTest', accounts[0])
-        protobuf = (await protobufFactory.deploy()) as ProtobufTest
     })
 
     // TODO
-    // it("add client", async function () {
-    //     await clientManager.createClient("irishub", tmClient.address, Buffer.from("0x0"), Buffer.from("0x0"))
+    it("add client", async function () {
+        let clientState = {
+            chainId: "testA",
+            trustLevel: {
+                numerator: 1,
+                denominator: 3
+            },
+            trustingPeriod: 1209600,
+            unbondingPeriod: 1814400,
+            maxClockDrift: 10,
+            latestHeight: {
+                revisionNumber: 0,
+                revisionHeight: 4
+            },
+            timeDelay: 0,
+        };
+        let clientStateBuf = client.ClientState.encode(clientState).finish();
 
-    //     let irishubClient = await clientManager.clients("irishub")
-    //     expect(irishubClient).to.eq(tmClient.address)
-    // })
+        let consensusState = {
+            timestamp: {
+                secs: 1630014534,
+                nanos: 0,
+            },
+            root: Buffer.from("YXBwX2hhc2g=", "base64"),
+            nextValidatorsHash: Buffer.from("8C532894EF659A1BBD8F9C6D340D55C768431DB79BFD8F85ABE5BEA59ADC55EA", "hex")
+        }
+        let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
 
-    it("encode and decode", async function () {
-        let voteBz = Buffer.from("0802113930000000000000190200000000000000224a0a208b01023386c371778ecb6368573e539afc3cc860ec3a2f614e54fe5652f4fc80122608c0843d122072db3d959635dff1bb567bedaa70573392c5159666a3f8caf11e413aac52207a2a0b08b1d381d20510809dca6f320d746573745f636861696e5f6964", "hex")
+        await clientManager.createClient("irishub", tmClient.address, clientStateBuf, consensusStateBuf)
 
-        //test decode
-        await protobuf.decode(voteBz);
+        let irishubClient = await clientManager.clients("irishub")
+        expect(irishubClient).to.eq(tmClient.address)
 
-        let data = await protobuf.data()
-        expect(data.height).to.eq(12345)
-        expect(data.block_id.hash).to.eq("0x8b01023386c371778ecb6368573e539afc3cc860ec3a2f614e54fe5652f4fc80")
-        expect(data.typ).to.eq(2)
+        let expClientState = (await tmClient.clientState())
+        expect(expClientState.chain_id).to.eq("testA")
 
-        //test encode
-        let expData = await protobuf.encode()
-        expect(expData.slice(2)).to.eq(voteBz.toString("hex"))
+        let expConsensusState = (await tmClient.consensusStates(clientState.latestHeight.revisionHeight))
+        expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
     })
-
 })

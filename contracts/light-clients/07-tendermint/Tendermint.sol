@@ -46,8 +46,8 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
 
     /*  @notice                 this function is called by the ClientManager contract, the purpose is to initialize light client state
 
-     *  @param clientState      light client status
-     *  @param consensusState   light client consensus status
+     *  @param clientStateBz      light client status
+     *  @param consensusStateBz   light client consensus status
      */
     function initialize(
         bytes calldata clientStateBz,
@@ -62,8 +62,8 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
      *
-     *  @param clientState      light client status
-     *  @param consensusState   light client consensus status
+     *  @param clientStateBz      light client status
+     *  @param consensusStateBz   light client consensus status
      */
     function upgrade(
         bytes calldata clientStateBz,
@@ -78,7 +78,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
      *
-     *  @param header           block header of the counterparty chain
+     *  @param headerBz          block header of the counterparty chain
      */
     function checkHeaderAndUpdateState(bytes calldata headerBz)
         external
