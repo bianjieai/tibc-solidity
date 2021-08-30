@@ -2,6 +2,7 @@
 pragma solidity ^0.6.8;
 import "./ProtoBufRuntime.sol";
 import "./GoogleProtobufAny.sol";
+import "./PublicKey.sol";
 
 library ValidatorSet {
 
@@ -434,7 +435,7 @@ library Validator {
   //struct definition
   struct Data {
     bytes addr;
-    bytes pub_key;
+    PublicKey.Data pub_key;
     int64 voting_power;
     int64 proposer_priority;
   }
@@ -571,7 +572,7 @@ library Validator {
     /**
      * if `r` is NULL, then only counting the number of fields.
      */
-    (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
+    (PublicKey.Data memory x, uint256 sz) = _decode_PublicKey(p, bs);
     if (isNil(r)) {
       counters[2] += 1;
     } else {
@@ -635,6 +636,26 @@ library Validator {
     return sz;
   }
 
+  // struct decoder
+  /**
+   * @dev The decoder for reading a inner struct field
+   * @param p The offset of bytes array to start decode
+   * @param bs The bytes array to be decoded
+   * @return The decoded inner-struct
+   * @return The number of bytes used to decode
+   */
+  function _decode_PublicKey(uint256 p, bytes memory bs)
+    internal
+    pure
+    returns (PublicKey.Data memory, uint)
+  {
+    uint256 pointer = p;
+    (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(pointer, bs);
+    pointer += bytesRead;
+    (PublicKey.Data memory r, ) = PublicKey._decode(pointer, bs, sz);
+    return (r, sz + bytesRead);
+  }
+
 
   // Encoder section
 
@@ -677,15 +698,15 @@ library Validator {
     );
     pointer += ProtoBufRuntime._encode_bytes(r.addr, pointer, bs);
     }
-    if (r.pub_key.length != 0) {
+    
     pointer += ProtoBufRuntime._encode_key(
       2,
       ProtoBufRuntime.WireType.LengthDelim,
       pointer,
       bs
     );
-    pointer += ProtoBufRuntime._encode_bytes(r.pub_key, pointer, bs);
-    }
+    pointer += PublicKey._encode_nested(r.pub_key, pointer, bs);
+    
     if (r.voting_power != 0) {
     pointer += ProtoBufRuntime._encode_key(
       3,
@@ -748,7 +769,7 @@ library Validator {
   ) internal pure returns (uint) {
     uint256 e;
     e += 1 + ProtoBufRuntime._sz_lendelim(r.addr.length);
-    e += 1 + ProtoBufRuntime._sz_lendelim(r.pub_key.length);
+    e += 1 + ProtoBufRuntime._sz_lendelim(PublicKey._estimate(r.pub_key));
     e += 1 + ProtoBufRuntime._sz_int64(r.voting_power);
     e += 1 + ProtoBufRuntime._sz_int64(r.proposer_priority);
     return e;
@@ -760,10 +781,6 @@ library Validator {
   ) internal pure returns (bool) {
     
   if (r.addr.length != 0) {
-    return false;
-  }
-
-  if (r.pub_key.length != 0) {
     return false;
   }
 
@@ -787,7 +804,7 @@ library Validator {
    */
   function store(Data memory input, Data storage output) internal {
     output.addr = input.addr;
-    output.pub_key = input.pub_key;
+    PublicKey.store(input.pub_key, output.pub_key);
     output.voting_power = input.voting_power;
     output.proposer_priority = input.proposer_priority;
 
@@ -824,7 +841,7 @@ library SimpleValidator {
 
   //struct definition
   struct Data {
-    bytes pub_key;
+    PublicKey.Data pub_key;
     int64 voting_power;
   }
 
@@ -927,7 +944,7 @@ library SimpleValidator {
     /**
      * if `r` is NULL, then only counting the number of fields.
      */
-    (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
+    (PublicKey.Data memory x, uint256 sz) = _decode_PublicKey(p, bs);
     if (isNil(r)) {
       counters[1] += 1;
     } else {
@@ -964,6 +981,26 @@ library SimpleValidator {
     return sz;
   }
 
+  // struct decoder
+  /**
+   * @dev The decoder for reading a inner struct field
+   * @param p The offset of bytes array to start decode
+   * @param bs The bytes array to be decoded
+   * @return The decoded inner-struct
+   * @return The number of bytes used to decode
+   */
+  function _decode_PublicKey(uint256 p, bytes memory bs)
+    internal
+    pure
+    returns (PublicKey.Data memory, uint)
+  {
+    uint256 pointer = p;
+    (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(pointer, bs);
+    pointer += bytesRead;
+    (PublicKey.Data memory r, ) = PublicKey._decode(pointer, bs, sz);
+    return (r, sz + bytesRead);
+  }
+
 
   // Encoder section
 
@@ -997,15 +1034,15 @@ library SimpleValidator {
     uint256 offset = p;
     uint256 pointer = p;
     
-    if (r.pub_key.length != 0) {
+    
     pointer += ProtoBufRuntime._encode_key(
       1,
       ProtoBufRuntime.WireType.LengthDelim,
       pointer,
       bs
     );
-    pointer += ProtoBufRuntime._encode_bytes(r.pub_key, pointer, bs);
-    }
+    pointer += PublicKey._encode_nested(r.pub_key, pointer, bs);
+    
     if (r.voting_power != 0) {
     pointer += ProtoBufRuntime._encode_key(
       2,
@@ -1058,7 +1095,7 @@ library SimpleValidator {
     Data memory r
   ) internal pure returns (uint) {
     uint256 e;
-    e += 1 + ProtoBufRuntime._sz_lendelim(r.pub_key.length);
+    e += 1 + ProtoBufRuntime._sz_lendelim(PublicKey._estimate(r.pub_key));
     e += 1 + ProtoBufRuntime._sz_int64(r.voting_power);
     return e;
   }
@@ -1068,10 +1105,6 @@ library SimpleValidator {
     Data memory r
   ) internal pure returns (bool) {
     
-  if (r.pub_key.length != 0) {
-    return false;
-  }
-
   if (r.voting_power != 0) {
     return false;
   }
@@ -1087,7 +1120,7 @@ library SimpleValidator {
    * @param output The in-storage struct
    */
   function store(Data memory input, Data storage output) internal {
-    output.pub_key = input.pub_key;
+    PublicKey.store(input.pub_key, output.pub_key);
     output.voting_power = input.voting_power;
 
   }

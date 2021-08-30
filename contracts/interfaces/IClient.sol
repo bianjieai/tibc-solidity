@@ -2,13 +2,10 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../libraries/02-client/Client.sol";
+import "../libraries/Types.sol";
 
 interface IClient {
-    function getLatestHeight()
-        external
-        view
-        returns (ClientTypes.Height memory);
+    function getLatestHeight() external view returns (Height.Data memory);
 
     function initialize(
         bytes calldata clientState,
@@ -23,7 +20,7 @@ interface IClient {
     function checkHeaderAndUpdateState(bytes calldata header) external;
 
     function verifyPacketCommitment(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
@@ -32,7 +29,7 @@ interface IClient {
     ) external;
 
     function verifyPacketAcknowledgement(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
@@ -41,7 +38,7 @@ interface IClient {
     ) external;
 
     function verifyPacketCleanCommitment(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,

@@ -25,7 +25,7 @@ describe('Client', () => {
         protobuf = (await protobufFactory.deploy()) as ProtobufTest
     })
 
-
+    // TODO
     // it("add client", async function () {
     //     await clientManager.createClient("irishub", tmClient.address, Buffer.from("0x0"), Buffer.from("0x0"))
 
@@ -39,14 +39,14 @@ describe('Client', () => {
         //test decode
         await protobuf.decode(voteBz);
 
-        let vote = await protobuf.data()
-        expect(vote.height).to.eq(12345)
-        expect(vote.block_id.hash).to.eq("0x8b01023386c371778ecb6368573e539afc3cc860ec3a2f614e54fe5652f4fc80")
-        expect(vote.typ).to.eq(2)
+        let data = await protobuf.data()
+        expect(data.height).to.eq(12345)
+        expect(data.block_id.hash).to.eq("0x8b01023386c371778ecb6368573e539afc3cc860ec3a2f614e54fe5652f4fc80")
+        expect(data.typ).to.eq(2)
 
         //test encode
-        let expVote = await protobuf.encode()
-        expect(expVote.slice(2)).to.eq(voteBz.toString("hex"))
+        let expData = await protobuf.encode()
+        expect(expData.slice(2)).to.eq(voteBz.toString("hex"))
     })
 
 })

@@ -33,14 +33,15 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         external
         view
         override
-        returns (ClientTypes.Height memory)
+        returns (Height.Data memory)
     {
-        //return clientState.latest_height;
+        return clientState.latest_height;
     }
 
     /*  @notice   return the status of the current light client
      *
      */
+    //TODO
     function status() external view override returns (int8) {}
 
     /*  @notice                 this function is called by the ClientManager contract, the purpose is to initialize light client state
@@ -90,7 +91,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param commitmentBytes  the hash of the cross-chain data packet
      */
     function verifyPacketCommitment(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
@@ -108,7 +109,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param acknowledgement  the hash of the acknowledgement of the cross-chain data packet
      */
     function verifyPacketAcknowledgement(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
@@ -125,10 +126,17 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param sequence         the sequence of cross-chain data packets
      */
     function verifyPacketCleanCommitment(
-        ClientTypes.Height calldata height,
+        Height.Data calldata height,
         bytes calldata proof,
         string calldata sourceChain,
         string calldata destChain,
         uint64 sequence
     ) external override {}
+
+    function checkValidity(Header.Data memory header) internal {}
+
+    function checkTrustedHeader(
+        Header.Data memory header,
+        ConsensusState.Data memory consensusState
+    ) internal {}
 }
