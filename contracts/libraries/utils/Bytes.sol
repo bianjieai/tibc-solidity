@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
 library Bytes {
      function toAddress(bytes memory bz) internal pure returns (address addr) {
          require(bz.length == 20, "cannot convert into address");

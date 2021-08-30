@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 
 import "./Transfer.sol";
 import "./ERC1155Bank.sol";
@@ -9,7 +10,7 @@ contract ERC1155TransferBank is Transfer{
 
     ERC1155Bank bank;
 
-    constructor(ERC1155Bank bank_){
+    constructor(ERC1155Bank bank_) public{
         bank = bank_;
     }
 

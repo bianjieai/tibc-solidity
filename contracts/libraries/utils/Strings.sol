@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
 
 library strings {
     struct slice {
@@ -180,11 +180,9 @@ library strings {
                 if(shortest < 32) {
                   mask = ~(2 ** (8 * (32 - shortest + idx)) - 1);
                 }
-                unchecked {
-                    uint256 diff = (a & mask) - (b & mask);
-                    if (diff != 0)
-                        return int(diff);
-                }
+                uint256 diff = (a & mask) - (b & mask);
+                if (diff != 0)
+                    return int(diff);
             }
             selfptr += 32;
             otherptr += 32;

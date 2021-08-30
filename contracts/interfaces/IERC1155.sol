@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 
 interface IERC1155{
-    function mint(address account,uint256 id,uint256 amount,bytes memory data) external;
+    function mint(address account,uint256 id,uint256 amount,bytes calldata data) external;
 
     function burn(address account,uint256 id,uint256 amount) external;
 
@@ -10,5 +11,5 @@ interface IERC1155{
         address to,
         uint256 id,
         uint256 amount,
-        bytes memory data) external;
+        bytes calldata data) external;
 }

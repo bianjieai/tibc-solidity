@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 
 import "../../../libraries/30-nft-transfer/NftTransfer.sol";
 import "../../../libraries/utils/Bytes.sol";
@@ -223,7 +224,7 @@ abstract contract Transfer is ITransfer{
     /// helper functions ///
 
     // determineAwayFromOrigin determine whether nft is sent from the source chain or sent back to the source chain from other chains
-    function _determineAwayFromOrigin(string calldata class, string calldata destChain) internal pure returns (bool){
+    function _determineAwayFromOrigin(string memory class, string memory destChain) internal pure returns (bool){
         /*
             -- not has prefix
             1. A -> B  class:class | sourceChain:A  | destChain:B |awayFromOrigin = true
