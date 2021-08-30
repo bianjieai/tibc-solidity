@@ -4,7 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IClientManager.sol";
+import "../../libraries/Bytes.sol";
 import "../../libraries/02-client/Client.sol";
+import "../../libraries/07-tendermint/LightClient.sol";
+import "../../libraries/07-tendermint/SimpleMerkleTree.sol";
 import "../../libraries/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -86,11 +89,13 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         onlyOwner
     {
         Header.Data memory header = Header.decode(headerBz);
-        // ConsensusState.Data memory tmConsState = consensusStates[
-        //     header.trusted_height.revision_height
-        // ];
+        ConsensusState.Data memory tmConsState = consensusStates[
+            header.trusted_height.revision_height
+        ];
         // TODO check heaer
-        // HeaderLib.checkValidity(header, clientState, tmConsState);
+        checkValidity(header, clientState, tmConsState);
+
+        // update the client state of the light client
         if (
             uint64(header.signed_header.header.height) >
             clientState.latest_height.revision_height
@@ -100,6 +105,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
             );
         }
 
+        // save the consensus state of the light client
         ConsensusState.Data storage newConsState;
         newConsState.timestamp = header.signed_header.header.time;
         newConsState.root = header.signed_header.header.app_hash;
@@ -164,10 +170,79 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         uint64 sequence
     ) external override {}
 
-    function checkValidity(Header.Data memory header) internal {}
+    /*  @notice                   this function checks if the Tendermint header is valid.
+     *  @param header             header to be verified
+     *  @param clientSate         the trusted clientSate specified by the user in the contract,
+     *  @param consensusState     the trusted consensusState specified by the user in the contract,
+     */
+    function checkValidity(
+        Header.Data memory header,
+        ClientState.Data memory clientSate,
+        ConsensusState.Data memory consensusState
+    ) internal view {
+        checkTrustedHeader(header, consensusState);
+        require(
+            uint64(header.signed_header.header.height) >
+                header.trusted_height.revision_height,
+            "invalid block height"
+        );
 
+        SignedHeader.Data memory trustedHeader;
+        trustedHeader.header.chain_id = clientSate.chain_id;
+        trustedHeader.header.height = int64(
+            clientSate.latest_height.revision_height
+        );
+        trustedHeader.header.time = consensusState.timestamp;
+        trustedHeader.header.next_validators_hash = consensusState
+            .next_validators_hash;
+
+        Timestamp.Data memory trustedPeriod;
+        trustedPeriod.secs = clientSate.trusting_period;
+
+        Timestamp.Data memory currentTimestamp;
+        currentTimestamp.secs = int64(block.timestamp);
+
+        // Verify next header with the passed-in trustedVals
+        // - asserts trusting period not passed
+        // - assert header timestamp is not past the trusting period
+        // - assert header timestamp is past latest stored consensus state timestamp
+        // - assert that a TrustLevel proportion of TrustedValidators signed new Commit
+        LightClientLib.verify(
+            trustedHeader,
+            header.trusted_validators,
+            header.signed_header,
+            header.validator_set,
+            trustedPeriod,
+            currentTimestamp,
+            clientSate.max_clock_drift,
+            clientSate.trust_level
+        );
+    }
+
+    /*  @notice                   this function checks that consensus state matches trusted fields of Header.
+     *  @param consensusState     the trusted consensusState specified by the user in the contract,
+     */
     function checkTrustedHeader(
         Header.Data memory header,
         ConsensusState.Data memory consensusState
-    ) internal {}
+    ) internal pure {
+        bytes[] memory valsBz;
+        for (
+            uint256 i = 0;
+            i < header.trusted_validators.validators.length;
+            i++
+        ) {
+            SimpleValidator.Data memory val;
+            val.pub_key = header.trusted_validators.validators[i].pub_key;
+            val.voting_power = header
+                .trusted_validators
+                .validators[i]
+                .voting_power;
+
+            valsBz[i] = SimpleValidator.encode(val);
+        }
+        bytes32 expRoot = SimpleMerkleTree.makeRoot(valsBz);
+        bytes32 actual = Bytes.toBytes32(consensusState.next_validators_hash);
+        require(expRoot == actual, "invalid validator set");
+    }
 }
