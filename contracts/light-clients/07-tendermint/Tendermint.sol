@@ -6,6 +6,7 @@ import "../../interfaces/IClient.sol";
 import "../../interfaces/IClientManager.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/Tendermint.sol";
+import "../../libraries/07-tendermint/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
@@ -65,21 +66,52 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
      *  @param clientState      light client status
      *  @param consensusState   light client consensus status
      */
-    function upgrade(bytes calldata clientState, bytes calldata consensusState)
-        external
-        override
-        onlyOwner
-    {}
+    function upgrade(
+        bytes calldata clientStateBz,
+        bytes calldata consensusStateBz
+    ) external override onlyOwner {
+        clientState = ClientState.decode(clientStateBz);
+        ConsensusState.Data memory consData = ConsensusState.decode(
+            consensusStateBz
+        );
+        consensusStates[clientState.latest_height.revision_height] = consData;
+    }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
      *
      *  @param header           block header of the counterparty chain
      */
-    function checkHeaderAndUpdateState(bytes calldata header)
+    function checkHeaderAndUpdateState(bytes calldata headerBz)
         external
         override
         onlyOwner
-    {}
+    {
+        Header.Data memory header = Header.decode(headerBz);
+        // ConsensusState.Data memory tmConsState = consensusStates[
+        //     header.trusted_height.revision_height
+        // ];
+        // TODO check heaer
+        // HeaderLib.checkValidity(header, clientState, tmConsState);
+        if (
+            uint64(header.signed_header.header.height) >
+            clientState.latest_height.revision_height
+        ) {
+            clientState.latest_height.revision_height = uint64(
+                header.signed_header.header.height
+            );
+        }
+
+        ConsensusState.Data storage newConsState;
+        newConsState.timestamp = header.signed_header.header.time;
+        newConsState.root = header.signed_header.header.app_hash;
+        newConsState.next_validators_hash = header
+            .signed_header
+            .header
+            .next_validators_hash;
+        consensusStates[
+            clientState.latest_height.revision_height
+        ] = newConsState;
+    }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
      *
