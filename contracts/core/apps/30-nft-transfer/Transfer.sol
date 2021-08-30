@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "../../../libraries/30-nft-transfer/NftTransfer.sol";
-import "../../../libraries/30-nft-transfer/Bytes.sol";
-import "../../../libraries/30-nft-transfer/Strings.sol";
+import "../../../libraries/utils/Bytes.sol";
+import "../../../libraries/utils/Strings.sol";
 import "../../../libraries/04-packet/Packet.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
