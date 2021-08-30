@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+// BlockIdFlag indicates which BlcokID the signature is for
+enum BlockIDFlag {
+  BLOCK_ID_FLAG_UNKNOWN = 0;
+  BLOCK_ID_FLAG_ABSENT = 1;
+  BLOCK_ID_FLAG_COMMIT = 2;
+  BLOCK_ID_FLAG_NIL = 3;
+}
+
+// SignedMsgType is a type of signed message in the consensus.
+enum SignedMsgType {
+  SIGNED_MSG_TYPE_UNKNOWN = 0;
+  // Votes
+  SIGNED_MSG_TYPE_PREVOTE = 1;
+  SIGNED_MSG_TYPE_PRECOMMIT = 2;
+  // Proposals
+  SIGNED_MSG_TYPE_PROPOSAL = 32;
+}
+
+// PartsetHeader
+message PartSetHeader {
+  uint64 total = 1; // uint32
+  bytes hash = 2;
+}
+
+// BlockID
+message BlockID {
+  bytes hash = 1;
+  PartSetHeader part_set_header = 2;
+}
+
+message Timestamp {
+  // Represents seconds of UTC time since Unix epoch
+  // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+  // 9999-12-31T23:59:59Z inclusive.
+  int64 secs = 1;
+
+  // Non-negative fractions of a second at nanosecond resolution. Negative
+  // second values with fractions must still have non-negative nanos values
+  // that count forward in time. Must be from 0 to 999,999,999
+  // inclusive.
+  int64 nanos = 2; // int32
+}
+
+// Consensus captures the consensus rules for processing a block in the
+// blockchain, including all blockchain data structures and the rules of the
+// application's state transition machine.
+message Consensus {
+  uint64 height = 1;
+  uint64 app = 2;
+}
+
+// --------------------------------
+
+// TmHeader defines the structure of a Tendermint block header.
+message TmHeader {
+  // basic block info
+  Consensus version = 1;
+  string chain_id = 2;
+  int64 height = 3;
+  Timestamp time = 4;
+
+  // prev block info
+  BlockID last_block_id = 5;
+
+  // hashes of block data
+  bytes last_commit_hash = 6; // commit from validators from the last block
+  bytes data_hash = 7;        // transactions
+
+  // hashes from the app output from the prev block
+  bytes validators_hash = 8;      // validators for the current block
+  bytes next_validators_hash = 9; // validators for the next block
+  bytes consensus_hash = 10;      // consensus params for current block
+  bytes app_hash = 11;            // state after txs from the previous block
+  bytes last_results_hash =
+      12; // root hash of all results from the txs from the previous block
+
+  // consensus info
+  bytes evidence_hash = 13;    // evidence included in the block
+  bytes proposer_address = 14; // original proposer of the block
+}
+
+// Vote represents a prevote, precommit, or commit vote from validators for
+// consensus.
+message Vote {
+  SignedMsgType typ = 1;
+  int64 height = 2;
+  int64 round = 3;      // int32 TODO
+  BlockID block_id = 4; // zero if vote is nil.
+  Timestamp timestamp = 5;
+  bytes validator_address = 6;
+  int64 validator_index = 7; // int32 TODO
+  bytes signature = 8;
+}
+
+// Commit contains the evidence that a block was committed by a set of
+// validators.
+message Commit {
+  int64 height = 1;
+  int64 round = 2; // int32 TODO
+  BlockID block_id = 3;
+  repeated CommitSig signatures = 4;
+}
+
+// CommitSig is a part of the Vote included in a Commit.
+message CommitSig {
+  BlockIDFlag block_id_flag = 1;
+  bytes validator_address = 2;
+  Timestamp timestamp = 3;
+  bytes signature = 4;
+}
+
+message SignedHeader {
+  TmHeader header = 1;
+  Commit commit = 2;
+}
+
+message CanonicalBlockID {
+  bytes hash = 1;
+  CanonicalPartSetHeader part_set_header = 2;
+}
+
+message CanonicalPartSetHeader {
+  uint64 total = 1; // uint32 TODO
+  bytes hash = 2;
+}
+
+message CanonicalVote {
+  SignedMsgType typ = 1; // type alias for byte
+  sfixed64 height = 2;   // canonicalization requires fixed size encoding
+  sfixed64 round = 3;    // canonicalization requires fixed size
+  CanonicalBlockID block_id = 4;
+  Timestamp timestamp = 5;
+  string chain_id = 6;
+}
+
+// Normally the RevisionHeight is incremented at each height while keeping
+// RevisionNumber the same. However some consensus algorithms may choose to
+// reset the height in certain conditions e.g. hard forks, state-machine
+// breaking changes In these cases, the RevisionNumber is incremented so that
+// height continues to be monitonically increasing even as the RevisionHeight
+// gets reset
+message Height {
+  // the revision that the client is currently on
+  uint64 revision_number = 1;
+  // the height within the given revision
+  uint64 revision_height = 2;
+}
