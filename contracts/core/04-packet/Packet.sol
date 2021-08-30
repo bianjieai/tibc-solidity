@@ -3,6 +3,7 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../02-client/ClientManager.sol";
+import "../../libraries/Types.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/04-packet/Packet.sol";
 import "../../interfaces/IClientManager.sol";
@@ -27,7 +28,7 @@ contract Packet is ReentrancyGuard {
     function recvPacket(
         PacketTypes.Packet calldata packet,
         bytes calldata proof,
-        ClientTypes.Height calldata height
+        Height.Data calldata height
     ) external nonReentrant {
         IClient client = clientManager.getClient(packet.sourceChain);
         client.verifyPacketCommitment(
@@ -46,7 +47,7 @@ contract Packet is ReentrancyGuard {
         PacketTypes.Packet calldata packet,
         bytes calldata acknowledgement,
         bytes calldata proofAcked,
-        ClientTypes.Height calldata height
+        Height.Data calldata height
     ) external nonReentrant {
         IClient client = clientManager.getClient(packet.destChain);
         client.verifyPacketAcknowledgement(

@@ -6,7 +6,7 @@ import "../Types.sol";
 import "../Tendermint.sol";
 import "../Validator.sol";
 
-library HeaderUtil {
+library HeaderLib {
     function checkValidity(
         Header.Data memory header,
         ClientState.Data memory clientSate,
@@ -175,6 +175,24 @@ library HeaderUtil {
             untrustedVals.validators.length == commit.signatures.length,
             "invalid commit -- wrong set size"
         );
+        require(height != commit.height, "Invalid commit -- wrong height");
+        require(
+            Bytes.equal(blockID.hash, commit.block_id.hash),
+            "invalid block_id.hash"
+        );
+        require(
+            blockID.part_set_header.total !=
+                commit.block_id.part_set_header.total,
+            "invalid part_set_header.total"
+        );
+        require(
+            Bytes.equal(
+                blockID.part_set_header.hash,
+                commit.block_id.part_set_header.hash
+            ),
+            "invalid part_set_header.hash"
+        );
+        // TODO Validate signature.
     }
 
     function verifyCommitLightTrusting(
