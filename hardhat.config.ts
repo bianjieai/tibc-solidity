@@ -7,6 +7,11 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [{ version: '0.6.8', settings: {} }],
   },
+  networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
+  },
 }
 
 export default config
