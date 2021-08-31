@@ -9,8 +9,9 @@ import "../../../libraries/04-packet/Packet.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "../../04-packet/Packet.sol";
+import "./ERC1155Bank.sol";
 
-abstract contract Transfer is ITransfer{
+contract Transfer is ITransfer{
     using strings for *;
     using Bytes for *;
 
@@ -23,8 +24,11 @@ abstract contract Transfer is ITransfer{
     // packet contract address
     address packet;
 
-    // erc1155 contract address
-    address erc1155Bank;
+    ERC1155Bank bank;
+
+    constructor(ERC1155Bank bank_) public{
+        bank = bank_;
+    }
 
     /*
         keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass
@@ -63,7 +67,7 @@ abstract contract Transfer is ITransfer{
         if (awayFromOrigin) {
             // nft is away from origin
             // lock nft (transfer nft to contract address)
-            _transferFrom(msg.sender, erc1155Bank, tid, uint256(1), "");
+            _transferFrom(msg.sender, address(bank), tid, uint256(1), "");
         } else{
             // nft is be closed to origin
             // burn nft
@@ -155,7 +159,7 @@ abstract contract Transfer is ITransfer{
 
             // unlock
             return _newAcknowledgement(
-                _transferFrom(erc1155Bank, data.receiver.parseAddr(), Bytes.bytes32ToUint(tokenId), uint256(1), "")
+                _transferFrom(address(bank), data.receiver.parseAddr(), Bytes.bytes32ToUint(tokenId), uint256(1), "")
             );
         }
 
@@ -170,11 +174,29 @@ abstract contract Transfer is ITransfer{
 
 
     /// Internal functions ///
-    function _burn(address account,uint256 id,uint256 amount) internal virtual returns(bool);
+    function _burn(address account,uint256 id,uint256 amount) internal virtual returns(bool){
+        try bank.burn(account, id, amount) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
+    }
 
-    function _mint(address account,uint256 id,uint256 amount,bytes memory data) internal virtual returns(bool);
+    function _mint(address account,uint256 id,uint256 amount,bytes memory data) internal virtual returns(bool){
+        try bank.mint(account, id, amount, data) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
+    }
 
-    function _transferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) internal virtual returns(bool);
+    function _transferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) internal virtual returns(bool){
+        try bank.transferFrom(from, to, id, amount, data) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
+    }
 
     function _newAcknowledgement(bool success) internal virtual pure returns (bytes memory) {
         bytes memory acknowledgement = new bytes(1);
@@ -213,7 +235,7 @@ abstract contract Transfer is ITransfer{
 
         if (data.awayFromOrigin) {
             // unlock
-            _transferFrom(erc1155Bank, msg.sender, Bytes.bytes32ToUint(tokenId), uint256(1), "");
+            _transferFrom(address(bank), msg.sender, Bytes.bytes32ToUint(tokenId), uint256(1), "");
         } else{
             // tibc/nft/A/B/nftClass
             // mint nft
