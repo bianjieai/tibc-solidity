@@ -7,7 +7,6 @@ import "../../interfaces/IClientManager.sol";
 import "../../libraries/Bytes.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
-import "../../libraries/07-tendermint/SimpleMerkleTree.sol";
 import "../../libraries/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -223,22 +222,9 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         Header.Data memory header,
         ConsensusState.Data memory consensusState
     ) internal pure {
-        bytes[] memory valsBz;
-        for (
-            uint256 i = 0;
-            i < header.trusted_validators.validators.length;
-            i++
-        ) {
-            SimpleValidator.Data memory val;
-            val.pub_key = header.trusted_validators.validators[i].pub_key;
-            val.voting_power = header
-                .trusted_validators
-                .validators[i]
-                .voting_power;
-
-            valsBz[i] = SimpleValidator.encode(val);
-        }
-        bytes32 expRoot = SimpleMerkleTree.makeRoot(valsBz);
+        bytes32 expRoot = LightClientLib.genValidatorSetHash(
+            header.trusted_validators
+        );
         bytes32 actual = Bytes.toBytes32(consensusState.next_validators_hash);
         require(expRoot == actual, "invalid validator set");
     }

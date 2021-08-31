@@ -3,14 +3,15 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../Types.sol";
+import "../Timestamp.sol";
 import "../Tendermint.sol";
 import "../Bytes.sol";
 import "../Validator.sol";
 import "./Ed25519.sol";
+import "./SimpleMerkleTree.sol";
 
 library LightClientLib {
     /** @notice this function combines both VerifyAdjacent and VerifyNonAdjacent functions.
-
      *  @param trustedHeader      trusted header
      *  @param trustedVals        trusted validatorSet
      *  @param untrustedHeader    header that needs to be verified
@@ -134,7 +135,13 @@ library LightClientLib {
 
         verifyHeaderExpired(trustedHeader.header.time, trustingPeriod, nowTime);
 
-        // verifyNewHeaderAndVals
+        verifyNewHeaderAndVals(
+            untrustedHeader,
+            untrustedVals,
+            trustedHeader,
+            nowTime,
+            maxClockDrift
+        );
 
         require(
             Bytes.equal(
@@ -230,24 +237,73 @@ library LightClientLib {
         require(trustLevel.denominator == 0, "trustLevel has zero Denominator");
     }
 
-    // TODO
+    /** @notice this function verifies the new header and new validator set.
+     *  @param untrustedHeader   header of the block that is being committed.
+     *  @param untrustedVals     validator set of the block that is being committed.
+     *  @param trustedHeader     trusted header.
+     *  @param nowTime           the current time.
+     *  @param maxClockDrift     max clock drift.
+     */
     function verifyNewHeaderAndVals(
         SignedHeader.Data memory untrustedHeader,
         ValidatorSet.Data memory untrustedVals,
         SignedHeader.Data memory trustedHeader,
-        int64 trustingPeriod,
         Timestamp.Data memory nowTime,
         int64 maxClockDrift
-    ) internal pure {}
+    ) internal pure {
+        // validate header hash
+        require(
+            Bytes.equal(
+                genHeaderHash(untrustedHeader.header),
+                untrustedHeader.commit.block_id.hash
+            ),
+            "invalid header hash"
+        );
 
-    // TODO
+        require(
+            untrustedHeader.header.height <= trustedHeader.header.height,
+            "expected new header height to be greater than one of old header"
+        );
+
+        require(
+            TimeLib.lessThan(
+                untrustedHeader.header.time,
+                trustedHeader.header.time
+            ),
+            "expected new header time to be after old header time"
+        );
+
+        Timestamp.Data memory localTime = TimeLib.addSecnods(
+            nowTime,
+            maxClockDrift
+        );
+        require(
+            TimeLib.lessThan(localTime, untrustedHeader.header.time),
+            "expected new header time to be after old header time"
+        );
+
+        bytes memory valHash = genValidatorSetHash(untrustedVals);
+        require(
+            Bytes.equal(valHash, untrustedHeader.header.validators_hash),
+            "invalid validator set hash"
+        );
+    }
+
+    /** @notice this function verifies that the given header is expired.
+     *  @param lastTrustTime      the time when the header was last trusted.
+     *  @param trustingPeriod     the trusting period.
+     *  @param nowTime            the current time.
+     */
     function verifyHeaderExpired(
         Timestamp.Data memory lastTrustTime,
         int64 trustingPeriod,
         Timestamp.Data memory nowTime
     ) internal pure {
-        int64 expirationTime = lastTrustTime.secs + trustingPeriod;
-        require(expirationTime > nowTime.secs, "Header expired");
+        Timestamp.Data memory expirationTime = TimeLib.addSecnods(
+            lastTrustTime,
+            trustingPeriod
+        );
+        require(TimeLib.greaterThan(expirationTime, nowTime), "Header expired");
     }
 
     function genVoteSignBytes(
@@ -274,5 +330,27 @@ library LightClientLib {
         vote.timestamp = sig.timestamp;
         vote.chain_id = chainID;
         return CanonicalVote.encode(vote);
+    }
+
+    function genHeaderHash(TmHeader.Data memory header)
+        internal
+        pure
+        returns (bytes memory)
+    {}
+
+    function genValidatorSetHash(ValidatorSet.Data memory vals)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes[] memory valsBz;
+        for (uint256 i = 0; i < vals.validators.length; i++) {
+            SimpleValidator.Data memory val;
+            val.pub_key = vals.validators[i].pub_key;
+            val.voting_power = vals.validators[i].voting_power;
+
+            valsBz[i] = SimpleValidator.encode(val);
+        }
+        return Bytes.fromBytes32(MerkleLib.hashFromByteSlices(valsBz));
     }
 }

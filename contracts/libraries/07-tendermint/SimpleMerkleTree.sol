@@ -2,8 +2,12 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-library SimpleMerkleTree {
-    function makeRoot(bytes[] memory data) internal pure returns (bytes32) {
+library MerkleLib {
+    function hashFromByteSlices(bytes[] memory data)
+        internal
+        pure
+        returns (bytes32)
+    {
         uint256 n = data.length;
         uint256 offset = 0;
 

@@ -17,6 +17,13 @@ library Bytes {
         }
     }
 
+    function fromBytes32(bytes32 bz) internal pure returns (bytes memory ret) {
+        ret = new bytes(32);
+        assembly {
+            returndatacopy(ret, bz, 32)
+        }
+    }
+
     function toUint64(bytes memory _bytes, uint256 _start)
         internal
         pure
