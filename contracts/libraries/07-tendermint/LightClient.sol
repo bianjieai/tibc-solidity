@@ -188,7 +188,9 @@ library LightClientLib {
             untrustedVals.validators.length == commit.signatures.length,
             "invalid commit -- wrong set size"
         );
+
         require(height != commit.height, "Invalid commit -- wrong height");
+
         require(
             Bytes.equal(blockID.hash, commit.block_id.hash),
             "invalid block_id.hash"
@@ -231,7 +233,9 @@ library LightClientLib {
                 return;
             }
         }
-        revert("invalid commit, verifyCommitLight failed");
+        revert(
+            "verifyCommitLight: invalid commit -- insufficient voting power"
+        );
     }
 
     /**
@@ -257,17 +261,22 @@ library LightClientLib {
     ) internal pure {
         require(trustLevel.denominator == 0, "trustLevel has zero Denominator");
 
-        (bool success, uint256 numerator) = SafeMath.tryMul(
-            uint256(trustedValset.total_voting_power),
-            uint256(trustLevel.numerator)
-        );
+        uint256 totalVotingPower;
+        for (uint256 i = 0; i < trustedValset.validators.length; i++) {
+            totalVotingPower += uint256(
+                trustedValset.validators[i].voting_power
+            );
+        }
+
+        (bool success, uint256 totalVotingPowerMulByNumerator) = SafeMath
+            .tryMul(totalVotingPower, uint256(trustLevel.numerator));
         require(
             success,
             "uint256 overflow while calculating voting power needed. please provide smaller trustLevel numerator"
         );
 
         uint256 talliedVotingPower = 0;
-        uint256 votingPowerNeeded = uint256(numerator) /
+        uint256 votingPowerNeeded = uint256(totalVotingPowerMulByNumerator) /
             uint256(trustLevel.denominator);
 
         for (uint256 i = 0; i < commit.signatures.length; i++) {
@@ -298,7 +307,9 @@ library LightClientLib {
                 return;
             }
         }
-        revert("invalid commit, verifyCommitLight failed");
+        revert(
+            "verifyCommitLightTrusting: invalid commit -- insufficient voting power"
+        );
     }
 
     /** @notice this function verifies the new header and new validator set.
@@ -325,12 +336,12 @@ library LightClientLib {
         );
 
         require(
-            untrustedHeader.header.height <= trustedHeader.header.height,
+            untrustedHeader.header.height > trustedHeader.header.height,
             "expected new header height to be greater than one of old header"
         );
 
         require(
-            TimeLib.lessThan(
+            TimeLib.greaterThan(
                 untrustedHeader.header.time,
                 trustedHeader.header.time
             ),
@@ -342,8 +353,8 @@ library LightClientLib {
             maxClockDrift
         );
         require(
-            TimeLib.lessThan(localTime, untrustedHeader.header.time),
-            "expected new header time to be after old header time"
+            TimeLib.lessThan(untrustedHeader.header.time, localTime),
+            "new header has a time from the future"
         );
 
         bytes memory valHash = genValidatorSetHash(untrustedVals);

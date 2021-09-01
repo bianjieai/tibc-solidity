@@ -33,10 +33,10 @@ library TimeLib {
         pure
         returns (bool)
     {
-        if (t1.secs <= t2.secs) {
+        if (t1.secs < t2.secs) {
             return true;
         }
-        if (t1.nanos == t2.nanos && t1.secs <= t2.secs) {
+        if (t1.nanos == t2.nanos && t1.secs < t2.secs) {
             return true;
         }
         return false;
