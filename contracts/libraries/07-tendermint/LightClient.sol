@@ -9,6 +9,7 @@ import "../Bytes.sol";
 import "../Validator.sol";
 import "./Ed25519.sol";
 import "./SimpleMerkleTree.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 library LightClientLib {
     /** @notice this function combines both VerifyAdjacent and VerifyNonAdjacent functions.
@@ -83,8 +84,14 @@ library LightClientLib {
             "headers must be adjacent in height"
         );
 
-        // todo headerExpired
-        // todo verifyNewHeaderAndVals
+        verifyHeaderExpired(trustedHeader.header.time, trustingPeriod, nowTime);
+        verifyNewHeaderAndVals(
+            untrustedHeader,
+            untrustedVals,
+            trustedHeader,
+            nowTime,
+            maxClockDrift
+        );
 
         // Ensure that +`trustLevel` (default 1/3) or more of last trusted validators signed correctly.
         verifyCommitLightTrusting(
@@ -134,7 +141,6 @@ library LightClientLib {
         );
 
         verifyHeaderExpired(trustedHeader.header.time, trustingPeriod, nowTime);
-
         verifyNewHeaderAndVals(
             untrustedHeader,
             untrustedVals,
@@ -198,7 +204,6 @@ library LightClientLib {
             ),
             "invalid part_set_header.hash"
         );
-        // TODO Validate signature.
 
         int64 talliedVotingPower = 0;
         int64 votingPowerNeeded = (untrustedVals.total_voting_power * 2) / 3;
@@ -228,6 +233,21 @@ library LightClientLib {
         revert("invalid commit, verifyCommitLight failed");
     }
 
+    /**
+     * @notice VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+        this commit.
+        
+        the given validators do not necessarily correspond to the validator set
+        for this commit, but there may be some intersection.
+        
+        This method is primarily used by the light client and does not check all the
+        signatures.
+     *  @param chainID           chain id.
+     *  @param commit            block voting information.
+     *  @param trustedValset     trusted validatorSet.
+     *  @param trustLevel        threshold for signature verification.
+     *  
+     */
     function verifyCommitLightTrusting(
         string memory chainID,
         Commit.Data memory commit,
@@ -235,6 +255,49 @@ library LightClientLib {
         Fraction.Data memory trustLevel
     ) internal pure {
         require(trustLevel.denominator == 0, "trustLevel has zero Denominator");
+
+        (bool success, uint256 numerator) = SafeMath.tryMul(
+            uint256(trustedValset.total_voting_power),
+            uint256(trustLevel.numerator)
+        );
+        require(
+            success,
+            "uint256 overflow while calculating voting power needed. please provide smaller trustLevel numerator"
+        );
+
+        uint256 talliedVotingPower = 0;
+        uint256 votingPowerNeeded = uint256(numerator) /
+            uint256(trustLevel.denominator);
+
+        for (uint256 i = 0; i < commit.signatures.length; i++) {
+            if (
+                commit.signatures[i].block_id_flag !=
+                TYPES_PROTO_GLOBAL_ENUMS.BlockIDFlag.BLOCK_ID_FLAG_COMMIT
+            ) {
+                continue;
+            }
+
+            // The vals and commit have a 1-to-1 correspondance.
+            // This means we don't need the validator address or to do any lookup.
+            Validator.Data memory val = trustedValset.validators[i];
+
+            if (contains(i, val.addr, commit.signatures)) {
+                revert("commit double vote");
+            }
+
+            // Validate signature.
+            bytes memory signBytes = genVoteSignBytes(commit, chainID, i);
+            Ed25519Lib.verify(
+                val.pub_key.ed25519,
+                signBytes,
+                commit.signatures[i].signature
+            );
+            talliedVotingPower += uint256(val.voting_power);
+            if (talliedVotingPower > votingPowerNeeded) {
+                return;
+            }
+        }
+        revert("invalid commit, verifyCommitLight failed");
     }
 
     /** @notice this function verifies the new header and new validator set.
@@ -352,5 +415,18 @@ library LightClientLib {
             valsBz[i] = SimpleValidator.encode(val);
         }
         return Bytes.fromBytes32(MerkleLib.hashFromByteSlices(valsBz));
+    }
+
+    function contains(
+        uint256 beginIdx,
+        bytes memory ele,
+        CommitSig.Data[] memory sigs
+    ) internal pure returns (bool) {
+        for (uint256 i = beginIdx + 1; i < sigs.length; i++) {
+            if (Bytes.equal(sigs[i].signature, ele)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
