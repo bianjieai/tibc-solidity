@@ -7,6 +7,7 @@ import "../Timestamp.sol";
 import "../Tendermint.sol";
 import "../Bytes.sol";
 import "../Validator.sol";
+import "../ProtoBufRuntime.sol";
 import "./Ed25519.sol";
 import "./SimpleMerkleTree.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -80,7 +81,7 @@ library LightClientLib {
         Fraction.Data memory trustLevel
     ) internal pure {
         require(
-            untrustedHeader.header.height == trustedHeader.header.height + 1,
+            untrustedHeader.header.height != trustedHeader.header.height + 1,
             "headers must be adjacent in height"
         );
 
@@ -136,7 +137,7 @@ library LightClientLib {
         int64 maxClockDrift
     ) internal pure {
         require(
-            untrustedHeader.header.height != trustedHeader.header.height + 1,
+            untrustedHeader.header.height == trustedHeader.header.height + 1,
             "headers must be adjacent in height"
         );
 
@@ -366,7 +367,10 @@ library LightClientLib {
             lastTrustTime,
             trustingPeriod
         );
-        require(TimeLib.greaterThan(expirationTime, nowTime), "Header expired");
+        require(
+            !TimeLib.greaterThan(expirationTime, nowTime),
+            "Header expired"
+        );
     }
 
     function genVoteSignBytes(
@@ -399,7 +403,81 @@ library LightClientLib {
         internal
         pure
         returns (bytes memory)
-    {}
+    {
+        bytes[] memory valsBz = new bytes[](14);
+        valsBz[0] = Consensus.encode(header.version);
+
+        bytes memory chainIdBz;
+        ProtoBufRuntime._encode_string(header.chain_id, 0, chainIdBz);
+        valsBz[1] = chainIdBz;
+
+        bytes memory heightBz;
+        ProtoBufRuntime._encode_int64(header.height, 0, heightBz);
+        valsBz[2] = heightBz;
+        valsBz[3] = Timestamp.encode(header.time);
+        valsBz[4] = BlockID.encode(header.last_block_id);
+
+        bytes memory lastCommitHashBz;
+        ProtoBufRuntime._encode_bytes(
+            header.last_commit_hash,
+            0,
+            lastCommitHashBz
+        );
+        valsBz[5] = lastCommitHashBz;
+
+        bytes memory dataHashBz;
+        ProtoBufRuntime._encode_bytes(header.data_hash, 0, dataHashBz);
+        valsBz[6] = dataHashBz;
+
+        bytes memory validatorsHashBz;
+        ProtoBufRuntime._encode_bytes(
+            header.validators_hash,
+            0,
+            validatorsHashBz
+        );
+        valsBz[7] = validatorsHashBz;
+
+        bytes memory nextValidatorsHashBz;
+        ProtoBufRuntime._encode_bytes(
+            header.next_validators_hash,
+            0,
+            nextValidatorsHashBz
+        );
+        valsBz[8] = nextValidatorsHashBz;
+
+        bytes memory consensusHashBz;
+        ProtoBufRuntime._encode_bytes(
+            header.consensus_hash,
+            0,
+            consensusHashBz
+        );
+        valsBz[9] = consensusHashBz;
+
+        bytes memory appHashBz;
+        ProtoBufRuntime._encode_bytes(header.app_hash, 0, appHashBz);
+        valsBz[10] = appHashBz;
+
+        bytes memory lastResultsHashBz;
+        ProtoBufRuntime._encode_bytes(
+            header.last_results_hash,
+            0,
+            lastResultsHashBz
+        );
+        valsBz[11] = lastResultsHashBz;
+
+        bytes memory evidenceHashBz;
+        ProtoBufRuntime._encode_bytes(header.evidence_hash, 0, evidenceHashBz);
+        valsBz[12] = evidenceHashBz;
+
+        bytes memory proposerAddressBz;
+        ProtoBufRuntime._encode_bytes(
+            header.proposer_address,
+            0,
+            proposerAddressBz
+        );
+        valsBz[13] = proposerAddressBz;
+        return Bytes.fromBytes32(MerkleLib.hashFromByteSlices(valsBz));
+    }
 
     function genValidatorSetHash(ValidatorSet.Data memory vals)
         internal
