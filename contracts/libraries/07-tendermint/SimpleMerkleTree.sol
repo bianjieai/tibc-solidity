@@ -9,32 +9,21 @@ library MerkleLib {
         returns (bytes32)
     {
         uint256 n = data.length;
-        uint256 offset = 0;
-
-        if (n == 1) {
-            return leafHash(data[0]);
-        }
-
-        bytes32[] memory merklePaths;
-        while (n > 0) {
-            for (uint256 i = 0; i < n - 1; i += 2) {
-                bytes32 left = leafHash(data[offset + i]);
-                bytes32 right = leafHash(data[offset + i + 1]);
-                merklePaths[merklePaths.length] = innerHash(left, right);
-            }
-            offset += n;
-            n = n / 2;
-        }
-        return merklePaths[merklePaths.length - 1];
+        if (n == 0) return keccak256(bytes(""));
+        if (n == 1) return leafHash(data[0]);
+        uint256 k = getSplitPoint(data.length);
+        bytes32 left = hashFromByteSlices(subArray(data, 0, k));
+        bytes32 right = hashFromByteSlices(subArray(data, k, n));
+        return innerHash(left, right);
     }
 
     function leafHash(bytes memory data) internal pure returns (bytes32) {
         bytes memory rs;
-        rs[0] = bytes1("0");
-        for (uint256 i = 0; i < data.length - 1; i++) {
+        rs[0] = 0x00;
+        for (uint256 i = 0; i < data.length; i++) {
             rs[i + 1] = data[i];
         }
-        return sha256(rs);
+        return keccak256(rs);
     }
 
     function innerHash(bytes32 left, bytes32 right)
@@ -43,18 +32,43 @@ library MerkleLib {
         returns (bytes32)
     {
         bytes memory rs;
-        rs[0] = bytes1("1");
+        rs[0] = 0x01;
 
         uint256 offset = 1;
-        for (uint256 i = 0; i < left.length - 1; i++) {
+        for (uint256 i = 0; i < left.length; i++) {
             rs[offset] = left[i];
             offset++;
         }
 
-        for (uint256 i = 0; i < right.length - 1; i++) {
+        for (uint256 i = 0; i < right.length; i++) {
             rs[offset] = right[i];
             offset++;
         }
-        return sha256(rs);
+        return keccak256(rs);
+    }
+
+    function getSplitPoint(uint256 n) internal pure returns (uint256) {
+        require(n >= 1, "Trying to split a tree with size < 1");
+        if (n == 1) {
+            return 0;
+        }
+
+        uint256 splitPoint = 1;
+        while (splitPoint * 2 < n) {
+            splitPoint *= 2;
+        }
+        return splitPoint;
+    }
+
+    function subArray(
+        bytes[] memory data,
+        uint256 begin,
+        uint256 end
+    ) internal pure returns (bytes[] memory) {
+        bytes[] memory ret = new bytes[](end - begin);
+        for (uint256 i = 0; i < ret.length; i++) {
+            ret[i] = data[begin + i];
+        }
+        return ret;
     }
 }
