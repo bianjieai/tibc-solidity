@@ -31,9 +31,10 @@ describe('Client', () => {
     })
 
     it("generate merkle root", async function () {
-        let data = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
+        //let data: any = []
+        let data: any = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
         let root = await tmClient.testMerkleRoot(data);
-        expect(root).to.eq("f326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
+        expect(root).to.eq("0xf326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
     })
 
     // TODO

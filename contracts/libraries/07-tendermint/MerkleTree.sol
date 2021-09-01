@@ -9,7 +9,7 @@ library MerkleTree {
         returns (bytes32)
     {
         uint256 n = data.length;
-        if (n == 0) return keccak256(bytes(""));
+        if (n == 0) return sha256(new bytes(0));
         if (n == 1) return leafHash(data[0]);
         uint256 k = getSplitPoint(data.length);
         bytes32 left = hashFromByteSlices(subArray(data, 0, k));
@@ -23,7 +23,7 @@ library MerkleTree {
         for (uint256 i = 0; i < data.length; i++) {
             rs[i + 1] = data[i];
         }
-        return keccak256(rs);
+        return sha256(rs);
     }
 
     function innerHash(bytes32 left, bytes32 right)
@@ -44,7 +44,7 @@ library MerkleTree {
             rs[offset] = right[i];
             offset++;
         }
-        return keccak256(rs);
+        return sha256(rs);
     }
 
     function getSplitPoint(uint256 n) internal pure returns (uint256) {
