@@ -5,12 +5,12 @@ pragma experimental ABIEncoderV2;
 import "./Types.sol";
 
 library TimeLib {
-    function getLocalTime() public view returns (int64) {
+    function getLocalTime() internal view returns (int64) {
         return int64(block.timestamp);
     }
 
     function addSecnods(Timestamp.Data memory time, int64 secnods)
-        public
+        internal
         pure
         returns (Timestamp.Data memory)
     {
@@ -19,7 +19,7 @@ library TimeLib {
     }
 
     function add(Timestamp.Data memory t1, Timestamp.Data memory t2)
-        public
+        internal
         pure
         returns (Timestamp.Data memory)
     {

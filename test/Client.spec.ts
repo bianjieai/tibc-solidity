@@ -15,11 +15,25 @@ describe('Client', () => {
     before('deploy ClientManager', async () => {
         accounts = await ethers.getSigners();
 
-        const msrFactory = await ethers.getContractFactory('ClientManager', accounts[0])
+        // const merkleLibFactory = await ethers.getContractFactory("MerkleLib");
+        // merkleLib = await merkleLibFactory.deploy() as MerkleLib;
+
+        const msrFactory = await ethers.getContractFactory('ClientManager', {
+            signer: accounts[0],
+            libraries: {
+                //SimpleMerkleTree: merkleLib.address
+            },
+        })
         clientManager = (await msrFactory.deploy()) as ClientManager
 
         const tmFactory = await ethers.getContractFactory('Tendermint', accounts[0])
         tmClient = (await tmFactory.deploy(clientManager.address)) as Tendermint
+    })
+
+    it("generate merkle root", async function () {
+        let data = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
+        let root = await tmClient.testMerkleRoot(data);
+        expect(root).to.eq("f326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
     })
 
     // TODO

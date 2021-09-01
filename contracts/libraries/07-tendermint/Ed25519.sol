@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-library Ed25519Lib {
+library Ed25519 {
     //TODO
     function verify(
         bytes memory pubkey,

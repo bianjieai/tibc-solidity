@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-library MerkleLib {
+library MerkleTree {
     function hashFromByteSlices(bytes[] memory data)
         internal
         pure
@@ -18,7 +18,7 @@ library MerkleLib {
     }
 
     function leafHash(bytes memory data) internal pure returns (bytes32) {
-        bytes memory rs;
+        bytes memory rs = new bytes(data.length + 1);
         rs[0] = 0x00;
         for (uint256 i = 0; i < data.length; i++) {
             rs[i + 1] = data[i];
@@ -31,7 +31,7 @@ library MerkleLib {
         pure
         returns (bytes32)
     {
-        bytes memory rs;
+        bytes memory rs = new bytes(left.length + right.length + 1);
         rs[0] = 0x01;
 
         uint256 offset = 1;

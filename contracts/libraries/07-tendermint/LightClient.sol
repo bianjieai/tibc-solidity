@@ -9,10 +9,10 @@ import "../Bytes.sol";
 import "../Validator.sol";
 import "../ProtoBufRuntime.sol";
 import "./Ed25519.sol";
-import "./SimpleMerkleTree.sol";
+import "./MerkleTree.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-library LightClientLib {
+library LightClient {
     /** @notice this function combines both VerifyAdjacent and VerifyNonAdjacent functions.
      *  @param trustedHeader      trusted header
      *  @param trustedVals        trusted validatorSet
@@ -222,7 +222,7 @@ library LightClientLib {
             Validator.Data memory val = untrustedVals.validators[i];
             // Validate signature.
             bytes memory signBytes = genVoteSignBytes(commit, chainID, i);
-            Ed25519Lib.verify(
+            Ed25519.verify(
                 val.pub_key.ed25519,
                 signBytes,
                 commit.signatures[i].signature
@@ -297,7 +297,7 @@ library LightClientLib {
 
             // Validate signature.
             bytes memory signBytes = genVoteSignBytes(commit, chainID, i);
-            Ed25519Lib.verify(
+            Ed25519.verify(
                 val.pub_key.ed25519,
                 signBytes,
                 commit.signatures[i].signature
@@ -487,7 +487,7 @@ library LightClientLib {
             proposerAddressBz
         );
         valsBz[13] = proposerAddressBz;
-        return Bytes.fromBytes32(MerkleLib.hashFromByteSlices(valsBz));
+        return Bytes.fromBytes32(MerkleTree.hashFromByteSlices(valsBz));
     }
 
     function genValidatorSetHash(ValidatorSet.Data memory vals)
@@ -503,7 +503,7 @@ library LightClientLib {
 
             valsBz[i] = SimpleValidator.encode(val);
         }
-        return Bytes.fromBytes32(MerkleLib.hashFromByteSlices(valsBz));
+        return Bytes.fromBytes32(MerkleTree.hashFromByteSlices(valsBz));
     }
 
     function contains(

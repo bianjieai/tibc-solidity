@@ -7,6 +7,7 @@ import "../../interfaces/IClientManager.sol";
 import "../../libraries/Bytes.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
+import "../../libraries/07-tendermint/MerkleTree.sol";
 import "../../libraries/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -203,16 +204,16 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         // - assert header timestamp is not past the trusting period
         // - assert header timestamp is past latest stored consensus state timestamp
         // - assert that a TrustLevel proportion of TrustedValidators signed new Commit
-        LightClientLib.verify(
-            trustedHeader,
-            header.trusted_validators,
-            header.signed_header,
-            header.validator_set,
-            clientSate.trusting_period,
-            currentTimestamp,
-            clientSate.max_clock_drift,
-            clientSate.trust_level
-        );
+        // LightClient.verify(
+        //     trustedHeader,
+        //     header.trusted_validators,
+        //     header.signed_header,
+        //     header.validator_set,
+        //     clientSate.trusting_period,
+        //     currentTimestamp,
+        //     clientSate.max_clock_drift,
+        //     clientSate.trust_level
+        // );
     }
 
     /*  @notice                   this function checks that consensus state matches trusted fields of Header.
@@ -222,10 +223,16 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         Header.Data memory header,
         ConsensusState.Data memory consensusState
     ) internal pure {
-        bytes32 expRoot = LightClientLib.genValidatorSetHash(
-            header.trusted_validators
-        );
-        bytes32 actual = Bytes.toBytes32(consensusState.next_validators_hash);
-        require(expRoot == actual, "invalid validator set");
+        // bytes memory expRoot = LightClientLib.genValidatorSetHash(
+        //     header.trusted_validators
+        // );
+        // require(
+        //     Bytes.equal(expRoot, consensusState.next_validators_hash),
+        //     "invalid validator set"
+        // );
+    }
+
+    function testMerkleRoot(bytes[] memory data) public pure returns (bytes32) {
+        return MerkleTree.hashFromByteSlices(data);
     }
 }
