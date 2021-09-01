@@ -7,7 +7,6 @@ import "../../interfaces/IClientManager.sol";
 import "../../libraries/Bytes.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
-import "../../libraries/07-tendermint/MerkleTree.sol";
 import "../../libraries/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -230,9 +229,5 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
             Bytes.equal(expRoot, consensusState.next_validators_hash),
             "invalid validator set"
         );
-    }
-
-    function testMerkleRoot(bytes[] memory data) public pure returns (bytes32) {
-        return MerkleTree.hashFromByteSlices(data);
     }
 }

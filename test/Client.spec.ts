@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { Signer } from "ethers";
 import chai from "chai";
-import { ClientManager, Tendermint } from '../typechain';
+import { ClientManager, Tendermint, TestMerkleTree } from '../typechain';
 
 
 let client = require("./proto/client.js");
@@ -14,10 +14,6 @@ describe('Client', () => {
 
     before('deploy ClientManager', async () => {
         accounts = await ethers.getSigners();
-
-        // const merkleLibFactory = await ethers.getContractFactory("MerkleLib");
-        // merkleLib = await merkleLibFactory.deploy() as MerkleLib;
-
         const msrFactory = await ethers.getContractFactory('ClientManager', {
             signer: accounts[0],
             libraries: {
@@ -31,9 +27,11 @@ describe('Client', () => {
     })
 
     it("generate merkle root", async function () {
+        const mkFactory = await ethers.getContractFactory('TestMerkleTree', accounts[0])
+        const mk = (await mkFactory.deploy()) as TestMerkleTree
         //let data: any = []
         let data: any = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
-        let root = await tmClient.testMerkleRoot(data);
+        let root = await mk.hashFromByteSlices(data);
         expect(root).to.eq("0xf326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
     })
 
