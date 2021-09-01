@@ -13,6 +13,8 @@ import "./MerkleTree.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 library LightClient {
+    using TimeLib for Timestamp.Data;
+
     /** @notice this function combines both VerifyAdjacent and VerifyNonAdjacent functions.
      *  @param trustedHeader      trusted header
      *  @param trustedVals        trusted validatorSet
@@ -341,19 +343,13 @@ library LightClient {
         );
 
         require(
-            TimeLib.greaterThan(
-                untrustedHeader.header.time,
-                trustedHeader.header.time
-            ),
+            untrustedHeader.header.time.greaterThan(trustedHeader.header.time),
             "expected new header time to be after old header time"
         );
 
-        Timestamp.Data memory localTime = TimeLib.addSecnods(
-            nowTime,
-            maxClockDrift
-        );
+        Timestamp.Data memory localTime = nowTime.addSecnods(maxClockDrift);
         require(
-            TimeLib.lessThan(untrustedHeader.header.time, localTime),
+            untrustedHeader.header.time.lessThan(localTime),
             "new header has a time from the future"
         );
 
@@ -374,14 +370,10 @@ library LightClient {
         int64 trustingPeriod,
         Timestamp.Data memory nowTime
     ) internal pure {
-        Timestamp.Data memory expirationTime = TimeLib.addSecnods(
-            lastTrustTime,
+        Timestamp.Data memory expirationTime = lastTrustTime.addSecnods(
             trustingPeriod
         );
-        require(
-            !TimeLib.greaterThan(expirationTime, nowTime),
-            "Header expired"
-        );
+        require(!expirationTime.greaterThan(nowTime), "Header expired");
     }
 
     function genVoteSignBytes(

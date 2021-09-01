@@ -9,48 +9,48 @@ library TimeLib {
         return int64(block.timestamp);
     }
 
-    function addSecnods(Timestamp.Data memory time, int64 secnods)
+    function addSecnods(Timestamp.Data memory self, int64 secnods)
         internal
         pure
         returns (Timestamp.Data memory)
     {
-        time.secs = time.secs + secnods;
-        return time;
+        self.secs = self.secs + secnods;
+        return self;
     }
 
-    function add(Timestamp.Data memory t1, Timestamp.Data memory t2)
+    function add(Timestamp.Data memory self, Timestamp.Data memory t2)
         internal
         pure
         returns (Timestamp.Data memory)
     {
-        t1.secs += t2.secs;
-        t1.nanos += t2.nanos;
-        return t1;
+        self.secs += t2.secs;
+        self.nanos += t2.nanos;
+        return self;
     }
 
-    function lessThan(Timestamp.Data memory t1, Timestamp.Data memory t2)
+    function lessThan(Timestamp.Data memory self, Timestamp.Data memory t2)
         internal
         pure
         returns (bool)
     {
-        if (t1.secs < t2.secs) {
+        if (self.secs < t2.secs) {
             return true;
         }
-        if (t1.nanos == t2.nanos && t1.secs < t2.secs) {
+        if (self.nanos == t2.nanos && self.secs < t2.secs) {
             return true;
         }
         return false;
     }
 
-    function greaterThan(Timestamp.Data memory t1, Timestamp.Data memory t2)
+    function greaterThan(Timestamp.Data memory self, Timestamp.Data memory t2)
         internal
         pure
         returns (bool)
     {
-        if (t1.secs > t2.secs) {
+        if (self.secs > t2.secs) {
             return true;
         }
-        if (t1.nanos == t2.nanos && t1.secs > t2.secs) {
+        if (self.nanos == t2.nanos && self.secs > t2.secs) {
             return true;
         }
         return false;
