@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-library String {
+library Strings {
     function uint642str(
         uint64 _i
     )
