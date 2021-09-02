@@ -2,10 +2,10 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../libraries/Types.sol";
+import "../proto/Types.sol";
 import "../libraries/Timestamp.sol";
-import "../libraries/Tendermint.sol";
-import "../libraries/Validator.sol";
+import "../proto/Tendermint.sol";
+import "../proto/Validator.sol";
 import "../libraries/07-tendermint/LightClient.sol";
 
 contract TestLightClient {

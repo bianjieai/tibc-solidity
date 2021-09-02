@@ -7,7 +7,7 @@ import "../../interfaces/IClientManager.sol";
 import "../../libraries/Bytes.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
-import "../../libraries/Tendermint.sol";
+import "../../proto/Tendermint.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 

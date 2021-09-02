@@ -2,12 +2,12 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../Types.sol";
+import "../../proto/Types.sol";
+import "../../proto/Validator.sol";
+import "../../proto/ProtoBufRuntime.sol";
+import "../../proto/Tendermint.sol";
 import "../Timestamp.sol";
-import "../Tendermint.sol";
 import "../Bytes.sol";
-import "../Validator.sol";
-import "../ProtoBufRuntime.sol";
 import "./Ed25519.sol";
 import "./MerkleTree.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";

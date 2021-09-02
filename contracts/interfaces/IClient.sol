@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../libraries/Types.sol";
+import "../proto/Types.sol";
 
 interface IClient {
     function getLatestHeight() external view returns (Height.Data memory);

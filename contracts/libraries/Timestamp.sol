@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "./Types.sol";
+import "../proto/Types.sol";
 
 library TimeLib {
     function getLocalTime() internal view returns (int64) {
