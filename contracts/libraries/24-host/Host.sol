@@ -2,6 +2,8 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
+import "../Utils.sol";
+
 library Host {
 
     /* @notice                  nextSequenceSendPath defines the next send sequence counter store path
@@ -17,7 +19,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat("nextSequenceSend/", packetPath(sourceChain, destChain));
+        return  Utils.strConcat("nextSequenceSend/", packetPath(sourceChain, destChain));
     }
 
     /* @notice                  nextSequenceSendKey returns the store key for the send sequence of a particular
@@ -51,7 +53,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat(_strConcat(packetCommitmentPrefixPath(sourceChain, destChain),"/"), uint642str(sequence));
+        return  Utils.strConcat(Utils.strConcat(packetCommitmentPrefixPath(sourceChain, destChain),"/"), Utils.uint642str(sequence));
     }
 
     /* @notice                  packetCommitmentKey returns the store key of under which a packet commitment
@@ -85,7 +87,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat(_strConcat("commitments/", packetPath(sourceChain, destChain)), "/sequences");
+        return  Utils.strConcat(Utils.strConcat("commitments/", packetPath(sourceChain, destChain)), "/sequences");
     }
 
     /* @notice                  packetAcknowledgementPath defines the packet acknowledgement store path
@@ -103,7 +105,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat(_strConcat(packetAcknowledgementPrefixPath(sourceChain, destChain), "/"), uint642str(sequence));
+        return  Utils.strConcat(Utils.strConcat(packetAcknowledgementPrefixPath(sourceChain, destChain), "/"), Utils.uint642str(sequence));
     }
 
     /* @notice                  packetAcknowledgementKey returns the store key of under which a packet
@@ -137,7 +139,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat(_strConcat("acks/", packetPath(sourceChain, destChain)), "/sequences");
+        return  Utils.strConcat(Utils.strConcat("acks/", packetPath(sourceChain, destChain)), "/sequences");
     }
 
     /* @notice                  packetReceiptPath defines the packet acknowledgement store path
@@ -155,7 +157,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat(_strConcat(packetReceiptPrefixPath(sourceChain, destChain),"/"), uint642str(sequence));
+        return  Utils.strConcat(Utils.strConcat(packetReceiptPrefixPath(sourceChain, destChain),"/"), Utils.uint642str(sequence));
     }
 
     /* @notice                  packetReceiptKey returns the store key of under which a packet
@@ -189,7 +191,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat(_strConcat("receipts/", packetPath(sourceChain, destChain)), "/sequences");
+        return  Utils.strConcat(Utils.strConcat("receipts/", packetPath(sourceChain, destChain)), "/sequences");
     }
 
     /* @notice                  cleanPacketCommitmentKey returns the store key of under which a clean packet commitment
@@ -222,7 +224,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat("clean/", packetPath(sourceChain, destChain));
+        return  Utils.strConcat("clean/", packetPath(sourceChain, destChain));
     }
 
     /* @notice       packetPath
@@ -237,61 +239,6 @@ library Host {
     pure
     returns (string memory)
     {
-        return  _strConcat(_strConcat(sourceChain, "/"), destChain);
-    }
-
-    function uint642str(
-        uint64 _i
-    )
-    internal
-    pure
-    returns (string memory) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint64 j = _i;
-        uint len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint k = len;
-        while (_i != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
-    }
-
-    /*
-     * @notice Concatenate two strings into a single string
-     * @param _first First string
-     * @param _second Second string
-     */
-    function _strConcat(
-        string memory _first,
-        string memory _second
-    )
-    internal
-    pure
-    returns(string memory)
-    {
-        bytes memory first = bytes(_first);
-        bytes memory second = bytes(_second);
-        bytes memory res = new bytes(first.length + second.length);
-
-        for(uint i = 0; i < first.length; i++) {
-            res[i] = first[i];
-        }
-
-        for(uint j = 0; j < second.length; j++) {
-            res[first.length+j] = second[j];
-        }
-
-        return string(res);
+        return  Utils.strConcat(Utils.strConcat(sourceChain, "/"), destChain);
     }
 }
