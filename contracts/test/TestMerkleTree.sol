@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "./MerkleTree.sol";
+import "../libraries/07-tendermint/MerkleTree.sol";
 
 contract TestMerkleTree {
     function hashFromByteSlices(bytes[] memory data)
