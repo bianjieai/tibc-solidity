@@ -3,7 +3,6 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../proto/Types.sol";
-import "../libraries/Timestamp.sol";
 import "../proto/Tendermint.sol";
 import "../proto/Validator.sol";
 import "../libraries/07-tendermint/LightClient.sol";

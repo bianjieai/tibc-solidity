@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IClientManager.sol";
-import "../../libraries/Bytes.sol";
+import "../../libraries/utils/Bytes.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
 import "../../proto/Tendermint.sol";

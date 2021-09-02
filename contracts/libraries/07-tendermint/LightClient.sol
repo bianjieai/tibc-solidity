@@ -6,14 +6,14 @@ import "../../proto/Types.sol";
 import "../../proto/Validator.sol";
 import "../../proto/ProtoBufRuntime.sol";
 import "../../proto/Tendermint.sol";
-import "../Timestamp.sol";
-import "../Bytes.sol";
+import "../utils/Timestamp.sol";
+import "../utils/Bytes.sol";
 import "./Ed25519.sol";
 import "./MerkleTree.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 library LightClient {
-    using TimeLib for Timestamp.Data;
+    using TimestampLib for Timestamp.Data;
 
     /** @notice this function combines both VerifyAdjacent and VerifyNonAdjacent functions.
      *  @param trustedHeader      trusted header
