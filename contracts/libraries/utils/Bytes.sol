@@ -22,7 +22,7 @@ library Bytes {
          }
      }
 
-    function toBytes(address a) public pure returns (bytes memory) {
+    function toBytes(address a) internal pure returns (bytes memory) {
         return abi.encodePacked(a);
     }
 
@@ -81,7 +81,7 @@ library Bytes {
         return tempUint;
     }
 
-    function stringToBytes32(string memory source) public pure returns (bytes32) {
+    function stringToBytes32(string memory source) internal pure returns (bytes32) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
             return 0x0;

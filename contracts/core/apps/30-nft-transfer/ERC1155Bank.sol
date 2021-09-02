@@ -4,7 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155.sol";
 
-abstract contract ERC1155Bank is IERC1155, ERC1155{
+contract ERC1155Bank is ERC1155{
+
+    constructor() public ERC1155("www.test.com") {
+    }
 
     function mint(address account,uint256 id,uint256 amount,bytes memory data) public virtual{
         _mint(account, id, amount, data);
