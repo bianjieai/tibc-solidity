@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../Utils.sol";
+import "../utils/String.sol";
 
 library Host {
 
@@ -19,7 +19,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat("nextSequenceSend/", packetPath(sourceChain, destChain));
+        return  String.strConcat("nextSequenceSend/", packetPath(sourceChain, destChain));
     }
 
     /* @notice                  nextSequenceSendKey returns the store key for the send sequence of a particular
@@ -53,7 +53,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat(Utils.strConcat(packetCommitmentPrefixPath(sourceChain, destChain),"/"), Utils.uint642str(sequence));
+        return  String.strConcat(String.strConcat(packetCommitmentPrefixPath(sourceChain, destChain),"/"), String.uint642str(sequence));
     }
 
     /* @notice                  packetCommitmentKey returns the store key of under which a packet commitment
@@ -87,7 +87,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat(Utils.strConcat("commitments/", packetPath(sourceChain, destChain)), "/sequences");
+        return  String.strConcat(String.strConcat("commitments/", packetPath(sourceChain, destChain)), "/sequences");
     }
 
     /* @notice                  packetAcknowledgementPath defines the packet acknowledgement store path
@@ -105,7 +105,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat(Utils.strConcat(packetAcknowledgementPrefixPath(sourceChain, destChain), "/"), Utils.uint642str(sequence));
+        return  String.strConcat(String.strConcat(packetAcknowledgementPrefixPath(sourceChain, destChain), "/"), String.uint642str(sequence));
     }
 
     /* @notice                  packetAcknowledgementKey returns the store key of under which a packet
@@ -139,7 +139,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat(Utils.strConcat("acks/", packetPath(sourceChain, destChain)), "/sequences");
+        return  String.strConcat(String.strConcat("acks/", packetPath(sourceChain, destChain)), "/sequences");
     }
 
     /* @notice                  packetReceiptPath defines the packet acknowledgement store path
@@ -157,7 +157,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat(Utils.strConcat(packetReceiptPrefixPath(sourceChain, destChain),"/"), Utils.uint642str(sequence));
+        return  String.strConcat(String.strConcat(packetReceiptPrefixPath(sourceChain, destChain),"/"), String.uint642str(sequence));
     }
 
     /* @notice                  packetReceiptKey returns the store key of under which a packet
@@ -191,7 +191,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat(Utils.strConcat("receipts/", packetPath(sourceChain, destChain)), "/sequences");
+        return  String.strConcat(String.strConcat("receipts/", packetPath(sourceChain, destChain)), "/sequences");
     }
 
     /* @notice                  cleanPacketCommitmentKey returns the store key of under which a clean packet commitment
@@ -224,7 +224,7 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat("clean/", packetPath(sourceChain, destChain));
+        return  String.strConcat("clean/", packetPath(sourceChain, destChain));
     }
 
     /* @notice       packetPath
@@ -239,6 +239,6 @@ library Host {
     pure
     returns (string memory)
     {
-        return  Utils.strConcat(Utils.strConcat(sourceChain, "/"), destChain);
+        return  String.strConcat(String.strConcat(sourceChain, "/"), destChain);
     }
 }
