@@ -204,16 +204,16 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         // - assert header timestamp is not past the trusting period
         // - assert header timestamp is past latest stored consensus state timestamp
         // - assert that a TrustLevel proportion of TrustedValidators signed new Commit
-        // LightClient.verify(
-        //     trustedHeader,
-        //     header.trusted_validators,
-        //     header.signed_header,
-        //     header.validator_set,
-        //     clientSate.trusting_period,
-        //     currentTimestamp,
-        //     clientSate.max_clock_drift,
-        //     clientSate.trust_level
-        // );
+        LightClient.verify(
+            trustedHeader,
+            header.trusted_validators,
+            header.signed_header,
+            header.validator_set,
+            clientSate.trusting_period,
+            currentTimestamp,
+            clientSate.max_clock_drift,
+            clientSate.trust_level
+        );
     }
 
     /*  @notice                   this function checks that consensus state matches trusted fields of Header.
@@ -222,7 +222,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
     function checkTrustedHeader(
         Header.Data memory header,
         ConsensusState.Data memory consensusState
-    ) internal pure {
+    ) internal view {
         bytes memory validatorSetHash = LightClient.genValidatorSetHash(
             header.trusted_validators
         );

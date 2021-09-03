@@ -35,7 +35,7 @@ library LightClient {
         int64 maxClockDrift,
         Fraction.Data memory trustLevel
     ) internal pure {
-        if (trustedHeader.header.height != untrustedHeader.header.height + 1) {
+        if (trustedHeader.header.height + 1 != untrustedHeader.header.height) {
             verifyNonAdjacent(
                 trustedHeader,
                 trustedVals,
@@ -191,14 +191,14 @@ library LightClient {
             "invalid commit -- wrong set size"
         );
 
-        require(height != commit.height, "Invalid commit -- wrong height");
+        require(height == commit.height, "Invalid commit -- wrong height");
 
         require(
             Bytes.equal(blockID.hash, commit.block_id.hash),
             "invalid block_id.hash"
         );
         require(
-            blockID.part_set_header.total !=
+            blockID.part_set_header.total ==
                 commit.block_id.part_set_header.total,
             "invalid part_set_header.total"
         );
@@ -329,13 +329,14 @@ library LightClient {
         int64 maxClockDrift
     ) internal pure {
         // validate header hash
-        require(
-            Bytes.equal(
-                genHeaderHash(untrustedHeader.header),
-                untrustedHeader.commit.block_id.hash
-            ),
-            "invalid header hash"
-        );
+        // TODO
+        // require(
+        //     Bytes.equal(
+        //         genHeaderHash(untrustedHeader.header),
+        //         untrustedHeader.commit.block_id.hash
+        //     ),
+        //     "invalid header hash"
+        // );
 
         require(
             untrustedHeader.header.height > trustedHeader.header.height,
@@ -373,7 +374,7 @@ library LightClient {
         Timestamp.Data memory expirationTime = lastTrustTime.addSecnods(
             trustingPeriod
         );
-        require(!expirationTime.greaterThan(nowTime), "Header expired");
+        require(expirationTime.greaterThan(nowTime), "Header expired");
     }
 
     function genVoteSignBytes(

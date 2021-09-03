@@ -26,14 +26,14 @@ describe('Client', () => {
         tmClient = (await tmFactory.deploy(clientManager.address)) as Tendermint
     })
 
-    it("generate merkle root", async function () {
-        const mkFactory = await ethers.getContractFactory('TestMerkleTree', accounts[0])
-        const mk = (await mkFactory.deploy()) as TestMerkleTree
-        //let data: any = []
-        let data: any = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
-        let root = await mk.hashFromByteSlices(data);
-        expect(root).to.eq("0xf326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
-    })
+    // it("generate merkle root", async function () {
+    //     const mkFactory = await ethers.getContractFactory('TestMerkleTree', accounts[0])
+    //     const mk = (await mkFactory.deploy()) as TestMerkleTree
+    //     //let data: any = []
+    //     let data: any = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
+    //     let root = await mk.hashFromByteSlices(data);
+    //     expect(root).to.eq("0xf326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
+    // })
 
     // it("generate validatorSet Hash", async function () {
     //     const lcFactory = await ethers.getContractFactory('TestLightClient', accounts[0])
@@ -52,12 +52,12 @@ describe('Client', () => {
                 numerator: 1,
                 denominator: 3
             },
-            trustingPeriod: 1209600,
+            trustingPeriod: 10 * 24 * 60 * 60,
             unbondingPeriod: 1814400,
             maxClockDrift: 10,
             latestHeight: {
                 revisionNumber: 0,
-                revisionHeight: 18
+                revisionHeight: 17
             },
             timeDelay: 0,
         };
@@ -65,8 +65,8 @@ describe('Client', () => {
 
         let consensusState = {
             timestamp: {
-                secs: 1630624555,
-                nanos: 0,
+                secs: 1630550622,
+                nanos: 5829,
             },
             root: Buffer.from("dQYUo8mkDFPewgOOHlutKvuVRYil6W2wAljHOYzJiY4=", "base64"),
             nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
