@@ -487,7 +487,7 @@ library LightClient {
         pure
         returns (bytes memory)
     {
-        bytes[] memory valsBz;
+        bytes[] memory valsBz = new bytes[](vals.validators.length);
         for (uint256 i = 0; i < vals.validators.length; i++) {
             SimpleValidator.Data memory val;
             val.pub_key = vals.validators[i].pub_key;

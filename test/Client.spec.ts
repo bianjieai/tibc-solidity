@@ -35,10 +35,19 @@ describe('Client', () => {
         expect(root).to.eq("0xf326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
     })
 
+    // it("generate validatorSet Hash", async function () {
+    //     const lcFactory = await ethers.getContractFactory('TestLightClient', accounts[0])
+    //     const lc = (await lcFactory.deploy()) as TestLightClient
+    //     //let data: any = []
+    //     let data: any = Buffer.from("0a3c0a14c42d7c8a0a7a831c19fbda4b050910629bf2b16b12220a208522460be5acf8faefedca5b72b8a546f9ce485f2155815a529ed132b0fdcc721864123c0a14c42d7c8a0a7a831c19fbda4b050910629bf2b16b12220a208522460be5acf8faefedca5b72b8a546f9ce485f2155815a529ed132b0fdcc721864", "hex")
+    //     let valSetHash = await lc.genValidatorSetHash(data);
+    //     expect(valSetHash).to.eq("0x0757f0bc673f8df26d61d3e74bb6181ac9df88c09a1100c6fade264604b4c478")
+    // })
+
     // TODO
-    it("add client", async function () {
+    it("test tendermint", async function () {
         let clientState = {
-            chainId: "testA",
+            chainId: "chain-f6C1TF",
             trustLevel: {
                 numerator: 1,
                 denominator: 3
@@ -48,7 +57,7 @@ describe('Client', () => {
             maxClockDrift: 10,
             latestHeight: {
                 revisionNumber: 0,
-                revisionHeight: 4
+                revisionHeight: 18
             },
             timeDelay: 0,
         };
@@ -56,11 +65,11 @@ describe('Client', () => {
 
         let consensusState = {
             timestamp: {
-                secs: 1630014534,
+                secs: 1630624555,
                 nanos: 0,
             },
-            root: Buffer.from("YXBwX2hhc2g=", "base64"),
-            nextValidatorsHash: Buffer.from("8C532894EF659A1BBD8F9C6D340D55C768431DB79BFD8F85ABE5BEA59ADC55EA", "hex")
+            root: Buffer.from("dQYUo8mkDFPewgOOHlutKvuVRYil6W2wAljHOYzJiY4=", "base64"),
+            nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
         }
         let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
 
@@ -70,162 +79,23 @@ describe('Client', () => {
         expect(irishubClient).to.eq(tmClient.address)
 
         let expClientState = (await tmClient.clientState())
-        expect(expClientState.chain_id).to.eq("testA")
+        expect(expClientState.chain_id).to.eq("chain-f6C1TF")
 
         let expConsensusState = (await tmClient.consensusStates(clientState.latestHeight.revisionHeight))
         expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
+        expect(expConsensusState.next_validators_hash.slice(2)).to.eq(consensusState.nextValidatorsHash.toString("hex"))
+        console.log(expConsensusState.next_validators_hash)
+
+
+        let signer = await accounts[0].getAddress();
+        let ret1 = await clientManager.registerRelayer("irishub", signer)
+        expect(ret1.blockNumber).to.greaterThan(0);
+
+        let headerBz = Buffer.from("0ace040a92030a02080b120c636861696e2d6636433154461812220c08ab97c7890610e88bfe95022a480a201424d4e37cb40efb81a4fff5e4f5fbdf14575ce3a5f68be1845c2f52d109867112240801122044f92552fb37c4c04decbbbf7a85d4277e815632bbec2a3f5851f04cc4cefd8a322037695f3d65b890ea8f95993415f17efb5e62eeddf0d9686bd7fb975d2317a8103a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85542200757f0bc673f8df26d61d3e74bb6181ac9df88c09a1100c6fade264604b4c4784a200757f0bc673f8df26d61d3e74bb6181ac9df88c09a1100c6fade264604b4c4785220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a20750614a3c9a40c53dec2038e1e5bad2afb954588a5e96db00258c7398cc9898e6220e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8556a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8557214c42d7c8a0a7a831c19fbda4b050910629bf2b16b12b60108121a480a2079db67f6df78416b103b5afc0806d0eb13ee7ee26c912e023b0fa3cf34d85825122408011220fa6693091cccf00e34e04290186ce9af4b0a948fff6dc3622566d48ca7ed2fe9226808021214c42d7c8a0a7a831c19fbda4b050910629bf2b16b1a0c08b097c7890610f0a2beba022240b4af302c46c6cde7419c880de8babf438b0cf4da20085b16ad5e7905cf5cfce3e0709dc506e5c6d161ec1fc361e06ba6af63fc5ecf63d44e5ed1eaeda1ec210f127c0a3c0a14c42d7c8a0a7a831c19fbda4b050910629bf2b16b12220a208522460be5acf8faefedca5b72b8a546f9ce485f2155815a529ed132b0fdcc721864123c0a14c42d7c8a0a7a831c19fbda4b050910629bf2b16b12220a208522460be5acf8faefedca5b72b8a546f9ce485f2155815a529ed132b0fdcc7218641a021011227c0a3c0a14c42d7c8a0a7a831c19fbda4b050910629bf2b16b12220a208522460be5acf8faefedca5b72b8a546f9ce485f2155815a529ed132b0fdcc721864123c0a14c42d7c8a0a7a831c19fbda4b050910629bf2b16b12220a208522460be5acf8faefedca5b72b8a546f9ce485f2155815a529ed132b0fdcc721864", "hex")
+        let result = await clientManager.updateClient("irishub", headerBz, {
+            //gasLimit: 70000000,
+        })
+        let txResult = await result.wait();
+        console.log(txResult)
     })
-
-    // it("verifyNonAdjacent", async function () {
-    //     const lightFactory = await ethers.getContractFactory('TestLightClient', accounts[0])
-    //     const light = (await lightFactory.deploy()) as TestLightClient
-
-    //     const trustedHeader: any = {
-    //         "header": {
-    //             "version": {
-    //                 "block": 11,
-    //                 "app": 0
-    //             },
-    //             "chain_id": "chain-JXnmKy",
-    //             "height": 8,
-    //             "time": "2021-09-02T03:35:24.178071Z",
-    //             "last_block_id": {
-    //                 "hash": "zj1LYMeEjqql0mURNnZvVIeDiFAvVGPdLwxvKUUaKyo=",
-    //                 "part_set_header": {
-    //                     "total": 1,
-    //                     "hash": "rj+xQp7M9Ve6ViZ+CcBF72H8/geY8uI7a31dorsnLxI="
-    //                 }
-    //             },
-    //             "last_commit_hash": "1P4U8HKBJ2o0fLwWEeOIFKaPs74YMQx2e8MnE1vpK50=",
-    //             "data_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    //             "validators_hash": "eCbeLK2wUY2SbndGyKwfyJTWsvslhGkJgQZrV9e3p9k=",
-    //             "next_validators_hash": "eCbeLK2wUY2SbndGyKwfyJTWsvslhGkJgQZrV9e3p9k=",
-    //             "consensus_hash": "BICRvH3cKD93v7+R1zxE2ljD34qcvIZ0Bdi389qtoi8=",
-    //             "app_hash": "7X68jO3Vbcb5XqvX26gmpEe/g4t5fXsVVtmyH/7TyuU=",
-    //             "last_results_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    //             "evidence_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    //             "proposer_address": "djMOg4IWIaKRgnmnBCcjDVXqiBU="
-    //         },
-    //         "commit": {
-    //             "height": 8,
-    //             "round": 0,
-    //             "block_id": {
-    //                 "hash": "dOr8HpJPYWbFUH1B1LeV1m8f06z3LZQSVhjB+wW0HZ4=",
-    //                 "part_set_header": {
-    //                     "total": 1,
-    //                     "hash": "CDzP3jpd5oRZ4+3b6r+Bp18QbnNlmhL5hoKV70j8zQ4="
-    //                 }
-    //             },
-    //             "signatures": [
-    //                 {
-    //                     "block_id_flag": "2",
-    //                     "validator_address": "djMOg4IWIaKRgnmnBCcjDVXqiBU=",
-    //                     "timestamp": "2021-09-02T03:35:29.255085Z",
-    //                     "signature": "bUtkqfrWUsJXUPdR9FSNMsl4x2yn5cqsjVCf/8qo2b+CdZTv/9zj93a9e/tdwXiCjpzndq+plWZDM2so1N52Ag=="
-    //                 }
-    //             ]
-    //         }
-    //     };
-    //     const trustedVals: any = {
-    //         "validators": [
-    //             {
-    //                 "address": "djMOg4IWIaKRgnmnBCcjDVXqiBU=",
-    //                 "pub_key": {
-    //                     "ed25519": "S859myFP7iFtzceM8ZoOEzoeTBIy84ERe0vcHen8ZWM="
-    //                 },
-    //                 "voting_power": 100,
-    //                 "proposer_priority": 0
-    //             }
-    //         ],
-    //         "proposer": {
-    //             "address": "djMOg4IWIaKRgnmnBCcjDVXqiBU=",
-    //             "pub_key": {
-    //                 "ed25519": "S859myFP7iFtzceM8ZoOEzoeTBIy84ERe0vcHen8ZWM="
-    //             },
-    //             "voting_power": 100,
-    //             "proposer_priority": 0
-    //         },
-    //         "total_voting_power": 0
-    //     };
-    //     const untrustedHeader: any = {
-    //         "header": {
-    //             "version": {
-    //                 "block": 11,
-    //                 "app": 0
-    //             },
-    //             "chain_id": "chain-JXnmKy",
-    //             "height": 20,
-    //             "time": "2021-09-02T03:36:25.096064Z",
-    //             "last_block_id": {
-    //                 "hash": "ZgJK8TTIE/C1019SZYSB3H+53PQsblAQCAARCiF1mo8=",
-    //                 "part_set_header": {
-    //                     "total": 1,
-    //                     "hash": "D1uDB3EkogSIPgK6+yUHcBMCg3qyuaTasI6nEZf/Xmk="
-    //                 }
-    //             },
-    //             "last_commit_hash": "PUfO+RHD9de0ZGPzmygZ1t/xlLusr0ZEC/FJB276Cnk=",
-    //             "data_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    //             "validators_hash": "eCbeLK2wUY2SbndGyKwfyJTWsvslhGkJgQZrV9e3p9k=",
-    //             "next_validators_hash": "eCbeLK2wUY2SbndGyKwfyJTWsvslhGkJgQZrV9e3p9k=",
-    //             "consensus_hash": "BICRvH3cKD93v7+R1zxE2ljD34qcvIZ0Bdi389qtoi8=",
-    //             "app_hash": "YhFQUF8wq+4CS7+i+B6T2pfN27BUwa2tsdtYZSzBLpc=",
-    //             "last_results_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    //             "evidence_hash": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    //             "proposer_address": "djMOg4IWIaKRgnmnBCcjDVXqiBU="
-    //         },
-    //         "commit": {
-    //             "height": 20,
-    //             "round": 0,
-    //             "block_id": {
-    //                 "hash": "UbH145tGdgi5n2UY2rigtAZmw4/VPrF/2sR2lbbYJN4=",
-    //                 "part_set_header": {
-    //                     "total": 1,
-    //                     "hash": "VU+Cf1FhJdYNpCYwyg+X3BNlj+1oEqlS8NIoK5KZlAA="
-    //                 }
-    //             },
-    //             "signatures": [
-    //                 {
-    //                     "block_id_flag": "2",
-    //                     "validator_address": "djMOg4IWIaKRgnmnBCcjDVXqiBU=",
-    //                     "timestamp": "2021-09-02T03:36:30.166392Z",
-    //                     "signature": "S2ZlY1Mz97fnrxalf/xN0bULeKF6EfLqjiNhNbVC1Y0bnodcbsbB7HltHx69l90F/nI7kCrfSmxzgSAiYaMiAA=="
-    //                 }
-    //             ]
-    //         }
-    //     };
-    //     const untrustedVals: any = {
-    //         "validators": [
-    //             {
-    //                 "address": "djMOg4IWIaKRgnmnBCcjDVXqiBU=",
-    //                 "pub_key": {
-    //                     "ed25519": "S859myFP7iFtzceM8ZoOEzoeTBIy84ERe0vcHen8ZWM="
-    //                 },
-    //                 "voting_power": 100,
-    //                 "proposer_priority": 0
-    //             }
-    //         ],
-    //         "proposer": {
-    //             "address": "djMOg4IWIaKRgnmnBCcjDVXqiBU=",
-    //             "pub_key": {
-    //                 "ed25519": "S859myFP7iFtzceM8ZoOEzoeTBIy84ERe0vcHen8ZWM="
-    //             },
-    //             "voting_power": 100,
-    //             "proposer_priority": 0
-    //         },
-    //         "total_voting_power": 0
-    //     };
-    //     const trustingPeriod = 36000;
-    //     const nowTime = { secs: 1630554350, nanos: 0 };
-    //     const maxClockDrift = 600;
-    //     const trustLevel: any = { numerator: 2, denominator: 1 };
-
-    //     let trustedHeader1 = client.SignedHeader.encode(trustedHeader).finish();
-    //     let untrustedHeader1 = client.SignedHeader.encode(untrustedHeader).finish();
-
-    //     let trustedVals1 = client.ValidatorSet.encode(trustedVals).finish();
-    //     let untrustedVals1 = client.ValidatorSet.encode(untrustedVals).finish();
-
-    //     console.log(2)
-    //     light.verifyNonAdjacent(trustedHeader1, trustedVals1, untrustedHeader1, untrustedVals1, trustingPeriod, nowTime, maxClockDrift, trustLevel);
-    // })
 })
