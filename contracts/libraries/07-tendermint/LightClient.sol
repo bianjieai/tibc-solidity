@@ -330,13 +330,13 @@ library LightClient {
     ) internal pure {
         // validate header hash
         // TODO
-        // require(
-        //     Bytes.equal(
-        //         genHeaderHash(untrustedHeader.header),
-        //         untrustedHeader.commit.block_id.hash
-        //     ),
-        //     "invalid header hash"
-        // );
+        require(
+            Bytes.equal(
+                genHeaderHash(untrustedHeader.header),
+                untrustedHeader.commit.block_id.hash
+            ),
+            "invalid header hash"
+        );
 
         require(
             untrustedHeader.header.height > trustedHeader.header.height,
@@ -408,6 +408,10 @@ library LightClient {
         pure
         returns (bytes memory)
     {
+        if (header.validators_hash.length == 0) {
+            return new bytes(0);
+        }
+
         bytes[] memory valsBz = new bytes[](14);
         valsBz[0] = Consensus.encode(header.version);
 

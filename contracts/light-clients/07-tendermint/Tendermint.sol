@@ -222,7 +222,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
     function checkTrustedHeader(
         Header.Data memory header,
         ConsensusState.Data memory consensusState
-    ) internal view {
+    ) internal pure {
         bytes memory validatorSetHash = LightClient.genValidatorSetHash(
             header.trusted_validators
         );
