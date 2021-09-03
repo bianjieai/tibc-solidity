@@ -9,7 +9,7 @@ library TimestampLib {
         return int64(block.timestamp);
     }
 
-    function addSecnods(Timestamp.Data memory self, int64 secnods)
+    function add(Timestamp.Data memory self, int64 secnods)
         internal
         pure
         returns (Timestamp.Data memory target)

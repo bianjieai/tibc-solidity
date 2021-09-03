@@ -348,7 +348,7 @@ library LightClient {
             "expected new header time to be after old header time"
         );
 
-        Timestamp.Data memory localTime = nowTime.addSecnods(maxClockDrift);
+        Timestamp.Data memory localTime = nowTime.add(maxClockDrift);
         require(
             untrustedHeader.header.time.lessThan(localTime),
             "new header has a time from the future"
@@ -371,7 +371,7 @@ library LightClient {
         int64 trustingPeriod,
         Timestamp.Data memory nowTime
     ) internal pure {
-        Timestamp.Data memory expirationTime = lastTrustTime.addSecnods(
+        Timestamp.Data memory expirationTime = lastTrustTime.add(
             trustingPeriod
         );
         require(expirationTime.greaterThan(nowTime), "Header expired");
