@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../../libraries/NftTransfer.sol";
+import "../../../proto/NftTransfer.sol";
 import "../uu/Bytes.sol";
 import "../uu/Strings.sol";
 import "../../../libraries/04-packet/Packet.sol";
