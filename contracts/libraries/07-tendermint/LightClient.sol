@@ -35,7 +35,7 @@ library LightClient {
         int64 maxClockDrift,
         Fraction.Data memory trustLevel
     ) internal pure {
-        if (trustedHeader.header.height != untrustedHeader.header.height + 1) {
+        if (trustedHeader.header.height + 1 != untrustedHeader.header.height) {
             verifyNonAdjacent(
                 trustedHeader,
                 trustedVals,
@@ -191,14 +191,14 @@ library LightClient {
             "invalid commit -- wrong set size"
         );
 
-        require(height != commit.height, "Invalid commit -- wrong height");
+        require(height == commit.height, "Invalid commit -- wrong height");
 
         require(
             Bytes.equal(blockID.hash, commit.block_id.hash),
             "invalid block_id.hash"
         );
         require(
-            blockID.part_set_header.total !=
+            blockID.part_set_header.total ==
                 commit.block_id.part_set_header.total,
             "invalid part_set_header.total"
         );
@@ -329,6 +329,7 @@ library LightClient {
         int64 maxClockDrift
     ) internal pure {
         // validate header hash
+        // TODO
         require(
             Bytes.equal(
                 genHeaderHash(untrustedHeader.header),
@@ -347,7 +348,7 @@ library LightClient {
             "expected new header time to be after old header time"
         );
 
-        Timestamp.Data memory localTime = nowTime.addSecnods(maxClockDrift);
+        Timestamp.Data memory localTime = nowTime.add(maxClockDrift);
         require(
             untrustedHeader.header.time.lessThan(localTime),
             "new header has a time from the future"
@@ -370,10 +371,10 @@ library LightClient {
         int64 trustingPeriod,
         Timestamp.Data memory nowTime
     ) internal pure {
-        Timestamp.Data memory expirationTime = lastTrustTime.addSecnods(
+        Timestamp.Data memory expirationTime = lastTrustTime.add(
             trustingPeriod
         );
-        require(!expirationTime.greaterThan(nowTime), "Header expired");
+        require(expirationTime.greaterThan(nowTime), "Header expired");
     }
 
     function genVoteSignBytes(
@@ -407,6 +408,10 @@ library LightClient {
         pure
         returns (bytes memory)
     {
+        if (header.validators_hash.length == 0) {
+            return new bytes(0);
+        }
+
         bytes[] memory valsBz = new bytes[](14);
         valsBz[0] = Consensus.encode(header.version);
 
@@ -487,7 +492,7 @@ library LightClient {
         pure
         returns (bytes memory)
     {
-        bytes[] memory valsBz;
+        bytes[] memory valsBz = new bytes[](vals.validators.length);
         for (uint256 i = 0; i < vals.validators.length; i++) {
             SimpleValidator.Data memory val;
             val.pub_key = vals.validators[i].pub_key;
