@@ -26,7 +26,7 @@ contract Routing is Ownable, IRouting {
         _setRuleMap();
     }
 
-    function getMoudleMap(string calldata _moduleName)
+    function getMoudle(string calldata _moduleName)
         external
         view
         override

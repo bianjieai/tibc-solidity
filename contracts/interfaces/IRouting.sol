@@ -11,7 +11,7 @@ interface IRouting {
         string calldata _port
     ) external view returns (bool);
 
-    function getMoudleMap(string calldata _moduleName)
+    function getMoudle(string calldata _moduleName)
         external
         view
         returns (IModule);
