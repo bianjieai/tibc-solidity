@@ -11,4 +11,11 @@ library PacketTypes {
         string relayChain;
         bytes data;
     }
+
+    struct CleanPacket {
+        uint64 sequence;
+        string sourceChain;
+        string destChain;
+        string relayChain;
+    }
 }

@@ -2,12 +2,18 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
+import "../libraries/04-packet/Packet.sol";
+import "../libraries/Types.sol";
+
 interface IPacket {
     function sendPacket(
-        uint64 sequence,
-        string calldata sourceChain,
-        string calldata destChain,
-        string calldata relayChain,
-        bytes calldata data
+        PacketTypes.Packet calldata packet
+    ) external;
+
+
+    function recvPacket(
+        PacketTypes.Packet calldata packet,
+        bytes calldata proof,
+        Height.Data calldata height
     ) external;
 }
