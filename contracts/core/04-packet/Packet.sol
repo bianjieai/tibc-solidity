@@ -3,7 +3,7 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../02-client/ClientManager.sol";
-import "../../libraries/Types.sol";
+import "../../proto/Types.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/04-packet/Packet.sol";
 import "../../interfaces/IClientManager.sol";
