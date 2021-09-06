@@ -1,7 +1,11 @@
 .vscode
 node_modules
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 typechain
+
+# Node files
+yarn.lock
+package-lock.json
