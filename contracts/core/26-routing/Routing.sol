@@ -23,7 +23,7 @@ contract Routing is Ownable, IRouting {
 
     constructor(string[] memory _rules) public {
         rules = _rules;
-        _setRuleMap();
+        _setRuleMap(_rules);
     }
 
     function getMoudle(string calldata _moduleName)
@@ -106,7 +106,7 @@ contract Routing is Ownable, IRouting {
             mRules[i] = _rules[i];
         }
         rules = mRules;
-        _setRuleMap();
+        _setRuleMap(mRules);
     }
 
     /*
@@ -121,11 +121,11 @@ contract Routing is Ownable, IRouting {
         moduleMap[_moduleName] = IModule(_moduleAddr);
     }
 
-    function _setRuleMap() private {
-        uint8 i;
-        for (i = 0; i < rules.length; i++) {
-            ruleMap[rules[i]].val = rules[i];
-            ruleMap[rules[i]].isValue = true;
+    function _setRuleMap(string[] memory _rules) private {
+        uint256 i;
+        for (i = 0; i < _rules.length; i++) {
+            ruleMap[_rules[i]].val = _rules[i];
+            ruleMap[_rules[i]].isValue = true;
         }
     }
 
