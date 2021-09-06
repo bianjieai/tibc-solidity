@@ -18,16 +18,6 @@ library Bytes {
     }
 
     function fromBytes32(bytes32 data) internal pure returns (bytes memory) {
-        // uint256 i = 0;
-        // while (i < 32 && data[i] != 0) {
-        //     ++i;
-        // }
-        // bytes memory result = new bytes(i);
-        // i = 0;
-        // while (i < 32 && data[i] != 0) {
-        //     result[i] = data[i];
-        //     ++i;
-        // }
         bytes memory result = new bytes(32);
         for (uint256 i = 0; i < 32; ++i) {
             result[i] = data[i];
