@@ -78,7 +78,6 @@ library InnerOpLib {
             "InnerOp prefix too short"
         );
 
-        //maxLeftChildBytes := (len(spec.InnerSpec.ChildOrder) - 1) * int(spec.InnerSpec.ChildSize)
         uint256 maxLeftChildLen = (spec.inner_spec.child_order.length - 1) *
             uint256(spec.inner_spec.child_size);
         require(
@@ -131,5 +130,36 @@ library Operation {
     function doLength(
         PROOFS_PROTO_GLOBAL_ENUMS.LengthOp lengthOp,
         bytes memory data
-    ) internal pure returns (bytes memory) {}
+    ) internal pure returns (bytes memory) {
+        if (lengthOp == PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.NO_PREFIX) {
+            return data;
+        }
+        if (lengthOp == PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO) {
+            return Bytes.concat(encodeVarintProto(data.length), data);
+        }
+        if (lengthOp == PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.REQUIRE_32_BYTES) {
+            require(data.length == 32, "Expected 32 bytes");
+            return data;
+        }
+        if (lengthOp == PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.REQUIRE_64_BYTES) {
+            require(data.length == 64, "Expected 64 bytes");
+            return data;
+        }
+        revert("Unsupported lengthop");
+    }
+
+    function encodeVarintProto(uint256 len)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        // avoid multiple allocs for normal case
+        bytes memory res = new bytes(8);
+        while (len >= 1 << 7) {
+            uint256 i = (len & 0x7f) | 0x80;
+            res = Bytes.concat(res, Bytes.toBytes(i));
+            len >>= 7;
+        }
+        return Bytes.concat(res, Bytes.toBytes(len));
+    }
 }

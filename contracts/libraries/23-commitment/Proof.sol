@@ -58,6 +58,8 @@ library ExistProof {
     {
         // leaf step takes the key and value as input
         bytes memory res = LeafOpLib.applyValue(p.leaf, p.key, p.value);
+
+        // the rest just take the output of the last step (reducing it)
         for (uint256 i = 0; i < p.path.length; i++) {
             res = InnerOpLib.applyValue(p.path[i], res);
         }

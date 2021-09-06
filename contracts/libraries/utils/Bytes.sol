@@ -17,6 +17,13 @@ library Bytes {
         }
     }
 
+    function toBytes(uint256 x) internal pure returns (bytes memory ret) {
+        ret = new bytes(32);
+        assembly {
+            mstore(add(ret, 32), x)
+        }
+    }
+
     function fromBytes32(bytes32 data) internal pure returns (bytes memory) {
         bytes memory result = new bytes(32);
         for (uint256 i = 0; i < 32; ++i) {
