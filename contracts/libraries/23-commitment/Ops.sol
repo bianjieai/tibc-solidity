@@ -135,7 +135,7 @@ library Operation {
             return data;
         }
         if (lengthOp == PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO) {
-            return Bytes.concat(encodeVarintProto(data.length), data);
+            return Bytes.concat(encodeVarintProto(uint64(data.length)), data);
         }
         if (lengthOp == PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.REQUIRE_32_BYTES) {
             require(data.length == 32, "Expected 32 bytes");
@@ -148,18 +148,27 @@ library Operation {
         revert("Unsupported lengthop");
     }
 
-    function encodeVarintProto(uint256 len)
-        private
-        pure
-        returns (bytes memory)
-    {
-        // avoid multiple allocs for normal case
-        bytes memory res = new bytes(8);
-        while (len >= 1 << 7) {
-            uint256 i = (len & 0x7f) | 0x80;
-            res = Bytes.concat(res, Bytes.toBytes(i));
-            len >>= 7;
+    function encodeVarintProto(uint64 n) internal pure returns (bytes memory) {
+        // Count the number of groups of 7 bits
+        // We need this pre-processing step since Solidity doesn't allow dynamic memory resizing
+        uint64 tmp = n;
+        uint64 num_bytes = 1;
+        while (tmp > 0x7F) {
+            tmp = tmp >> 7;
+            num_bytes += 1;
         }
-        return Bytes.concat(res, Bytes.toBytes(len));
+
+        bytes memory buf = new bytes(num_bytes);
+
+        tmp = n;
+        for (uint64 i = 0; i < num_bytes; i++) {
+            // Set the first bit in the byte for each group of 7 bits
+            buf[i] = bytes1(0x80 | uint8(tmp & 0x7F));
+            tmp = tmp >> 7;
+        }
+        // Unset the first bit of the last byte
+        buf[num_bytes - 1] &= 0x7F;
+
+        return buf;
     }
 }

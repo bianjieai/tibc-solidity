@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../libraries/07-tendermint/MerkleTree.sol";
 import "../libraries/23-commitment/Merkle.sol";
-import "hardhat/console.sol";
+import "../proto/ProtoBufRuntime.sol";
 
 contract TestMerkleTree {
     function hashFromByteSlices(bytes[] memory data)
@@ -21,10 +21,8 @@ contract TestMerkleTree {
         bytes memory rootBz,
         bytes memory pathBz,
         bytes memory value
-    ) public view {
+    ) public pure {
         MerkleProof.Data memory proof = MerkleProof.decode(proofBz);
-        console.logBytes(proof.proofs[0].exist.value);
-        console.logBytes(value);
         ProofSpec.Data[] memory specs = new ProofSpec.Data[](specsBz.length);
         for (uint256 i = 0; i < specsBz.length; i++) {
             specs[i] = ProofSpec.decode(specsBz[i]);
