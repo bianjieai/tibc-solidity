@@ -51,8 +51,12 @@ library Bytes {
         if (b1.length != b2.length) {
             return false;
         }
-        return
-            keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
+        for (uint256 i = 0; i < b1.length; ++i) {
+            if (b1[i] != b2[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function hasPrefix(bytes memory s, bytes memory prefix)
