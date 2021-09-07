@@ -2,7 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "./ICS23.sol";
+import "./Tics23.sol";
 import "../utils/Bytes.sol";
 import "../../proto/Proofs.sol";
 import "../../proto/Commitment.sol";
