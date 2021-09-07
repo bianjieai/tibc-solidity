@@ -76,7 +76,7 @@ library Merkle {
     }
 
     function getKey(MerklePath.Data memory keys, uint256 i)
-        internal
+        private
         pure
         returns (bytes memory)
     {
@@ -88,7 +88,7 @@ library Merkle {
         MerkleProof.Data memory proof,
         ProofSpec.Data[] memory specs,
         MerkleRoot.Data memory root
-    ) internal pure {
+    ) private pure {
         require(proof.proofs.length > 0, "proof cannot be empty");
         require(root.hash.length > 0, "root cannot be empty");
         require(

@@ -27,7 +27,7 @@ library ics23 {
     function getExistProofForKey(
         CommitmentProof.Data memory proof,
         bytes memory key
-    ) internal pure returns (ExistenceProof.Data memory) {
+    ) private pure returns (ExistenceProof.Data memory) {
         if (proof.exist.key.length > 0) {
             return proof.exist;
         }

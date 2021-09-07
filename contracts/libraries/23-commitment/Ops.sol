@@ -47,7 +47,7 @@ library LeafOpLib {
         PROOFS_PROTO_GLOBAL_ENUMS.HashOp hashOp,
         PROOFS_PROTO_GLOBAL_ENUMS.LengthOp lengthOp,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    ) private pure returns (bytes memory) {
         bytes memory hdata = doHashOrNoop(hashOp, data);
         return Operation.doLength(lengthOp, hdata);
     }
@@ -55,7 +55,7 @@ library LeafOpLib {
     function doHashOrNoop(
         PROOFS_PROTO_GLOBAL_ENUMS.HashOp hashOp,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    ) private pure returns (bytes memory) {
         if (hashOp == PROOFS_PROTO_GLOBAL_ENUMS.HashOp.NO_HASH) {
             return data;
         }
@@ -149,7 +149,7 @@ library Operation {
     }
 
     function encodeVarintProto(uint256 len)
-        internal
+        private
         pure
         returns (bytes memory)
     {

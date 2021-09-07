@@ -32,7 +32,7 @@ library ExistProof {
     function checkAgainstSpec(
         ExistenceProof.Data memory proof,
         ProofSpec.Data memory spec
-    ) internal pure {
+    ) private pure {
         LeafOpLib.checkAgainstSpec(proof.leaf, spec);
         require(
             spec.min_depth == 0 || proof.path.length >= uint256(spec.min_depth),
