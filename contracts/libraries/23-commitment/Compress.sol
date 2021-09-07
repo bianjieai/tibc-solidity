@@ -12,7 +12,7 @@ library Compress {
         pure
         returns (CommitmentProof.Data memory)
     {
-        if (proof.compressed.entries.length != 0) {
+        if (proof.compressed.entries.length == 0) {
             return proof;
         }
         CommitmentProof.Data memory pf;

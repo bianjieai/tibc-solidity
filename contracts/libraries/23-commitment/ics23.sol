@@ -10,6 +10,13 @@ import "../../proto/Commitment.sol";
 library ics23 {
     using ExistProof for ExistenceProof.Data;
 
+    /** @notice verifyMembership verifies the membership pf a merkle proof against the given root, path, and value.
+     * @param spec merkle root calculation rules
+     * @param root the root of the merkle tree
+     * @param proof the merkle proof of the value
+     * @param key the merkle path of the value
+     * @param value the node value of the merkle tree
+     */
     function verifyMembership(
         ProofSpec.Data memory spec,
         bytes memory root,
@@ -18,8 +25,10 @@ library ics23 {
         bytes memory value
     ) internal pure {
         // decompress it before running code (no-op if not compressed)
-        proof = Compress.decompress(proof);
-        ExistenceProof.Data memory ep = getExistProofForKey(proof, key);
+        ExistenceProof.Data memory ep = getExistProofForKey(
+            Compress.decompress(proof),
+            key
+        );
         require(ep.key.length > 0, "key is empty");
         ep.verify(spec, root, key, value);
     }
@@ -38,6 +47,7 @@ library ics23 {
                 }
             }
         }
+        revert("key not found");
     }
 }
 
