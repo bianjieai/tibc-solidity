@@ -7,7 +7,7 @@ import "./Compress.sol";
 import "../../proto/Proofs.sol";
 import "../../proto/Commitment.sol";
 
-library ics23 {
+library ICS23 {
     using ExistProof for ExistenceProof.Data;
 
     /** @notice verifyMembership verifies the membership pf a merkle proof against the given root, path, and value.

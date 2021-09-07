@@ -53,7 +53,7 @@ library Merkle {
             if (proofs[i].exist.key.length > 0) {
                 subroot = CommitmentProofLib.calculate(proofs[i]);
                 bytes memory key = getKey(keys, keys.key_path.length - 1 - i);
-                ics23.verifyMembership(
+                ICS23.verifyMembership(
                     specs[i],
                     subroot,
                     proofs[i],
