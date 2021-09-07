@@ -3,6 +3,7 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "./Proof.sol";
+import "./Compress.sol";
 import "../../proto/Proofs.sol";
 import "../../proto/Commitment.sol";
 
@@ -11,78 +12,16 @@ library ics23 {
 
     function verifyMembership(
         ProofSpec.Data memory spec,
-        MerkleRoot.Data memory root,
+        bytes memory root,
         CommitmentProof.Data memory proof,
         bytes memory key,
         bytes memory value
-    ) internal pure returns (bool) {
+    ) internal pure {
         // decompress it before running code (no-op if not compressed)
-        proof = decompress(proof);
+        proof = Compress.decompress(proof);
         ExistenceProof.Data memory ep = getExistProofForKey(proof, key);
-        if (ep.key.length == 0) {
-            return false;
-        }
-        ep.verify(spec, root.hash, key, value);
-        return true;
-    }
-
-    function decompress(CommitmentProof.Data memory proof)
-        internal
-        pure
-        returns (CommitmentProof.Data memory)
-    {
-        if (proof.compressed.entries.length != 0) {
-            return proof;
-        }
-        CommitmentProof.Data memory pf;
-        pf.batch = decompressBatch(proof.compressed);
-        return pf;
-    }
-
-    function decompressBatch(CompressedBatchProof.Data memory comp)
-        internal
-        pure
-        returns (BatchProof.Data memory)
-    {
-        InnerOp.Data[] memory lookup = comp.lookup_inners;
-        BatchEntry.Data[] memory entries = new BatchEntry.Data[](
-            comp.entries.length
-        );
-        for (uint256 i = 0; i < comp.entries.length; i++) {
-            entries[i] = decompressEntry(comp.entries[i], lookup);
-        }
-    }
-
-    function decompressEntry(
-        CompressedBatchEntry.Data memory entry,
-        InnerOp.Data[] memory lookup
-    ) internal pure returns (BatchEntry.Data memory batchEntry) {
-        if (entry.exist.key.length > 0) {
-            batchEntry.exist = decompressExist(entry.exist, lookup);
-            return batchEntry;
-        }
-        batchEntry.nonexist = NonExistenceProof.Data(
-            entry.nonexist.key,
-            decompressExist(entry.nonexist.left, lookup),
-            decompressExist(entry.nonexist.right, lookup)
-        );
-        return batchEntry;
-    }
-
-    function decompressExist(
-        CompressedExistenceProof.Data memory exist,
-        InnerOp.Data[] memory lookup
-    ) internal pure returns (ExistenceProof.Data memory epf) {
-        if (exist.key.length == 0) {
-            return epf;
-        }
-        epf.key = exist.key;
-        epf.value = exist.value;
-        epf.leaf = exist.leaf;
-        epf.path = new InnerOp.Data[](exist.path.length);
-        for (uint256 i = 0; i < exist.path.length; i++) {
-            epf.path[i] = lookup[i];
-        }
+        require(ep.key.length > 0, "key is empty");
+        ep.verify(spec, root, key, value);
     }
 
     function getExistProofForKey(
@@ -98,6 +37,29 @@ library ics23 {
                     return proof.batch.entries[i].exist;
                 }
             }
+        }
+    }
+}
+
+library CommitmentProofLib {
+    function calculate(CommitmentProof.Data memory p)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        if (p.exist.key.length > 0) {
+            return ExistProof.calculate(p.exist);
+        }
+        if (p.batch.entries.length > 0) {
+            if (p.batch.entries[0].exist.key.length > 0) {
+                return ExistProof.calculate(p.batch.entries[0].exist);
+            }
+            if (p.batch.entries[0].nonexist.key.length > 0) {
+                revert("not implement NonExistenceProof");
+            }
+        }
+        if (p.compressed.lookup_inners.length > 0) {
+            return calculate(Compress.decompress(p));
         }
     }
 }
