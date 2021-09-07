@@ -11,13 +11,57 @@ import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IModule.sol";
 import "../../interfaces/IPacket.sol";
+import "../../interfaces/IRouting.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract Packet is ReentrancyGuard, IPacket {
     IClientManager public clientManager;
+    IRouting public routing;
 
     mapping(bytes => uint64) public sequences;
     mapping(bytes => bytes32) public commitments;
+    mapping(bytes => bool) public receipts;
+
+    /**
+    * @dev Event triggered when the packet is sent
+    * @param packet packet data
+    */
+    event PacketSent(
+        PacketTypes.Packet packet
+    );
+
+    /**
+    * @dev Event triggered when the write ack
+    * @param packet packet data
+    * @param ack ack bytes
+    */
+    event AckWritten(
+        PacketTypes.Packet packet,
+        bytes ack
+    );
+
+    /**
+    * @dev Event triggered when the clean packet sent
+    * @param packet clean packet data
+    */
+    event CleanPacketSent(
+        PacketTypes.CleanPacket packet
+    );
+
+    /**
+    * @dev Constructor
+    * @param _clientManager clientManager address
+    * @param _routing routing address
+    */
+    constructor(address _clientManager, address _routing) public {
+        require(
+            _clientManager != address(0) || _routing != address(0),
+            "clientManager or routing cannot be empty"
+        );
+        clientManager = IClientManager(_clientManager);
+        routing = IRouting(_routing);
+
+    }
 
     /**
      * @dev Make sure that the packet is valid
@@ -36,14 +80,6 @@ contract Packet is ReentrancyGuard, IPacket {
         );
         _;
     }
-
-    /**
-    * @dev Event triggered when the packet is sent
-    * @param packet packet data
-    */
-    event PacketSent(
-        PacketTypes.Packet packet
-    );
 
     /**
      * @dev SendPacket is called by a module in order to send an TIBC packet.
@@ -104,19 +140,24 @@ contract Packet is ReentrancyGuard, IPacket {
             packet.sequence > sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)],
             "sequence illegal!"
         );
-        bytes32 commitment = sha256(packet.data);
-        bool isRelay;
-        string memory targetChainName;
 
-        if (keccak256(abi.encodePacked(packet.destChain)) == keccak256(abi.encodePacked(clientManager.getChainName()))) {
+        require(
+            receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)],
+            "packet has been received"
+        );
+        string memory targetChain;
+
+        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             if (bytes(packet.relayChain).length > 0){
-                targetChainName = packet.relayChain;
+                targetChain = packet.relayChain;
             }else{
-                targetChainName = packet.sourceChain;
+                targetChain = packet.sourceChain;
             }
+        }else{
+            targetChain = packet.sourceChain;
         }
 
-        IClient client = clientManager.getClient(packet.sourceChain);
+        IClient client = clientManager.getClient(targetChain);
         require(
             address(client) != address(0),
             "consensus state not found"
@@ -129,8 +170,60 @@ contract Packet is ReentrancyGuard, IPacket {
             packet.sequence,
             packet.data
         );
-//        IModule module = modules[packet.port];
-//        module.onRecvPacket(packet);
+
+        receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)] = true;
+
+        if (Strings.equals(packet.destChain, clientManager.getChainName())){
+            IModule module = routing.getMoudle(packet.port);
+            bytes memory ack = module.onRecvPacket(packet);
+            PacketTypes.Packet memory packetCopy = PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data);
+            if (ack.length > 0){
+                writeAcknowledgement(packetCopy, ack);
+            }
+        }else{
+            require(
+                routing.authenticate(packet.sourceChain, packet.destChain, packet.port),
+                "no rule in routing table to relay this packet"
+            );
+            client = clientManager.getClient(packet.destChain);
+            require(
+                address(client) != address(0),
+                "consensus state not found"
+            );
+            commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(packet.data);
+            emit PacketSent(
+                packet
+            );
+        }
+    }
+
+    function writeAcknowledgement(
+        PacketTypes.Packet memory packet,
+        bytes memory acknowledgement
+    ) internal nonReentrant {
+        require(
+            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)].length == 0,
+            "acknowledgement for packet already exists"
+        );
+        require(
+            acknowledgement.length != 0,
+            "acknowledgement cannot be empty"
+        );
+        string memory targetChain = packet.sourceChain;
+        if (bytes(packet.relayChain).length > 0) {
+            targetChain = packet.relayChain;
+        }
+        IClient client = clientManager.getClient(targetChain);
+        require(
+            address(client) != address(0),
+            "consensus state not found"
+        );
+
+        commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(acknowledgement);
+        emit AckWritten(
+            packet,
+            acknowledgement
+        );
     }
 
     function acknowledgePacket(
@@ -138,9 +231,30 @@ contract Packet is ReentrancyGuard, IPacket {
         bytes calldata acknowledgement,
         bytes calldata proofAcked,
         Height.Data calldata height
-    ) external nonReentrant {
-        IClient client = clientManager.getClient(packet.destChain);
-        client.verifyPacketAcknowledgement(
+    ) external override nonReentrant {
+        require(
+            commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] == sha256(packet.data),
+            "commitment bytes are not equal!"
+        );
+
+        string memory targetChain;
+
+        if (Strings.equals(packet.sourceChain, clientManager.getChainName())) {
+            if (bytes(packet.relayChain).length > 0){
+                targetChain = packet.relayChain;
+            }else{
+                targetChain = packet.destChain;
+            }
+        }else{
+            targetChain = packet.destChain;
+        }
+
+        require(
+            address(clientManager.getClient(targetChain)) != address(0),
+            "consensus state not found"
+        );
+
+        clientManager.getClient(targetChain).verifyPacketAcknowledgement(
             height,
             proofAcked,
             packet.sourceChain,
@@ -148,32 +262,119 @@ contract Packet is ReentrancyGuard, IPacket {
             packet.sequence,
             acknowledgement
         );
-//        IModule module = modules[packet.port];
-//        module.onAcknowledgementPacket(packet, acknowledgement);
+
+        delete commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)];
+
+        if (Strings.equals(packet.destChain, clientManager.getChainName())){
+            IModule module = routing.getMoudle(packet.port);
+            module.onAcknowledgementPacket(packet, acknowledgement);
+        }else{
+            require(
+                routing.authenticate(packet.sourceChain, packet.destChain, packet.port),
+                "no rule in routing table to relay this packet"
+            );
+
+            require(
+                address(clientManager.getClient(packet.sourceChain)) != address(0),
+                "consensus state not found"
+            );
+            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(acknowledgement);
+            emit AckWritten(
+                packet,
+                acknowledgement
+            );
+        }
     }
 
     function cleanPacket(
-        uint64 sequence,
-        string calldata sourceChain,
-        string calldata destChain,
-        string calldata relayChain
-    ) external nonReentrant {}
+        PacketTypes.CleanPacket calldata packet
+    ) external override nonReentrant {
+        require(
+            packet.sequence > 0,
+            "sequence must be greater than 0"
+        );
+
+        uint64 currentCleanSeq = sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)];
+        require(
+            packet.sequence > currentCleanSeq,
+            "sequence illegal!"
+        );
+
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
+            require(
+                commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, i)].length == 0,
+                "still have packet not been ack!"
+            );
+        }
+
+        sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)] = packet.sequence;
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
+            delete commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, i)];
+            delete receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, i)];
+        }
+        emit CleanPacketSent(
+            packet
+        );
+    }
 
     function recvCleanPacket(
-        uint64 sequence,
-        string calldata sourceChain,
-        string calldata destChain,
-        string calldata relayChain,
+        PacketTypes.CleanPacket calldata packet,
         bytes calldata proof,
-        ClientTypes.Height calldata height
-    ) external nonReentrant {}
+        Height.Data calldata height
+    ) external override nonReentrant {
+        uint64 currentCleanSeq = sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)];
+        require(
+            packet.sequence > currentCleanSeq,
+            "sequence illegal!"
+        );
 
-    function writeAcknowledgement(
-        uint64 sequence,
-        string memory port,
-        string memory sourceChain,
-        string memory destChain,
-        string memory relayChain,
-        bytes memory data
-    ) internal nonReentrant {}
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
+            require(
+                commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, i)].length == 0,
+                "still have packet not been ack!"
+            );
+        }
+
+        string memory targetChain;
+
+        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
+            if (bytes(packet.relayChain).length > 0){
+                targetChain = packet.relayChain;
+            }else{
+                targetChain = packet.sourceChain;
+            }
+        }else{
+            targetChain = packet.sourceChain;
+        }
+
+        IClient client = clientManager.getClient(targetChain);
+        require(
+            address(client) != address(0),
+            "consensus state not found"
+        );
+        client.verifyPacketCleanCommitment(
+            height,
+            proof,
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
+        );
+
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
+            delete commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, i)];
+            delete receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, i)];
+        }
+
+        if (!Strings.equals(packet.destChain, clientManager.getChainName())){
+            client = clientManager.getClient(packet.destChain);
+            require(
+                address(client) != address(0),
+                "consensus state not found"
+            );
+            sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)] = packet.sequence;
+            emit CleanPacketSent(
+                packet
+            );
+        }
+    }
 }
