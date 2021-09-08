@@ -10,12 +10,11 @@ library Compress {
     function decompress(CommitmentProof.Data memory proof)
         internal
         pure
-        returns (CommitmentProof.Data memory)
+        returns (CommitmentProof.Data memory pf)
     {
         if (proof.compressed.entries.length == 0) {
             return proof;
         }
-        CommitmentProof.Data memory pf;
         pf.batch = decompressBatch(proof.compressed);
         return pf;
     }
@@ -25,12 +24,11 @@ library Compress {
         pure
         returns (BatchProof.Data memory)
     {
-        InnerOp.Data[] memory lookup = comp.lookup_inners;
         BatchEntry.Data[] memory entries = new BatchEntry.Data[](
             comp.entries.length
         );
         for (uint256 i = 0; i < comp.entries.length; i++) {
-            entries[i] = decompressEntry(comp.entries[i], lookup);
+            entries[i] = decompressEntry(comp.entries[i], comp.lookup_inners);
         }
     }
 

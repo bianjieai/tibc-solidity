@@ -33,13 +33,13 @@ library LeafOpLib {
     ) internal pure returns (bytes memory) {
         require(key.length > 0, "Leaf op needs key");
         require(value.length > 0, "Leaf op needs value");
-        bytes memory pkey = prepareLeafData(op.prehash_key, op.length, key);
-        bytes memory pvalue = prepareLeafData(
-            op.prehash_value,
-            op.length,
-            value
+        bytes memory data = Bytes.concat(
+            Bytes.concat(
+                op.prefix,
+                prepareLeafData(op.prehash_key, op.length, key)
+            ),
+            prepareLeafData(op.prehash_value, op.length, value)
         );
-        bytes memory data = Bytes.concat(Bytes.concat(op.prefix, pkey), pvalue);
         return Operation.doHash(op.hash, data);
     }
 
@@ -48,8 +48,7 @@ library LeafOpLib {
         PROOFS_PROTO_GLOBAL_ENUMS.LengthOp lengthOp,
         bytes memory data
     ) private pure returns (bytes memory) {
-        bytes memory hdata = doHashOrNoop(hashOp, data);
-        return Operation.doLength(lengthOp, hdata);
+        return Operation.doLength(lengthOp, doHashOrNoop(hashOp, data));
     }
 
     function doHashOrNoop(

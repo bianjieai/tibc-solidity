@@ -22,13 +22,16 @@ contract TestMerkleTree {
         bytes memory pathBz,
         bytes memory value
     ) public pure {
-        MerkleProof.Data memory proof = MerkleProof.decode(proofBz);
         ProofSpec.Data[] memory specs = new ProofSpec.Data[](specsBz.length);
         for (uint256 i = 0; i < specsBz.length; i++) {
             specs[i] = ProofSpec.decode(specsBz[i]);
         }
-        MerkleRoot.Data memory root = MerkleRoot.decode(rootBz);
-        MerklePath.Data memory path = MerklePath.decode(pathBz);
-        Merkle.verifyMembership(proof, specs, root, path, value);
+        Merkle.verifyMembership(
+            MerkleProof.decode(proofBz),
+            specs,
+            MerkleRoot.decode(rootBz),
+            MerklePath.decode(pathBz),
+            value
+        );
     }
 }

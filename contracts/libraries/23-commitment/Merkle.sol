@@ -52,12 +52,11 @@ library Merkle {
         for (uint256 i = index; i < proofs.length; i++) {
             if (proofs[i].exist.key.length > 0) {
                 subroot = CommitmentProofLib.calculate(proofs[i]);
-                bytes memory key = getKey(keys, keys.key_path.length - 1 - i);
                 ICS23.verifyMembership(
                     specs[i],
                     subroot,
                     proofs[i],
-                    key,
+                    getKey(keys, keys.key_path.length - 1 - i),
                     value
                 );
                 // Set value to subroot so that we verify next proof in chain commits to this subroot
