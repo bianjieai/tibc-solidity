@@ -377,4 +377,15 @@ contract Packet is ReentrancyGuard, IPacket {
             );
         }
     }
+    function getNextSequenceSend(
+        string calldata sourceChain,
+        string calldata destChain
+    )
+    external
+    override
+    nonReentrant
+    returns (uint64)
+    {
+        return sequences[Host.nextSequenceSendKey(sourceChain, destChain)];
+    }
 }

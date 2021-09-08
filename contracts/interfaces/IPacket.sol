@@ -32,4 +32,11 @@ interface IPacket {
         bytes calldata proof,
         Height.Data calldata height
     ) external;
+
+    function getNextSequenceSend(
+        string calldata sourceChain,
+        string calldata destChain
+    )
+    external
+    returns (uint64);
 }
