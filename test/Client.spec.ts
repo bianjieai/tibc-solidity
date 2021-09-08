@@ -12,6 +12,7 @@ describe('Client', () => {
     let clientManager: ClientManager
     let tmClient: Tendermint
     let light: TestLightClient
+    let mk: TestMerkleTree
 
     before('deploy ClientManager', async () => {
         accounts = await ethers.getSigners();
@@ -28,15 +29,32 @@ describe('Client', () => {
 
         const lcFactory = await ethers.getContractFactory('TestLightClient', accounts[0])
         light = (await lcFactory.deploy()) as TestLightClient
+
+        const mkFactory = await ethers.getContractFactory('TestMerkleTree', accounts[0])
+        mk = (await mkFactory.deploy()) as TestMerkleTree
+
     })
 
-    it("generate merkle root", async function () {
+    it("test merkle tree", async function () {
         const mkFactory = await ethers.getContractFactory('TestMerkleTree', accounts[0])
         const mk = (await mkFactory.deploy()) as TestMerkleTree
+
         //let data: any = []
         let data: any = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
         let root = await mk.hashFromByteSlices(data);
         expect(root).to.eq("0xf326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
+    })
+
+    it("test verifyMembership", async function () {
+        let proofBz = Buffer.from("0a1f0a1d0a054d594b455912074d5956414c55451a0b0801180120012a030002020a3d0a3b0a0c6961766c53746f72654b65791220a758f4decb5c7b9d4a45601b60400c638c9c3eef5380fbc29f0c638613be75c71a090801180120012a0100", "hex")
+        let specsBz: any = [
+            Buffer.from("0a090801180120012a0100120c0a02000110211804200c3001", "hex"),
+            Buffer.from("0a090801180120012a0100120c0a0200011020180120013001", "hex"),
+        ]
+        let rootBz = Buffer.from("0a20edc765d6a5287a238227cf19f101b201922cbaec0f915b2c7bc767aa6368c3b5", "hex")
+        let pathBz = Buffer.from("0a0c6961766c53746f72654b65790a054d594b4559", "hex")
+        let value = Buffer.from("4d5956414c5545", "hex")
+        await mk.verifyMembership(proofBz, specsBz, rootBz, pathBz, value);
     })
 
     it("test genValidatorSetHash", async function () {
