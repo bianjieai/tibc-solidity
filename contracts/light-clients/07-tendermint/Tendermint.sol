@@ -16,22 +16,15 @@ import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract Tendermint is IClient, Ownable, ReentrancyGuard {
-    string public constant clientType = "tendermint";
     // current light client status
-    ClientState.Data public clientState;
-
+    bytes public clientState;
     // consensus status of light clients
-    mapping(uint256 => ConsensusState.Data) public consensusStates;
-
+    mapping(uint256 => bytes) public consensusStates;
     //System time each time the client status is updated
     mapping(uint256 => uint256) public processedTime;
 
-    // ClientManager contract of light clients
-    IClientManager public clientManager;
-
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
-        clientManager = IClientManager(clientManagerAddr);
     }
 
     /*  @notice   returns the latest height of the current light client
@@ -43,7 +36,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         override
         returns (Height.Data memory)
     {
-        return clientState.latest_height;
+        return ClientState.decode(clientState).latest_height;
     }
 
     /*  @notice   return the status of the current light client
@@ -61,12 +54,9 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         bytes calldata clientStateBz,
         bytes calldata consensusStateBz
     ) external override onlyOwner {
-        ClientState.decode(clientState, clientStateBz);
-        ConsensusState.Data memory consData = ConsensusState.decode(
-            consensusStateBz
-        );
-        consensusStates[clientState.latest_height.revision_height] = consData;
-        processedTime[clientState.latest_height.revision_height] = now;
+        ClientState.Data memory cs = ClientState.decode(clientStateBz);
+        consensusStates[cs.latest_height.revision_height] = consensusStateBz;
+        processedTime[cs.latest_height.revision_height] = now;
     }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
@@ -78,12 +68,9 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         bytes calldata clientStateBz,
         bytes calldata consensusStateBz
     ) external override onlyOwner {
-        ClientState.decode(clientState, clientStateBz);
-        ConsensusState.Data memory consData = ConsensusState.decode(
-            consensusStateBz
-        );
-        consensusStates[clientState.latest_height.revision_height] = consData;
-        processedTime[clientState.latest_height.revision_height] = now;
+        ClientState.Data memory cs = ClientState.decode(clientStateBz);
+        consensusStates[cs.latest_height.revision_height] = consensusStateBz;
+        processedTime[cs.latest_height.revision_height] = now;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
@@ -96,35 +83,75 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         onlyOwner
     {
         Header.Data memory header = Header.decode(headerBz);
+        ConsensusState.Data memory tmConsState = ConsensusState.decode(
+            consensusStates[header.trusted_height.revision_height]
+        );
 
-        ConsensusState.Data memory tmConsState = consensusStates[
-            header.trusted_height.revision_height
-        ];
-        // TODO check heaer
-        checkValidity(header, clientState, tmConsState);
+        ClientState.Data memory state = ClientState.decode(clientState);
+        // check heaer
+        require(
+            Bytes.equal(
+                LightClient.genValidatorSetHash(header.trusted_validators),
+                tmConsState.next_validators_hash
+            ),
+            "invalid validator set"
+        );
+        require(
+            uint64(header.signed_header.header.height) >
+                header.trusted_height.revision_height,
+            "invalid block height"
+        );
+
+        // SignedHeader.Data memory trustedHeader;
+        // trustedHeader.header.chain_id = state.chain_id;
+        // trustedHeader.header.height = int64(
+        //     state.latest_height.revision_height
+        // );
+        // trustedHeader.header.time = tmConsState.timestamp;
+        // trustedHeader.header.next_validators_hash = tmConsState
+        //     .next_validators_hash;
+
+        // Timestamp.Data memory currentTimestamp;
+        // currentTimestamp.secs = int64(block.timestamp);
+
+        // Verify next header with the passed-in trustedVals
+        // - asserts trusting period not passed
+        // - assert header timestamp is not past the trusting period
+        // - assert header timestamp is past latest stored consensus state timestamp
+        // - assert that a TrustLevel proportion of TrustedValidators signed new Commit
+        // TODO
+        // LightClient.verify(
+        //     trustedHeader,
+        //     header.trusted_validators,
+        //     header.signed_header,
+        //     header.validator_set,
+        //     clientSate.trusting_period,
+        //     currentTimestamp,
+        //     clientSate.max_clock_drift,
+        //     clientSate.trust_level
+        // );
 
         // update the client state of the light client
         if (
             uint64(header.signed_header.header.height) >
-            clientState.latest_height.revision_height
+            state.latest_height.revision_height
         ) {
-            clientState.latest_height.revision_height = uint64(
+            state.latest_height.revision_height = uint64(
                 header.signed_header.header.height
             );
+            clientState = ClientState.encode(state);
         }
-
         // save the consensus state of the light client
-        ConsensusState.Data storage newConsState;
+        ConsensusState.Data memory newConsState;
         newConsState.timestamp = header.signed_header.header.time;
         newConsState.root = header.signed_header.header.app_hash;
         newConsState.next_validators_hash = header
             .signed_header
             .header
             .next_validators_hash;
-        consensusStates[
-            clientState.latest_height.revision_height
-        ] = newConsState;
-        processedTime[clientState.latest_height.revision_height] = now;
+        consensusStates[state.latest_height.revision_height] = ConsensusState
+            .encode(newConsState);
+        processedTime[state.latest_height.revision_height] = now;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
@@ -144,21 +171,20 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         uint64 sequence,
         bytes calldata commitmentBytes
     ) external override {
+        ClientState.Data memory state = ClientState.decode(clientState);
         require(
-            processedTime[height.revision_height] + clientState.time_delay <=
-                now,
+            processedTime[height.revision_height] + state.time_delay <= now,
             "processedTime + time_delay should be greater than current time"
         );
-
-        ConsensusState.Data storage cs = consensusStates[
-            height.revision_height
-        ];
+        ConsensusState.Data memory cs = ConsensusState.decode(
+            consensusStates[height.revision_height]
+        );
         string[] memory path = new string[](2);
-        path[0] = string(clientState.merkle_prefix.key_prefix);
+        path[0] = string(state.merkle_prefix.key_prefix);
         path[1] = Host.packetCommitmentPath(sourceChain, destChain, sequence);
         Merkle.verifyMembership(
             MerkleProof.decode(proof),
-            clientState.proof_specs,
+            state.proof_specs,
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
             commitmentBytes
@@ -182,18 +208,16 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external override {
+        ClientState.Data memory state = ClientState.decode(clientState);
         require(
-            processedTime[height.revision_height] + clientState.time_delay <=
-                now,
+            processedTime[height.revision_height] + state.time_delay <= now,
             "processedTime + time_delay should be greater than current time"
         );
-
-        ConsensusState.Data storage cs = consensusStates[
-            height.revision_height
-        ];
-
+        ConsensusState.Data memory cs = ConsensusState.decode(
+            consensusStates[height.revision_height]
+        );
         string[] memory path = new string[](2);
-        path[0] = string(clientState.merkle_prefix.key_prefix);
+        path[0] = string(state.merkle_prefix.key_prefix);
         path[1] = Host.packetAcknowledgementPath(
             sourceChain,
             destChain,
@@ -201,7 +225,7 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         );
         Merkle.verifyMembership(
             MerkleProof.decode(proof),
-            clientState.proof_specs,
+            state.proof_specs,
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
             acknowledgement
@@ -223,78 +247,23 @@ contract Tendermint is IClient, Ownable, ReentrancyGuard {
         string calldata destChain,
         uint64 sequence
     ) external override {
+        ClientState.Data memory state = ClientState.decode(clientState);
         require(
-            processedTime[height.revision_height] + clientState.time_delay <=
-                now,
+            processedTime[height.revision_height] + state.time_delay <= now,
             "processedTime + time_delay should be greater than current time"
         );
-
-        ConsensusState.Data storage cs = consensusStates[
-            height.revision_height
-        ];
-
+        ConsensusState.Data memory cs = ConsensusState.decode(
+            consensusStates[height.revision_height]
+        );
         string[] memory path = new string[](2);
-        path[0] = string(clientState.merkle_prefix.key_prefix);
+        path[0] = string(state.merkle_prefix.key_prefix);
         path[1] = Host.cleanPacketCommitmentPath(sourceChain, destChain);
         Merkle.verifyMembership(
             MerkleProof.decode(proof),
-            clientState.proof_specs,
+            state.proof_specs,
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
             Bytes.uint64ToBigEndian(sequence)
         );
-    }
-
-    /*  @notice                   this function checks if the Tendermint header is valid.
-     *  @param header             header to be verified
-     *  @param clientSate         the trusted clientSate specified by the user in the contract,
-     *  @param consensusState     the trusted consensusState specified by the user in the contract,
-     */
-    function checkValidity(
-        Header.Data memory header,
-        ClientState.Data memory clientSate,
-        ConsensusState.Data memory consensusState
-    ) internal view {
-        require(
-            Bytes.equal(
-                LightClient.genValidatorSetHash(header.trusted_validators),
-                consensusState.next_validators_hash
-            ),
-            "invalid validator set"
-        );
-        require(
-            uint64(header.signed_header.header.height) >
-                header.trusted_height.revision_height,
-            "invalid block height"
-        );
-
-        SignedHeader.Data memory trustedHeader;
-        trustedHeader.header.chain_id = clientSate.chain_id;
-        trustedHeader.header.height = int64(
-            clientSate.latest_height.revision_height
-        );
-        trustedHeader.header.time = consensusState.timestamp;
-        trustedHeader.header.next_validators_hash = consensusState
-            .next_validators_hash;
-
-        Timestamp.Data memory currentTimestamp;
-        currentTimestamp.secs = int64(block.timestamp);
-
-        // Verify next header with the passed-in trustedVals
-        // - asserts trusting period not passed
-        // - assert header timestamp is not past the trusting period
-        // - assert header timestamp is past latest stored consensus state timestamp
-        // - assert that a TrustLevel proportion of TrustedValidators signed new Commit
-        // TODO
-        // LightClient.verify(
-        //     trustedHeader,
-        //     header.trusted_validators,
-        //     header.signed_header,
-        //     header.validator_set,
-        //     clientSate.trusting_period,
-        //     currentTimestamp,
-        //     clientSate.max_clock_drift,
-        //     clientSate.trust_level
-        // );
     }
 }

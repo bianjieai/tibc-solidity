@@ -31,7 +31,7 @@ library Strings {
         }
     }
 
-    function uint642str(uint64 _i) public pure returns (string memory) {
+    function uint642str(uint64 _i) internal pure returns (string memory) {
         if (_i == 0) {
             return "0";
         }
@@ -60,7 +60,7 @@ library Strings {
         uint256 selfptr,
         uint256 needlelen,
         uint256 needleptr
-    ) private pure returns (uint256) {
+    ) internal pure returns (uint256) {
         uint256 ptr = selfptr;
         uint256 idx;
 
@@ -113,7 +113,7 @@ library Strings {
      * @param _second Second string
      */
     function strConcat(string memory _first, string memory _second)
-        public
+        internal
         pure
         returns (string memory)
     {
