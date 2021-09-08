@@ -100,9 +100,8 @@ contract Routing is Ownable, IRouting {
     }
 
     function setRoutingRules(string[] calldata _rules) external onlyOwner {
-        uint32 i;
         string[] memory mRules;
-        for (i = 0; i < _rules.length; i++) {
+        for (uint256 i = 0; i < _rules.length; i++) {
             mRules[i] = _rules[i];
         }
         rules = mRules;
@@ -122,8 +121,7 @@ contract Routing is Ownable, IRouting {
     }
 
     function _setRuleMap(string[] memory _rules) private {
-        uint256 i;
-        for (i = 0; i < _rules.length; i++) {
+        for (uint256 i = 0; i < _rules.length; i++) {
             ruleMap[_rules[i]].val = _rules[i];
             ruleMap[_rules[i]].isValue = true;
         }
