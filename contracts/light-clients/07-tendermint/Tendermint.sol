@@ -3,9 +3,7 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClient.sol";
-import "../../interfaces/IClientManager.sol";
 import "../../libraries/utils/Bytes.sol";
-import "../../libraries/02-client/Client.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
 import "../../libraries/23-commitment/Merkle.sol";
 import "../../libraries/24-host/Host.sol";
@@ -13,9 +11,8 @@ import "../../proto/Tendermint.sol";
 import "../../proto/Commitment.sol";
 import "../../proto/Proofs.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
-contract Tendermint is IClient, Ownable, ReentrancyGuard {
+contract Tendermint is IClient, Ownable {
     // current light client status
     bytes public clientState;
     // consensus status of light clients
