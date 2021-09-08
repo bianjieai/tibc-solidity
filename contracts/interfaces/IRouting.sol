@@ -12,7 +12,7 @@ interface IRouting {
     ) external view returns (bool);
 
     function getMoudle(string calldata _moduleName)
-    external
-    view
-    returns (IModule);
+        external
+        view
+        returns (IModule);
 }
