@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 import "../../libraries/23-commitment/Merkle.sol";
 import "../../libraries/24-host/Host.sol";
 import "../../proto/Tendermint.sol";
-import "../../proto/Commitment.sol";
 import "../../proto/Proofs.sol";
+import "./Codec.sol";
 
 library Verifier {
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
@@ -19,15 +19,15 @@ library Verifier {
      *  @param commitmentBytes  the hash of the cross-chain data packet
      */
     function verifyCommitment(
-        ClientState.Data memory state,
-        ConsensusState.Data memory cs,
+        ClientState.Data storage state,
+        ConsensusState.Data storage cs,
         uint256 lastProcessedTime,
         bytes memory proof,
         string memory sourceChain,
         string memory destChain,
         uint64 sequence,
         bytes memory commitmentBytes
-    ) internal view {
+    ) public view {
         require(
             lastProcessedTime + state.time_delay <= now,
             "processedTime + time_delay should be greater than current time"
@@ -36,7 +36,7 @@ library Verifier {
         path[0] = string(state.merkle_prefix.key_prefix);
         path[1] = Host.packetCommitmentPath(sourceChain, destChain, sequence);
         Merkle.verifyMembership(
-            MerkleProof.decode(proof),
+            ProofCodec.decode(proof),
             state.proof_specs,
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
@@ -54,15 +54,15 @@ library Verifier {
      *  @param acknowledgement  the hash of the acknowledgement of the cross-chain data packet
      */
     function verifyAcknowledgement(
-        ClientState.Data memory state,
-        ConsensusState.Data memory cs,
+        ClientState.Data storage state,
+        ConsensusState.Data storage cs,
         uint256 lastProcessedTime,
         bytes memory proof,
         string memory sourceChain,
         string memory destChain,
         uint64 sequence,
         bytes memory acknowledgement
-    ) internal view {
+    ) public view {
         require(
             lastProcessedTime + state.time_delay <= now,
             "processedTime + time_delay should be greater than current time"
@@ -75,7 +75,7 @@ library Verifier {
             sequence
         );
         Merkle.verifyMembership(
-            MerkleProof.decode(proof),
+            ProofCodec.decode(proof),
             state.proof_specs,
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
@@ -92,14 +92,14 @@ library Verifier {
      *  @param sequence         the sequence of cross-chain data packets
      */
     function verifyCleanCommitment(
-        ClientState.Data memory state,
-        ConsensusState.Data memory cs,
+        ClientState.Data storage state,
+        ConsensusState.Data storage cs,
         uint256 lastProcessedTime,
         bytes memory proof,
         string memory sourceChain,
         string memory destChain,
         uint64 sequence
-    ) internal view {
+    ) public view {
         require(
             lastProcessedTime + state.time_delay <= now,
             "processedTime + time_delay should be greater than current time"
@@ -108,7 +108,7 @@ library Verifier {
         path[0] = string(state.merkle_prefix.key_prefix);
         path[1] = Host.cleanPacketCommitmentPath(sourceChain, destChain);
         Merkle.verifyMembership(
-            MerkleProof.decode(proof),
+            ProofCodec.decode(proof),
             state.proof_specs,
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),

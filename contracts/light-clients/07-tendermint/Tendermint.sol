@@ -7,10 +7,17 @@ import "../../libraries/utils/Bytes.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
 import "../../proto/Tendermint.sol";
 import "./Verifier.sol";
-import "./State.sol";
+import "../../proto/Commitment.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
-contract Tendermint is IClient, Ownable, State {
+contract Tendermint is IClient, Ownable {
+    // current light client status
+    ClientState.Data public clientState;
+    // consensus status of light clients
+    mapping(uint256 => ConsensusState.Data) public consensusStates;
+    //System time each time the client status is updated
+    mapping(uint256 => uint256) private processedTime;
+
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
     }
@@ -24,7 +31,7 @@ contract Tendermint is IClient, Ownable, State {
         override
         returns (Height.Data memory)
     {
-        return getClientState().latest_height;
+        return clientState.latest_height;
     }
 
     /*  @notice   return the status of the current light client
@@ -42,10 +49,11 @@ contract Tendermint is IClient, Ownable, State {
         bytes calldata clientStateBz,
         bytes calldata consensusStateBz
     ) external override onlyOwner {
-        ClientState.Data memory cs = ClientState.decode(clientStateBz);
-        setClientState(clientStateBz);
-        setConsensusState(cs.latest_height.revision_height, consensusStateBz);
-        setProcessedTime(cs.latest_height.revision_height);
+        ClientStateCodec.decode(clientState, clientStateBz);
+        consensusStates[
+            clientState.latest_height.revision_height
+        ] = ConsensusStateCodec.decode(consensusStateBz);
+        processedTime[clientState.latest_height.revision_height] = now;
     }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
@@ -57,10 +65,11 @@ contract Tendermint is IClient, Ownable, State {
         bytes calldata clientStateBz,
         bytes calldata consensusStateBz
     ) external override onlyOwner {
-        ClientState.Data memory cs = ClientState.decode(clientStateBz);
-        setClientState(clientStateBz);
-        setConsensusState(cs.latest_height.revision_height, consensusStateBz);
-        setProcessedTime(cs.latest_height.revision_height);
+        ClientStateCodec.decode(clientState, clientStateBz);
+        consensusStates[
+            clientState.latest_height.revision_height
+        ] = ConsensusStateCodec.decode(consensusStateBz);
+        processedTime[clientState.latest_height.revision_height] = now;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
@@ -72,12 +81,11 @@ contract Tendermint is IClient, Ownable, State {
         override
         onlyOwner
     {
-        Header.Data memory header = Header.decode(headerBz);
-        ConsensusState.Data memory tmConsState = getConsensusState(
+        Header.Data memory header = HeaderCodec.decode(headerBz);
+        ConsensusState.Data memory tmConsState = consensusStates[
             header.trusted_height.revision_height
-        );
+        ];
 
-        ClientState.Data memory state = getClientState();
         // check heaer
         require(
             Bytes.equal(
@@ -124,12 +132,11 @@ contract Tendermint is IClient, Ownable, State {
         // update the client state of the light client
         if (
             uint64(header.signed_header.header.height) >
-            state.latest_height.revision_height
+            clientState.latest_height.revision_height
         ) {
-            state.latest_height.revision_height = uint64(
+            clientState.latest_height.revision_height = uint64(
                 header.signed_header.header.height
             );
-            setClientState(state);
         }
         // save the consensus state of the light client
         ConsensusState.Data memory newConsState;
@@ -139,8 +146,10 @@ contract Tendermint is IClient, Ownable, State {
             .signed_header
             .header
             .next_validators_hash;
-        setConsensusState(state.latest_height.revision_height, newConsState);
-        setProcessedTime(state.latest_height.revision_height);
+        consensusStates[
+            clientState.latest_height.revision_height
+        ] = newConsState;
+        processedTime[clientState.latest_height.revision_height] = now;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
@@ -161,9 +170,9 @@ contract Tendermint is IClient, Ownable, State {
         bytes calldata commitmentBytes
     ) external override {
         Verifier.verifyCommitment(
-            getClientState(),
-            getConsensusState(height.revision_height),
-            getProcessedTime(height.revision_height),
+            clientState,
+            consensusStates[height.revision_height],
+            processedTime[height.revision_height],
             proof,
             sourceChain,
             destChain,
@@ -190,9 +199,9 @@ contract Tendermint is IClient, Ownable, State {
         bytes calldata acknowledgement
     ) external override {
         Verifier.verifyAcknowledgement(
-            getClientState(),
-            getConsensusState(height.revision_height),
-            getProcessedTime(height.revision_height),
+            clientState,
+            consensusStates[height.revision_height],
+            processedTime[height.revision_height],
             proof,
             sourceChain,
             destChain,
@@ -217,9 +226,9 @@ contract Tendermint is IClient, Ownable, State {
         uint64 sequence
     ) external override {
         Verifier.verifyCleanCommitment(
-            getClientState(),
-            getConsensusState(height.revision_height),
-            getProcessedTime(height.revision_height),
+            clientState,
+            consensusStates[height.revision_height],
+            processedTime[height.revision_height],
             proof,
             sourceChain,
             destChain,
