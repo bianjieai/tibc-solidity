@@ -43,9 +43,6 @@ describe('ERC1155Bank', function (){
         addr2 = await accounts[1].getAddress();
         
         await erc1155Bank.transferFrom(addr1, addr2, 33, 1, data);
-       
     })
-
-
 })
 

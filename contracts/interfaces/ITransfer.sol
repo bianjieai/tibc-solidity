@@ -5,7 +5,7 @@ import "./IModule.sol";
 
 interface ITransfer is IModule {
     function sendTransfer(
-        bytes32 tokenId,
+        uint256 tokenId,
         string  calldata receiver,
         string  calldata cls,
         string  calldata destChain,

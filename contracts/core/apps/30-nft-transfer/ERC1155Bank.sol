@@ -4,6 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155.sol";
 
+import "hardhat/console.sol";
+
 contract ERC1155Bank is ERC1155{
 
     constructor() public ERC1155("www.test.com") {
@@ -18,6 +20,12 @@ contract ERC1155Bank is ERC1155{
     }
 
     function transferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public virtual{
-        safeTransferFrom(from, to, id, amount, data);
+        super.safeTransferFrom(from, to, id, amount, data);
     }
+
+    function balanceOfAddr(address account, uint256 id) public view virtual returns (uint256) {
+        super.balanceOf(account, id);
+    }
+
+
 }

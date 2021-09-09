@@ -11,8 +11,10 @@ import "../../../interfaces/ITransfer.sol";
 import "../../04-packet/Packet.sol";
 import "./ERC1155Bank.sol";
 import "hardhat/console.sol";
+import "openzeppelin-solidity/contracts/token/ERC1155/IERC1155Receiver.sol";
+import "openzeppelin-solidity/contracts/introspection/ERC165.sol";
 
-contract Transfer is ITransfer{
+contract Transfer is ITransfer, IERC1155Receiver, ERC165{
     using strings for *;
     using Bytes for *;
 
@@ -35,9 +37,9 @@ contract Transfer is ITransfer{
         keep track of id :   tokenId -> id
         keep track of uri :  tokenId -> uri
     */
-    mapping(bytes32 => string) public classMapping;
-    mapping(bytes32 => string) public idMapping;
-    mapping(bytes32 => string) public uriMapping;
+    mapping(uint256 => string) public classMapping;
+    mapping(uint256 => string) public idMapping;
+    mapping(uint256 => string) public uriMapping;
 
     struct NftMapValue {
         string  class;
@@ -45,8 +47,32 @@ contract Transfer is ITransfer{
         string  uri;
     }
 
+
+function onERC1155Received(
+        address operator,
+        address from,
+        uint256 id,
+        uint256 value,
+        bytes memory data
+    )
+        public override
+        returns(bytes4){
+            return this.onERC1155Received.selector;
+        }
+
+        function onERC1155BatchReceived(
+        address operator,
+        address from,
+        uint256[] memory ids,
+        uint256[] memory values,
+        bytes memory data
+    )
+       public  override
+        returns(bytes4){
+           return this.onERC1155Received.selector;
+        }
     function sendTransfer(
-        bytes32 tokenId,
+        uint256 tokenId,
         string  calldata receiver,
         string  calldata cls,
         string  calldata destChain,
@@ -60,17 +86,18 @@ contract Transfer is ITransfer{
 
         // get the next sequence
         // todo
-        uint64 sequence = 1;
+       // uint64 sequence = 1;
 
 
         if ( _determineAwayFromOrigin(cls, destChain)) {
             // nft is away from origin
-            // lock nft (transfer nft to contract address)
-            _transferFrom(msg.sender, address(bank), Bytes.bytes32ToUint(tokenId), uint256(1), "");
+            // lock nft (transfer nft to nft-transfer contract address)
+            _transferFrom(msg.sender, address(this), tokenId, uint256(1), bytes(""));
         } else{
             // nft is be closed to origin
             // burn nft
-            _burn(msg.sender, Bytes.bytes32ToUint(tokenId), uint256(1));
+            bool success = _burn(msg.sender, tokenId, uint256(1));
+            console.logBool(success);
         }
     
         //NftMapValue memory mapData = _getInfoByTokenId(tokenId);
@@ -131,11 +158,11 @@ contract Transfer is ITransfer{
             }
 
             // generate tokenId
-            bytes32 tokenId = _calTokenId(scNft, data.id);
-            console.logBytes32(tokenId);
+            uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
+        
 
             // mint nft
-            bool success = _mint(data.receiver.parseAddr(), Bytes.bytes32ToUint(tokenId), uint256(1), "");
+            bool success = _mint(data.receiver.parseAddr(), tokenId, uint256(1), "");
 
             if (success){
                 // keep trace of class and id and uri
@@ -170,11 +197,11 @@ contract Transfer is ITransfer{
             }
 
             // generate tokenId
-            bytes32 tokenId = _calTokenId(scNft, data.id);
+            uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
 
             // unlock
             return _newAcknowledgement(
-                _transferFrom(address(bank), data.receiver.parseAddr(), Bytes.bytes32ToUint(tokenId), uint256(1), "")
+                _transferFrom(address(bank), data.receiver.parseAddr(), tokenId, uint256(1), bytes("testData"))
             );
         }
 
@@ -182,6 +209,7 @@ contract Transfer is ITransfer{
 
     function onAcknowledgementPacket(PacketTypes.Packet calldata pac, bytes calldata acknowledgement) external override {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
+            console.log("enter");
             _refundTokens(NftTransfer.decode(pac.data), pac.sourceChain);
         }
     }
@@ -189,34 +217,25 @@ contract Transfer is ITransfer{
     /// Internal functions ///
     function _burn(address account,uint256 id,uint256 amount) internal virtual returns(bool){
         console.log("start to burn ");
-            console.logAddress(account);
-            console.logUint(id);
-            console.logUint(amount);
-        try bank.burn(account, id, amount) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
+        console.logAddress(account);
+        console.logUint(id);
+        console.logUint(amount);
+        bank.burn(account, id, amount);
+        return true;
     }
 
     function _mint(address account,uint256 id,uint256 amount,bytes memory data) internal virtual returns(bool){
-        try bank.mint(account, id, amount, data) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
+        bank.mint(account, id, amount, data);
+        return true;
     }
 
     function _transferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) internal virtual returns(bool){
-        try bank.transferFrom(from, to, id, amount, data) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
+        bank.transferFrom(from, to, id, amount, data);
+        return true;
     }
 
 
-    function _getInfoByTokenId(bytes32 tokenId)internal view returns(NftMapValue memory){
+    function _getInfoByTokenId(uint256 tokenId)internal view returns(NftMapValue memory){
         NftMapValue memory data =  NftMapValue({
                 class : classMapping[tokenId],
                 id    : idMapping[tokenId],
@@ -255,6 +274,8 @@ contract Transfer is ITransfer{
     }
 
     function _refundTokens(NftTransfer.Data memory data, string memory sourceChain) internal virtual {
+        console.log("into _refundTokens");
+        console.log(data.class);
         string[] memory classSplit = _splitStringIntoArray(data.class, "/");
         string memory scNft;
         if (strings.startsWith(strings.toSlice(data.class), strings.toSlice(PREFIX))){
@@ -270,17 +291,16 @@ contract Transfer is ITransfer{
                                .concat("/".toSlice()).toSlice()
                                .concat(data.class.toSlice());
         }
-
+        console.log(scNft);
         // generate tokenId
-        bytes32 tokenId = _calTokenId(scNft, data.id);
-
+        uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
         if (data.awayFromOrigin) {
             // unlock
-            _transferFrom(address(bank), msg.sender, Bytes.bytes32ToUint(tokenId), uint256(1), "");
+            _transferFrom(address(this), data.sender.parseAddr(), tokenId, uint256(1), bytes("testdata"));
         } else{
             // tibc/nft/A/B/nftClass
             // mint nft
-            _mint(msg.sender, Bytes.bytes32ToUint(tokenId), uint256(1), "");
+            _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes("testdata"));
         }
     }
 
@@ -344,28 +364,29 @@ contract Transfer is ITransfer{
         return string(tokenId).stringToBytes32();
     }
 
-    function setClassMapping(bytes32 tokenId, string memory class)internal{
+    function setClassMapping(uint256 tokenId, string memory class)internal{
         classMapping[tokenId] = class;
     }
 
-    function setIdMapping(bytes32 tokenId, string memory id)internal{
+    function setIdMapping(uint256 tokenId, string memory id)internal{
         idMapping[tokenId] = id;
     }
 
-    function setUriMapping(bytes32 tokenId, string memory uri)internal{
+    function setUriMapping(uint256 tokenId, string memory uri)internal{
         uriMapping[tokenId] = uri;
     }
 
 
-    function getClass(bytes32 tokenId)public view returns (string memory){
+    function getClass(uint256 tokenId)public view returns (string memory){
             return classMapping[tokenId];
     }
 
-    function getid(bytes32 tokenId)public view returns (string memory){
+    function getid(uint256 tokenId)public view returns (string memory){
             return idMapping[tokenId];
     }
 
-    function getUri(bytes32 tokenId)public view returns (string memory){
+    function getUri(uint256 tokenId)public view returns (string memory){
             return uriMapping[tokenId];
     }
+
 }
