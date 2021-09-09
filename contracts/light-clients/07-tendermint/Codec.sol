@@ -6,14 +6,6 @@ import "../../proto/Tendermint.sol";
 import "../../proto/Commitment.sol";
 
 library ClientStateCodec {
-    function decode(bytes memory clientStateBz)
-        public
-        pure
-        returns (ClientState.Data memory)
-    {
-        return ClientState.decode(clientStateBz);
-    }
-
     function decode(ClientState.Data storage state, bytes memory clientStateBz)
         public
     {
