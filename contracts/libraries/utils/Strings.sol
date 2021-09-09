@@ -267,4 +267,18 @@ library Strings {
 
         return ret;
     }
+
+    /*
+     * @dev Returns true if the two string contain the same text.
+     * @param first The first slice to compare.
+     * @param second The second slice to compare.
+     * @return True if the string are equal, false otherwise.
+     */
+    function equals(string memory first, string memory second) public pure returns (bool) {
+        if (bytes(first).length != bytes(second).length) {
+            return false;
+        } else {
+            return keccak256(abi.encodePacked(first)) == keccak256(abi.encodePacked(second));
+        }
+    }
 }
