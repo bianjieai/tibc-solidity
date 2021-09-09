@@ -44,7 +44,42 @@ library Bytes {
         if (b1.length != b2.length) {
             return false;
         }
-        return
-            keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
+        for (uint256 i = 0; i < b1.length; ++i) {
+            if (b1[i] != b2[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function hasPrefix(bytes memory s, bytes memory prefix)
+        internal
+        pure
+        returns (bool)
+    {
+        if (s.length < prefix.length) {
+            return false;
+        }
+        for (uint256 i = 0; i < prefix.length; i++) {
+            if (s[i] != prefix[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function concat(bytes memory b1, bytes memory b2)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory ret = new bytes(b1.length + b2.length);
+        for (uint256 i = 0; i < b1.length; i++) {
+            ret[i] = b1[i];
+        }
+        for (uint256 i = 0; i < b2.length; i++) {
+            ret[b1.length + i] = b2[i];
+        }
+        return ret;
     }
 }
