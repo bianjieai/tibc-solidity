@@ -2,7 +2,7 @@ import { Signer } from "ethers";
 import chai from "chai";
 
 
-import {Transfer, ERC1155Bank, Packet} from '../typechain';
+import {Transfer, ERC1155Bank, Packet, ClientManager, Routing} from '../typechain';
 import { randomBytes } from "crypto";
 
 const { expect } = chai;
@@ -16,21 +16,46 @@ describe('Transfer', () => {
     let transfer: Transfer
     let erc1155bank : ERC1155Bank
     let pac : Packet
+    let clientManager : ClientManager
+    let routing : Routing
 
     before('deploy Transfer', async () => {
         accounts = await ethers.getSigners();
-        const erc1155Fac = await ethers.getContractFactory("ERC1155Bank", accounts[0]);
+
+        const stringsFac = await ethers.getContractFactory("Strings");
+        const strs = await stringsFac.deploy();
+        await strs.deployed();
+
+        const hostFac = await ethers.getContractFactory("Host",{signer: accounts[0],
+            libraries: {
+                Strings: strs.address,
+            }
+        });
+
+        const host = await hostFac.deploy();
+        await host.deployed();
+
+        const clientFac = await ethers.getContractFactory("ClientManager");
+        clientManager = (await clientFac.deploy()) as ClientManager;
+
+        const routingFac = await ethers.getContractFactory("Routing");
+        routing = (await routingFac.deploy()) as Routing;
+
+        const pacFac = await ethers.getContractFactory("Packet",{signer: accounts[0],
+            libraries: {
+                Host: host.address,
+                Strings : strs.address
+            }
+        });
+        pac = (await pacFac.deploy(clientManager.address, routing.address)) as Packet;
+
+        const erc1155Fac = await ethers.getContractFactory("ERC1155Bank");
         erc1155bank = (await erc1155Fac.deploy()) as ERC1155Bank;
 
-        const pacFac = await ethers.getContractFactory("Packet", accounts[0]);
-        pac = (await pacFac.deploy()) as Packet;
+    
 
-
-        const tsFac = await ethers.getContractFactory("Transfer", accounts[0]);
-        transfer = (await tsFac.deploy(erc1155bank.address, pac.address)) as Transfer
-        
-        console.log("aaaa:",(await accounts[0].getAddress()).toString());
-       
+        const tsFac = await ethers.getContractFactory("Transfer");
+        transfer = (await tsFac.deploy(erc1155bank.address, pac.address, clientManager.address)) as Transfer;
     });
    
 
@@ -67,19 +92,25 @@ describe('Transfer', () => {
 
     // send nft back to irishub from ethereum 
     it("sendTransfer: send nft back to irishub from ethereum", async function () {
-        let sender = (await accounts[0].getAddress()).toString()
+        let sender = (await accounts[0].getAddress()).toString();
         await erc1155bank.mint(sender, 1, 1, "0x123456");
-        let tokenId = 1;
-        let receiver = (await accounts[1].getAddress()).toString()
-        let cls = "tibc/nft/wenchang/irishub/kitty";
-        let destChain = "irishub";
-        let relayChain = "";
+        let transferdata = {
+            tokenId : 1,
+            receiver : (await accounts[1].getAddress()).toString(),
+            class : "tibc/nft/wenchang/irishub/kitty",
+            destChain : "irishub",
+            relayChain: ""
+        }
 
-        let res = await transfer.sendTransfer(tokenId, receiver, cls, destChain, relayChain);
+        let res = await transfer.sendTransfer(transferdata);
+
+        let balance = await erc1155bank.balanceOf(sender, 1);
+        expect(balance).to.eq(0);
     })
 
+
      
-    // The test can fix the tokenID in the refundToken
+    // The test need fix the tokenID in the refundToken
     it("onAcknowledgementPacket when awayFromOrigin is false", async function () {
        let sender = (await accounts[0].getAddress()).toString();
        let receiver = (await accounts[1].getAddress()).toString();

@@ -2,13 +2,19 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 import "./IModule.sol";
+import "../../contracts/libraries/30-nft-transfer/NftTransfer.sol";
 
 interface ITransfer is IModule {
+    // function sendTransfer(
+    //     uint256 tokenId,
+    //     string  calldata receiver,
+    //     string  calldata cls,
+    //     string  calldata destChain,
+    //     string  calldata relayChain
+    // )external;
+
     function sendTransfer(
-        uint256 tokenId,
-        string  calldata receiver,
-        string  calldata cls,
-        string  calldata destChain,
-        string  calldata relayChain
+        TransferDataTypes.TransferData calldata transferData
     )external;
+    
 }

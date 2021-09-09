@@ -6,15 +6,17 @@ import "../../../proto/NftTransfer.sol";
 import "../uu/Bytes.sol";
 import "../uu/Strings.sol";
 import "../../../libraries/04-packet/Packet.sol";
+import "../../../libraries/30-nft-transfer/NftTransfer.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "../../04-packet/Packet.sol";
+import "../../02-client/ClientManager.sol";
 import "./ERC1155Bank.sol";
 import "hardhat/console.sol";
-import "openzeppelin-solidity/contracts/token/ERC1155/IERC1155Receiver.sol";
-import "openzeppelin-solidity/contracts/introspection/ERC165.sol";
+import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
 
-contract Transfer is ITransfer, IERC1155Receiver, ERC165{
+
+contract Transfer is ITransfer, ERC1155Holder{
     using strings for *;
     using Bytes for *;
 
@@ -25,11 +27,13 @@ contract Transfer is ITransfer, IERC1155Receiver, ERC165{
     // referenced contract
     ERC1155Bank bank;
     Packet packet;
-    
+    ClientManager clientManager;
 
-    constructor(ERC1155Bank bank_, Packet packet_) public{
+
+    constructor(ERC1155Bank bank_, Packet packet_, ClientManager clientManager_) public{
         bank = bank_;
         packet = packet_;
+        clientManager = clientManager_;
     }
 
     /*
@@ -47,74 +51,58 @@ contract Transfer is ITransfer, IERC1155Receiver, ERC165{
         string  uri;
     }
 
-
-function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes memory data
-    )
-        public override
-        returns(bytes4){
-            return this.onERC1155Received.selector;
-        }
-
-        function onERC1155BatchReceived(
-        address operator,
-        address from,
-        uint256[] memory ids,
-        uint256[] memory values,
-        bytes memory data
-    )
-       public  override
-        returns(bytes4){
-           return this.onERC1155Received.selector;
-        }
     function sendTransfer(
-        uint256 tokenId,
-        string  calldata receiver,
-        string  calldata cls,
-        string  calldata destChain,
-        string  calldata relayChain
-    )override virtual external{
+        TransferDataTypes.TransferData calldata transferData
+    )external override virtual {
         // sourceChain cannot be equal to destChain
-        // todo
-        string memory sourceChain = "irishub";
+        string memory sourceChain = clientManager.getChainName();
+        require(!sourceChain.toSlice().equals(transferData.destChain.toSlice()), "sourceChain can't equal to destChain");
 
-        require(strings.equals(strings.toSlice(sourceChain),strings.toSlice(destChain)), "sourceChain can't equal to destChain");
+        bool awayFromOrigin = _determineAwayFromOrigin(transferData.class, transferData.destChain);
 
-        // get the next sequence
-        // todo
-       // uint64 sequence = 1;
-
-
-        if ( _determineAwayFromOrigin(cls, destChain)) {
+        if (awayFromOrigin) {
             // nft is away from origin
             // lock nft (transfer nft to nft-transfer contract address)
-            _transferFrom(msg.sender, address(this), tokenId, uint256(1), bytes(""));
+            require(_transferFrom(msg.sender, address(this), transferData.tokenId, uint256(1), bytes("")));
         } else{
             // nft is be closed to origin
             // burn nft
-            bool success = _burn(msg.sender, tokenId, uint256(1));
-            console.logBool(success);
+            console.log("burnburnburn ");
+            require(_burn(msg.sender, transferData.tokenId, uint256(1)));
         }
     
-        //NftMapValue memory mapData = _getInfoByTokenId(tokenId);
+        NftMapValue memory mapData = _getInfoByTokenId(transferData.tokenId);
+
+        bytes memory data = NftTransfer.encode(
+            NftTransfer.Data({
+            class : mapData.class,
+            id : mapData.id,
+            uri : mapData.uri,
+            sender: Bytes.addressToString(msg.sender),
+            receiver: transferData.receiver,
+            awayFromOrigin :  awayFromOrigin
+            })
+        );
 
         // send packet
-
-        // todo  stack too deep 
-        // packet.sendPacket(sequence, sourceChain, destChain, relayChain, NftTransfer.encode(
-        //     NftTransfer.Data({
-        //     class : mapData.class,
-        //     id : mapData.id,
-        //     uri : mapData.uri,
-        //     sender: Bytes.addressToString(msg.sender),
-        //     receiver: receiver,
-        //     awayFromOrigin :  _determineAwayFromOrigin(cls, destChain)
-        //     })
-        // ));
+        PacketTypes.Packet memory pac = PacketTypes.Packet({
+            sequence : packet.getNextSequenceSend(sourceChain, transferData.destChain),
+            port : "NFT",
+            sourceChain : sourceChain,
+            destChain : transferData.destChain,
+            relayChain : transferData.relayChain,
+            data : data = NftTransfer.encode(
+                    NftTransfer.Data({
+                    class : mapData.class,
+                    id : mapData.id,
+                    uri : mapData.uri,
+                    sender: Bytes.addressToString(msg.sender),
+                    receiver: transferData.receiver,
+                    awayFromOrigin :  awayFromOrigin
+                    })
+                )
+        });
+       // packet.sendPacket(pac);
     }
 
     // Module callbacks
