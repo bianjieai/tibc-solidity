@@ -5,21 +5,12 @@ pragma experimental ABIEncoderV2;
 import "../../interfaces/IClient.sol";
 import "../../libraries/utils/Bytes.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
-import "../../libraries/23-commitment/Merkle.sol";
-import "../../libraries/24-host/Host.sol";
 import "../../proto/Tendermint.sol";
 import "../../proto/Commitment.sol";
-import "../../proto/Proofs.sol";
+import "./Verifier.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
-contract Tendermint is IClient, Ownable {
-    // current light client status
-    bytes public clientState;
-    // consensus status of light clients
-    mapping(uint256 => bytes) public consensusStates;
-    //System time each time the client status is updated
-    mapping(uint256 => uint256) public processedTime;
-
+contract Tendermint is IClient, Ownable, Verifier {
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
     }
@@ -33,7 +24,7 @@ contract Tendermint is IClient, Ownable {
         override
         returns (Height.Data memory)
     {
-        return ClientState.decode(clientState).latest_height;
+        return getClientState().latest_height;
     }
 
     /*  @notice   return the status of the current light client
@@ -52,8 +43,9 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientState.Data memory cs = ClientState.decode(clientStateBz);
-        consensusStates[cs.latest_height.revision_height] = consensusStateBz;
-        processedTime[cs.latest_height.revision_height] = now;
+        setClientState(clientStateBz);
+        setConsensusState(cs.latest_height.revision_height, consensusStateBz);
+        setProcessedTime(cs.latest_height.revision_height);
     }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
@@ -66,8 +58,9 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientState.Data memory cs = ClientState.decode(clientStateBz);
-        consensusStates[cs.latest_height.revision_height] = consensusStateBz;
-        processedTime[cs.latest_height.revision_height] = now;
+        setClientState(clientStateBz);
+        setConsensusState(cs.latest_height.revision_height, consensusStateBz);
+        setProcessedTime(cs.latest_height.revision_height);
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
@@ -80,11 +73,11 @@ contract Tendermint is IClient, Ownable {
         onlyOwner
     {
         Header.Data memory header = Header.decode(headerBz);
-        ConsensusState.Data memory tmConsState = ConsensusState.decode(
-            consensusStates[header.trusted_height.revision_height]
+        ConsensusState.Data memory tmConsState = getConsensusState(
+            header.trusted_height.revision_height
         );
 
-        ClientState.Data memory state = ClientState.decode(clientState);
+        ClientState.Data memory state = getClientState();
         // check heaer
         require(
             Bytes.equal(
@@ -136,7 +129,7 @@ contract Tendermint is IClient, Ownable {
             state.latest_height.revision_height = uint64(
                 header.signed_header.header.height
             );
-            clientState = ClientState.encode(state);
+            setClientState(state);
         }
         // save the consensus state of the light client
         ConsensusState.Data memory newConsState;
@@ -146,9 +139,8 @@ contract Tendermint is IClient, Ownable {
             .signed_header
             .header
             .next_validators_hash;
-        consensusStates[state.latest_height.revision_height] = ConsensusState
-            .encode(newConsState);
-        processedTime[state.latest_height.revision_height] = now;
+        setConsensusState(state.latest_height.revision_height, newConsState);
+        setProcessedTime(state.latest_height.revision_height);
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
@@ -168,22 +160,12 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata commitmentBytes
     ) external override {
-        ClientState.Data memory state = ClientState.decode(clientState);
-        require(
-            processedTime[height.revision_height] + state.time_delay <= now,
-            "processedTime + time_delay should be greater than current time"
-        );
-        ConsensusState.Data memory cs = ConsensusState.decode(
-            consensusStates[height.revision_height]
-        );
-        string[] memory path = new string[](2);
-        path[0] = string(state.merkle_prefix.key_prefix);
-        path[1] = Host.packetCommitmentPath(sourceChain, destChain, sequence);
-        Merkle.verifyMembership(
-            MerkleProof.decode(proof),
-            state.proof_specs,
-            MerkleRoot.Data(cs.root),
-            MerklePath.Data(path),
+        verifyCommitment(
+            height,
+            proof,
+            sourceChain,
+            destChain,
+            sequence,
             commitmentBytes
         );
     }
@@ -205,26 +187,12 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external override {
-        ClientState.Data memory state = ClientState.decode(clientState);
-        require(
-            processedTime[height.revision_height] + state.time_delay <= now,
-            "processedTime + time_delay should be greater than current time"
-        );
-        ConsensusState.Data memory cs = ConsensusState.decode(
-            consensusStates[height.revision_height]
-        );
-        string[] memory path = new string[](2);
-        path[0] = string(state.merkle_prefix.key_prefix);
-        path[1] = Host.packetAcknowledgementPath(
+        verifyAcknowledgement(
+            height,
+            proof,
             sourceChain,
             destChain,
-            sequence
-        );
-        Merkle.verifyMembership(
-            MerkleProof.decode(proof),
-            state.proof_specs,
-            MerkleRoot.Data(cs.root),
-            MerklePath.Data(path),
+            sequence,
             acknowledgement
         );
     }
@@ -244,23 +212,6 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence
     ) external override {
-        ClientState.Data memory state = ClientState.decode(clientState);
-        require(
-            processedTime[height.revision_height] + state.time_delay <= now,
-            "processedTime + time_delay should be greater than current time"
-        );
-        ConsensusState.Data memory cs = ConsensusState.decode(
-            consensusStates[height.revision_height]
-        );
-        string[] memory path = new string[](2);
-        path[0] = string(state.merkle_prefix.key_prefix);
-        path[1] = Host.cleanPacketCommitmentPath(sourceChain, destChain);
-        Merkle.verifyMembership(
-            MerkleProof.decode(proof),
-            state.proof_specs,
-            MerkleRoot.Data(cs.root),
-            MerklePath.Data(path),
-            Bytes.uint64ToBigEndian(sequence)
-        );
+        verifyCleanCommitment(height, proof, sourceChain, destChain, sequence);
     }
 }
