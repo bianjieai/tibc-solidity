@@ -1,6 +1,7 @@
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
 import "hardhat-gas-reporter"
+import "hardhat-abi-exporter"
 
 import { HardhatUserConfig } from 'hardhat/types'
 
@@ -15,6 +16,12 @@ const config: HardhatUserConfig = {
       //blockGasLimit: 80000000,
     },
   },
+  abiExporter: {
+    path: './abi',
+    clear: true,
+    spacing: 2,
+    // pretty: true,
+  }
 }
 
 export default config
