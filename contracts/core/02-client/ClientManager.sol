@@ -100,4 +100,12 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     {
         return clients[chainName];
     }
+
+    function getChainName()
+        external
+        override
+        returns (string memory)
+    {
+        return "";
+    }
 }
