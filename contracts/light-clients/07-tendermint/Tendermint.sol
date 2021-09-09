@@ -6,7 +6,6 @@ import "../../interfaces/IClient.sol";
 import "../../libraries/utils/Bytes.sol";
 import "../../libraries/07-tendermint/LightClient.sol";
 import "../../proto/Tendermint.sol";
-import "../../proto/Commitment.sol";
 import "./Verifier.sol";
 import "./State.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";

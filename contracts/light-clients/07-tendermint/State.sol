@@ -2,9 +2,7 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "../../interfaces/IClient.sol";
 import "../../libraries/utils/Bytes.sol";
-import "../../libraries/07-tendermint/LightClient.sol";
 import "../../proto/Tendermint.sol";
 import "../../proto/Commitment.sol";
 import "./Verifier.sol";
