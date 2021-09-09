@@ -24,8 +24,42 @@ describe('Client', () => {
         })
         clientManager = (await msrFactory.deploy()) as ClientManager
 
-        const tmFactory = await ethers.getContractFactory('Tendermint', accounts[0])
+        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec')
+        const clientStateCodec = await ClientStateCodec.deploy();
+        await clientStateCodec.deployed();
+
+        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec')
+        const consensusStateCodec = await ConsensusStateCodec.deploy();
+        await consensusStateCodec.deployed();
+
+        const HeaderCodec = await ethers.getContractFactory('HeaderCodec')
+        const headerCodec = await HeaderCodec.deploy();
+        await headerCodec.deployed();
+
+        const ProofCodec = await ethers.getContractFactory('ProofCodec')
+        const proofCodec = await ProofCodec.deploy();
+        await proofCodec.deployed();
+
+        const Verifier = await ethers.getContractFactory('Verifier', {
+            signer: accounts[0],
+            libraries: {
+                ProofCodec: proofCodec.address,
+            },
+        })
+        const verifierLib = await Verifier.deploy();
+        await verifierLib.deployed();
+
+        const tmFactory = await ethers.getContractFactory('Tendermint', {
+            signer: accounts[0],
+            libraries: {
+                ClientStateCodec: clientStateCodec.address,
+                ConsensusStateCodec: consensusStateCodec.address,
+                HeaderCodec: proofCodec.address,
+                Verifier: verifierLib.address
+            },
+        })
         tmClient = (await tmFactory.deploy(clientManager.address)) as Tendermint
+
 
         const lcFactory = await ethers.getContractFactory('TestLightClient', accounts[0])
         light = (await lcFactory.deploy()) as TestLightClient

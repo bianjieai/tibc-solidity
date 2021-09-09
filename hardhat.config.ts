@@ -1,14 +1,21 @@
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
 import "hardhat-gas-reporter"
-import "hardhat-abi-exporter"
+import "hardhat-contract-sizer"
 
 import { HardhatUserConfig } from 'hardhat/types'
 
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   solidity: {
-    compilers: [{ version: '0.6.8', settings: {} }],
+    compilers: [{
+      version: '0.6.8', settings: {
+        optimizer: {
+          enabled: true,
+          runs: 1000,
+        },
+      }
+    }],
   },
   networks: {
     hardhat: {
@@ -16,11 +23,15 @@ const config: HardhatUserConfig = {
       //blockGasLimit: 80000000,
     },
   },
-  abiExporter: {
-    path: './abi',
-    clear: true,
-    spacing: 2,
-    // pretty: true,
+  gasReporter: {
+    enabled: true,
+    showMethodSig: true,
+    maxMethodDiff: 10,
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
   }
 }
 
