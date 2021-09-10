@@ -67,7 +67,8 @@ contract Tendermint is IClient, Ownable {
         consensusStates[
             clientState.latest_height.revision_height
         ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = now;
+        processedTime[clientState.latest_height.revision_height] = block
+            .timestamp;
     }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
@@ -83,7 +84,8 @@ contract Tendermint is IClient, Ownable {
         consensusStates[
             clientState.latest_height.revision_height
         ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = now;
+        processedTime[clientState.latest_height.revision_height] = block
+            .timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
@@ -163,7 +165,8 @@ contract Tendermint is IClient, Ownable {
         consensusStates[
             clientState.latest_height.revision_height
         ] = newConsState;
-        processedTime[clientState.latest_height.revision_height] = now;
+        processedTime[clientState.latest_height.revision_height] = block
+            .timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
