@@ -8,7 +8,7 @@ import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
-    // chain_name -> IClient implementation address
+    string private nativeChainName;
     mapping(string => IClient) public clients;
     mapping(string => mapping(address => uint64)) public relayers;
 
@@ -19,6 +19,10 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
             "caller is not a relayer"
         );
         _;
+    }
+
+    constructor(string memory name) public {
+        nativeChainName = name;
     }
 
     /* @notice                  this function is intended to be called by owner to create a light client and initialize light client data.
@@ -59,6 +63,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         nonReentrant
     {
         IClient client = clients[chainName];
+        require(client.status() == IClient.Status.Active, "client not active");
         client.checkHeaderAndUpdateState(header);
     }
 
@@ -101,11 +106,16 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         return clients[chainName];
     }
 
-    function getChainName()
-        external
+    function getChainName() external view override returns (string memory) {
+        return nativeChainName;
+    }
+
+    function getLatestHeight(string memory chainName)
+        public
+        view
         override
-        returns (string memory)
+        returns (Height.Data memory)
     {
-        return "";
+        return (clients[chainName]).getLatestHeight();
     }
 }

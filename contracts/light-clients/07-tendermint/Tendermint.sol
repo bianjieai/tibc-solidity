@@ -11,7 +11,6 @@ import "../../proto/Commitment.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
 contract Tendermint is IClient, Ownable {
-    string constant chainName = "etherum";
     // current light client status
     ClientState.Data public clientState;
     // consensus status of light clients
@@ -21,10 +20,6 @@ contract Tendermint is IClient, Ownable {
 
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
-    }
-
-    function getChainName() public pure returns (string memory) {
-        return chainName;
     }
 
     /*  @notice   returns the latest height of the current light client
@@ -42,8 +37,22 @@ contract Tendermint is IClient, Ownable {
     /*  @notice   return the status of the current light client
      *
      */
-    //TODO
-    function status() external view override returns (int8) {}
+    function status() external view override returns (Status) {
+        ConsensusState.Data storage consState = consensusStates[
+            clientState.latest_height.revision_height
+        ];
+        if (consState.root.length == 0) {
+            return Status.Unknown;
+        }
+
+        if (
+            !(uint256(consState.timestamp.secs + clientState.trusting_period) >
+                block.timestamp)
+        ) {
+            return Status.Expired;
+        }
+        return Status.Active;
+    }
 
     /*  @notice                 this function is called by the ClientManager contract, the purpose is to initialize light client state
 

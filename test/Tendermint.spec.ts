@@ -46,11 +46,12 @@ describe('Client', () => {
         let irishubClient = await clientManager.clients(chainName)
         expect(irishubClient).to.eq(tmClient.address)
 
+        let latestHeight = await clientManager.getLatestHeight(chainName)
+        expect(latestHeight[0].toNumber()).to.eq(clientState.latestHeight.revisionNumber)
+        expect(latestHeight[1].toNumber()).to.eq(clientState.latestHeight.revisionHeight)
+
         let expClientState = (await tmClient.clientState())
         expect(expClientState.chain_id).to.eq(clientState.chainId)
-
-        let originChainName = await tmClient.getChainName();
-        expect(originChainName).to.eq("etherum")
 
         let expConsensusState = (await tmClient.consensusStates(clientState.latestHeight.revisionHeight))
         expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
@@ -74,7 +75,10 @@ describe('Client', () => {
             signer: accounts[0],
             libraries: {},
         })
-        clientManager = (await msrFactory.deploy()) as ClientManager
+        clientManager = (await msrFactory.deploy("etherum")) as ClientManager
+
+        let originChainName = await clientManager.getChainName();
+        expect(originChainName).to.eq("etherum")
 
         const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec')
         const clientStateCodec = await ClientStateCodec.deploy();

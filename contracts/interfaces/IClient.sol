@@ -5,6 +5,12 @@ pragma experimental ABIEncoderV2;
 import "../proto/Types.sol";
 
 interface IClient {
+    enum Status {
+        Active,
+        Expired,
+        Unknown
+    }
+
     function getLatestHeight() external view returns (Height.Data memory);
 
     function initialize(
@@ -15,7 +21,7 @@ interface IClient {
     function upgrade(bytes calldata clientState, bytes calldata consensusState)
         external;
 
-    function status() external view returns (int8);
+    function status() external view returns (Status);
 
     function checkHeaderAndUpdateState(bytes calldata header) external;
 
