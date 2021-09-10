@@ -55,9 +55,6 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
-        if (clientState.proof_specs.length == 0) {
-            setDefaultProofSpecs(clientState.proof_specs);
-        }
         consensusStates[
             clientState.latest_height.revision_height
         ] = ConsensusStateCodec.decode(consensusStateBz);
@@ -74,9 +71,6 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
-        if (clientState.proof_specs.length == 0) {
-            setDefaultProofSpecs(clientState.proof_specs);
-        }
         consensusStates[
             clientState.latest_height.revision_height
         ] = ConsensusStateCodec.decode(consensusStateBz);
@@ -245,50 +239,5 @@ contract Tendermint is IClient, Ownable {
             destChain,
             sequence
         );
-    }
-
-    function setDefaultProofSpecs(ProofSpec.Data[] storage specs) private {
-        ProofSpec.Data memory iavlSpec;
-        ProofSpec.Data memory tmSpec;
-
-        int32[] memory childOrder = new int32[](2);
-        childOrder[0] = 0;
-        childOrder[1] = 1;
-
-        iavlSpec.leaf_spec = LeafOp.Data(
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.NO_HASH,
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
-            PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO,
-            "0x0"
-        );
-
-        iavlSpec.inner_spec = InnerSpec.Data(
-            childOrder,
-            33,
-            4,
-            12,
-            "",
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256
-        );
-        specs.push(iavlSpec);
-
-        tmSpec.leaf_spec = LeafOp.Data(
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.NO_HASH,
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
-            PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO,
-            "0x0"
-        );
-
-        tmSpec.inner_spec = InnerSpec.Data(
-            childOrder,
-            33,
-            1,
-            1,
-            "",
-            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256
-        );
-        specs.push(tmSpec);
     }
 }
