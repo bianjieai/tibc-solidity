@@ -100,7 +100,7 @@ contract Routing is Ownable, IRouting {
     }
 
     function setRoutingRules(string[] calldata _rules) external onlyOwner {
-        string[] memory mRules;
+        string[] memory mRules = new string[](_rules.length);
         for (uint256 i = 0; i < _rules.length; i++) {
             mRules[i] = _rules[i];
         }

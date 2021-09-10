@@ -34,4 +34,18 @@ describe('Routing', () => {
         expect(result).to.equal(false);
     });
 
+    it("Set rules ", async function () {
+        let mRules: string[] = ["bsn-hub,iris-hub,nft", "iris-hub,bsn-hub,*"]
+        routing.setRoutingRules(mRules)
+        let ruleIndex01 = await routing.rules(0)
+        expect(ruleIndex01).to.equal("bsn-hub,iris-hub,nft");
+        let ruleIndex02 = await routing.rules(1)
+        expect(ruleIndex02).to.equal("iris-hub,bsn-hub,*");
+        let source = "iris-hub";
+        let dest = "wenchangchain";
+        let port = "nft";
+        const result = await routing.authenticate(source, dest, port);
+        expect(result).to.equal(false);
+    });
+
 })
