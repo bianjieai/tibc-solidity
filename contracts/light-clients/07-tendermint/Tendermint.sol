@@ -11,6 +11,7 @@ import "../../proto/Commitment.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
 contract Tendermint is IClient, Ownable {
+    string constant chainName = "etherum";
     // current light client status
     ClientState.Data public clientState;
     // consensus status of light clients
@@ -20,6 +21,10 @@ contract Tendermint is IClient, Ownable {
 
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
+    }
+
+    function getChainName() public pure returns (string memory) {
+        return chainName;
     }
 
     /*  @notice   returns the latest height of the current light client

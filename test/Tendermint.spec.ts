@@ -49,6 +49,9 @@ describe('Client', () => {
         let expClientState = (await tmClient.clientState())
         expect(expClientState.chain_id).to.eq(clientState.chainId)
 
+        let originChainName = await tmClient.getChainName();
+        expect(originChainName).to.eq("etherum")
+
         let expConsensusState = (await tmClient.consensusStates(clientState.latestHeight.revisionHeight))
         expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
         expect(expConsensusState.next_validators_hash.slice(2)).to.eq(consensusState.nextValidatorsHash.toString("hex"))
