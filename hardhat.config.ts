@@ -2,6 +2,7 @@ import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer"
+import "hardhat-abi-exporter"
 
 import { HardhatUserConfig } from 'hardhat/types'
 
@@ -32,6 +33,11 @@ const config: HardhatUserConfig = {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
+  },
+  abiExporter: {
+    path: './abi',
+    clear: true,
+    spacing: 2,
   }
 }
 
