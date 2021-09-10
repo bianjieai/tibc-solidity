@@ -22,7 +22,7 @@ library Compress {
     function decompressBatch(CompressedBatchProof.Data memory comp)
         internal
         pure
-        returns (BatchProof.Data memory)
+        returns (BatchProof.Data memory bpf)
     {
         BatchEntry.Data[] memory entries = new BatchEntry.Data[](
             comp.entries.length
@@ -30,6 +30,7 @@ library Compress {
         for (uint256 i = 0; i < comp.entries.length; i++) {
             entries[i] = decompressEntry(comp.entries[i], comp.lookup_inners);
         }
+        bpf.entries = entries;
     }
 
     function decompressEntry(
