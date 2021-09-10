@@ -87,13 +87,13 @@ contract Tendermint is IClient, Ownable {
         ];
 
         // check heaer
-        // require(
-        //     Bytes.equal(
-        //         LightClient.genValidatorSetHash(header.trusted_validators),
-        //         tmConsState.next_validators_hash
-        //     ),
-        //     "invalid validator set"
-        // );
+        require(
+            Bytes.equal(
+                LightClient.genValidatorSetHash(header.trusted_validators),
+                tmConsState.next_validators_hash
+            ),
+            "invalid validator set"
+        );
         require(
             uint64(header.signed_header.header.height) >
                 header.trusted_height.revision_height,
