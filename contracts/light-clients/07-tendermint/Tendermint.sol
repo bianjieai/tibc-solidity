@@ -104,7 +104,7 @@ contract Tendermint is IClient, Ownable {
 
         // check heaer
         require(
-            Bytes.equal(
+            Bytes.equals(
                 LightClient.genValidatorSetHash(header.trusted_validators),
                 tmConsState.next_validators_hash
             ),

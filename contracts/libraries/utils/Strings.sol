@@ -272,6 +272,6 @@ library Strings {
         if (bytes(first).length != bytes(second).length) {
             return false;
         }
-        return Bytes.equal(bytes(first), bytes(second));
+        return Bytes.equals(bytes(first), bytes(second));
     }
 }
