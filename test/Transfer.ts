@@ -11,7 +11,7 @@ const { ethers } = require("hardhat");
 let nft = require("./proto/nftTransfer.js");
 
 describe('Transfer', () => {
-
+    let mRules: string[] = ["bsn-hub,iris-hub,nft", "iris-hub,bsn-hub,*"]
     let accounts: Signer[]
     let transfer: Transfer
     let erc1155bank : ERC1155Bank
@@ -26,11 +26,7 @@ describe('Transfer', () => {
         const strs = await stringsFac.deploy();
         await strs.deployed();
 
-        const hostFac = await ethers.getContractFactory("Host",{signer: accounts[0],
-            libraries: {
-                Strings: strs.address,
-            }
-        });
+        const hostFac = await ethers.getContractFactory("Host");
 
         const host = await hostFac.deploy();
         await host.deployed();
@@ -39,11 +35,10 @@ describe('Transfer', () => {
         clientManager = (await clientFac.deploy()) as ClientManager;
 
         const routingFac = await ethers.getContractFactory("Routing");
-        routing = (await routingFac.deploy()) as Routing;
+        routing = (await routingFac.deploy(mRules)) as Routing;
 
         const pacFac = await ethers.getContractFactory("Packet",{signer: accounts[0],
             libraries: {
-                Host: host.address,
                 Strings : strs.address
             }
         });
