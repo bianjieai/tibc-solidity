@@ -2,6 +2,8 @@ syntax = "proto3";
 
 import "Types.proto";
 import "Validator.proto";
+import "Proofs.proto";
+import "Commitment.proto";
 
 // ClientState from Tendermint tracks the current validator set, latest height,
 // and a possible frozen height.
@@ -17,8 +19,12 @@ message ClientState {
   int64 max_clock_drift = 5;
   // latest height the client was updated to
   Height latest_height = 6;
+  // proof specifications used in verifying counterparty state
+  repeated ProofSpec proof_specs = 7;
+  // commitment merkle prefix of the counterparty chain.
+  MerklePrefix merkle_prefix = 8;
   // period of transaction confirmation delay
-  uint64 time_delay = 7;
+  uint64 time_delay = 9;
 }
 
 // ConsensusState defines the consensus state from Tendermint.

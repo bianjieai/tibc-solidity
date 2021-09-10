@@ -377,6 +377,7 @@ contract Packet is ReentrancyGuard, IPacket {
             );
         }
     }
+
     function getNextSequenceSend(
         string calldata sourceChain,
         string calldata destChain
@@ -386,6 +387,10 @@ contract Packet is ReentrancyGuard, IPacket {
     nonReentrant
     returns (uint64)
     {
-        return sequences[Host.nextSequenceSendKey(sourceChain, destChain)];
+        uint64 seq = sequences[Host.nextSequenceSendKey(sourceChain, destChain)];
+        if (seq == 0){
+            seq = 1;
+        }
+        return seq;
     }
 }

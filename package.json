@@ -30,6 +30,8 @@
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.31",
     "hardhat": "^2.0.10",
+    "hardhat-abi-exporter": "^2.3.0",
+    "hardhat-contract-sizer": "^2.0.3",
     "hardhat-gas-reporter": "^1.0.4",
     "protobufjs": "^6.11.2",
     "ts-generator": "^0.1.1",

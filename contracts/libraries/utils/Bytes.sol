@@ -25,6 +25,12 @@ library Bytes {
         return result;
     }
 
+    function fromBytes1(bytes1 data) internal pure returns (bytes memory) {
+        bytes memory result = new bytes(1);
+        result[0] = data;
+        return result;
+    }
+
     function toUint64(bytes memory _bytes, uint256 _start)
         internal
         pure
@@ -34,6 +40,23 @@ library Bytes {
         assembly {
             ret := mload(add(add(_bytes, 0x8), _start))
         }
+    }
+
+    function uint64ToBigEndian(uint64 v)
+        internal
+        pure
+        returns (bytes memory ret)
+    {
+        ret = new bytes(8);
+        ret[0] = bytes1(uint8(v >> 56));
+        ret[1] = bytes1(uint8(v >> 48));
+        ret[2] = bytes1(uint8(v >> 40));
+        ret[3] = bytes1(uint8(v >> 32));
+        ret[4] = bytes1(uint8(v >> 24));
+        ret[5] = bytes1(uint8(v >> 16));
+        ret[6] = bytes1(uint8(v >> 8));
+        ret[7] = bytes1(uint8(v));
+        return ret;
     }
 
     function equal(bytes memory b1, bytes memory b2)

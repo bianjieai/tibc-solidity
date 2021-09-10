@@ -4,6 +4,8 @@ import "./ProtoBufRuntime.sol";
 import "./GoogleProtobufAny.sol";
 import "./Types.sol";
 import "./Validator.sol";
+import "./Proofs.sol";
+import "./Commitment.sol";
 
 library ClientState {
 
@@ -16,6 +18,8 @@ library ClientState {
     int64 unbonding_period;
     int64 max_clock_drift;
     Height.Data latest_height;
+    ProofSpec.Data[] proof_specs;
+    MerklePrefix.Data merkle_prefix;
     uint64 time_delay;
   }
 
@@ -56,7 +60,7 @@ library ClientState {
     returns (Data memory, uint)
   {
     Data memory r;
-    uint[8] memory counters;
+    uint[10] memory counters;
     uint256 fieldId;
     ProtoBufRuntime.WireType wireType;
     uint256 bytesRead;
@@ -84,6 +88,12 @@ library ClientState {
         pointer += _read_latest_height(pointer, bs, r, counters);
       }
       else if (fieldId == 7) {
+        pointer += _read_proof_specs(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 8) {
+        pointer += _read_merkle_prefix(pointer, bs, r, counters);
+      }
+      else if (fieldId == 9) {
         pointer += _read_time_delay(pointer, bs, r, counters);
       }
       
@@ -111,6 +121,62 @@ library ClientState {
       }
 
     }
+    pointer = offset;
+    r.proof_specs = new ProofSpec.Data[](counters[7]);
+
+    while (pointer < offset + sz) {
+      (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(pointer, bs);
+      pointer += bytesRead;
+      if (fieldId == 1) {
+        pointer += _read_chain_id(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 2) {
+        pointer += _read_trust_level(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 3) {
+        pointer += _read_trusting_period(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 4) {
+        pointer += _read_unbonding_period(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 5) {
+        pointer += _read_max_clock_drift(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 6) {
+        pointer += _read_latest_height(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 7) {
+        pointer += _read_proof_specs(pointer, bs, r, counters);
+      }
+      else if (fieldId == 8) {
+        pointer += _read_merkle_prefix(pointer, bs, nil(), counters);
+      }
+      else if (fieldId == 9) {
+        pointer += _read_time_delay(pointer, bs, nil(), counters);
+      }
+      else {
+        if (wireType == ProtoBufRuntime.WireType.Fixed64) {
+          uint256 size;
+          (, size) = ProtoBufRuntime._decode_fixed64(pointer, bs);
+          pointer += size;
+        }
+        if (wireType == ProtoBufRuntime.WireType.Fixed32) {
+          uint256 size;
+          (, size) = ProtoBufRuntime._decode_fixed32(pointer, bs);
+          pointer += size;
+        }
+        if (wireType == ProtoBufRuntime.WireType.Varint) {
+          uint256 size;
+          (, size) = ProtoBufRuntime._decode_varint(pointer, bs);
+          pointer += size;
+        }
+        if (wireType == ProtoBufRuntime.WireType.LengthDelim) {
+          uint256 size;
+          (, size) = ProtoBufRuntime._decode_lendelim(pointer, bs);
+          pointer += size;
+        }
+      }
+    }
     return (r, sz);
   }
 
@@ -128,7 +194,7 @@ library ClientState {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[8] memory counters
+    uint[10] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -155,7 +221,7 @@ library ClientState {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[8] memory counters
+    uint[10] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -182,7 +248,7 @@ library ClientState {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[8] memory counters
+    uint[10] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -209,7 +275,7 @@ library ClientState {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[8] memory counters
+    uint[10] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -236,7 +302,7 @@ library ClientState {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[8] memory counters
+    uint[10] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -263,7 +329,7 @@ library ClientState {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[8] memory counters
+    uint[10] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -286,21 +352,75 @@ library ClientState {
    * @param counters The counters for repeated fields
    * @return The number of bytes decoded
    */
+  function _read_proof_specs(
+    uint256 p,
+    bytes memory bs,
+    Data memory r,
+    uint[10] memory counters
+  ) internal pure returns (uint) {
+    /**
+     * if `r` is NULL, then only counting the number of fields.
+     */
+    (ProofSpec.Data memory x, uint256 sz) = _decode_ProofSpec(p, bs);
+    if (isNil(r)) {
+      counters[7] += 1;
+    } else {
+      r.proof_specs[r.proof_specs.length - counters[7]] = x;
+      if (counters[7] > 0) counters[7] -= 1;
+    }
+    return sz;
+  }
+
+  /**
+   * @dev The decoder for reading a field
+   * @param p The offset of bytes array to start decode
+   * @param bs The bytes array to be decoded
+   * @param r The in-memory struct
+   * @param counters The counters for repeated fields
+   * @return The number of bytes decoded
+   */
+  function _read_merkle_prefix(
+    uint256 p,
+    bytes memory bs,
+    Data memory r,
+    uint[10] memory counters
+  ) internal pure returns (uint) {
+    /**
+     * if `r` is NULL, then only counting the number of fields.
+     */
+    (MerklePrefix.Data memory x, uint256 sz) = _decode_MerklePrefix(p, bs);
+    if (isNil(r)) {
+      counters[8] += 1;
+    } else {
+      r.merkle_prefix = x;
+      if (counters[8] > 0) counters[8] -= 1;
+    }
+    return sz;
+  }
+
+  /**
+   * @dev The decoder for reading a field
+   * @param p The offset of bytes array to start decode
+   * @param bs The bytes array to be decoded
+   * @param r The in-memory struct
+   * @param counters The counters for repeated fields
+   * @return The number of bytes decoded
+   */
   function _read_time_delay(
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[8] memory counters
+    uint[10] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
      */
     (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
     if (isNil(r)) {
-      counters[7] += 1;
+      counters[9] += 1;
     } else {
       r.time_delay = x;
-      if (counters[7] > 0) counters[7] -= 1;
+      if (counters[9] > 0) counters[9] -= 1;
     }
     return sz;
   }
@@ -344,6 +464,44 @@ library ClientState {
     return (r, sz + bytesRead);
   }
 
+  /**
+   * @dev The decoder for reading a inner struct field
+   * @param p The offset of bytes array to start decode
+   * @param bs The bytes array to be decoded
+   * @return The decoded inner-struct
+   * @return The number of bytes used to decode
+   */
+  function _decode_ProofSpec(uint256 p, bytes memory bs)
+    internal
+    pure
+    returns (ProofSpec.Data memory, uint)
+  {
+    uint256 pointer = p;
+    (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(pointer, bs);
+    pointer += bytesRead;
+    (ProofSpec.Data memory r, ) = ProofSpec._decode(pointer, bs, sz);
+    return (r, sz + bytesRead);
+  }
+
+  /**
+   * @dev The decoder for reading a inner struct field
+   * @param p The offset of bytes array to start decode
+   * @param bs The bytes array to be decoded
+   * @return The decoded inner-struct
+   * @return The number of bytes used to decode
+   */
+  function _decode_MerklePrefix(uint256 p, bytes memory bs)
+    internal
+    pure
+    returns (MerklePrefix.Data memory, uint)
+  {
+    uint256 pointer = p;
+    (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(pointer, bs);
+    pointer += bytesRead;
+    (MerklePrefix.Data memory r, ) = MerklePrefix._decode(pointer, bs, sz);
+    return (r, sz + bytesRead);
+  }
+
 
   // Encoder section
 
@@ -376,7 +534,7 @@ library ClientState {
   {
     uint256 offset = p;
     uint256 pointer = p;
-    
+    uint256 i;
     if (bytes(r.chain_id).length != 0) {
     pointer += ProtoBufRuntime._encode_key(
       1,
@@ -431,9 +589,29 @@ library ClientState {
     );
     pointer += Height._encode_nested(r.latest_height, pointer, bs);
     
+    if (r.proof_specs.length != 0) {
+    for(i = 0; i < r.proof_specs.length; i++) {
+      pointer += ProtoBufRuntime._encode_key(
+        7,
+        ProtoBufRuntime.WireType.LengthDelim,
+        pointer,
+        bs)
+      ;
+      pointer += ProofSpec._encode_nested(r.proof_specs[i], pointer, bs);
+    }
+    }
+    
+    pointer += ProtoBufRuntime._encode_key(
+      8,
+      ProtoBufRuntime.WireType.LengthDelim,
+      pointer,
+      bs
+    );
+    pointer += MerklePrefix._encode_nested(r.merkle_prefix, pointer, bs);
+    
     if (r.time_delay != 0) {
     pointer += ProtoBufRuntime._encode_key(
-      7,
+      9,
       ProtoBufRuntime.WireType.Varint,
       pointer,
       bs
@@ -482,13 +660,17 @@ library ClientState {
   function _estimate(
     Data memory r
   ) internal pure returns (uint) {
-    uint256 e;
+    uint256 e;uint256 i;
     e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.chain_id).length);
     e += 1 + ProtoBufRuntime._sz_lendelim(Fraction._estimate(r.trust_level));
     e += 1 + ProtoBufRuntime._sz_int64(r.trusting_period);
     e += 1 + ProtoBufRuntime._sz_int64(r.unbonding_period);
     e += 1 + ProtoBufRuntime._sz_int64(r.max_clock_drift);
     e += 1 + ProtoBufRuntime._sz_lendelim(Height._estimate(r.latest_height));
+    for(i = 0; i < r.proof_specs.length; i++) {
+      e += 1 + ProtoBufRuntime._sz_lendelim(ProofSpec._estimate(r.proof_specs[i]));
+    }
+    e += 1 + ProtoBufRuntime._sz_lendelim(MerklePrefix._estimate(r.merkle_prefix));
     e += 1 + ProtoBufRuntime._sz_uint64(r.time_delay);
     return e;
   }
@@ -514,6 +696,10 @@ library ClientState {
     return false;
   }
 
+  if (r.proof_specs.length != 0) {
+    return false;
+  }
+
   if (r.time_delay != 0) {
     return false;
   }
@@ -535,10 +721,34 @@ library ClientState {
     output.unbonding_period = input.unbonding_period;
     output.max_clock_drift = input.max_clock_drift;
     Height.store(input.latest_height, output.latest_height);
+
+    for(uint256 i7 = 0; i7 < input.proof_specs.length; i7++) {
+      output.proof_specs.push(input.proof_specs[i7]);
+    }
+    
+    MerklePrefix.store(input.merkle_prefix, output.merkle_prefix);
     output.time_delay = input.time_delay;
 
   }
 
+
+  //array helpers for ProofSpecs
+  /**
+   * @dev Add value to an array
+   * @param self The in-memory struct
+   * @param value The value to add
+   */
+  function addProofSpecs(Data memory self, ProofSpec.Data memory value) internal pure {
+    /**
+     * First resize the array. Then add the new element to the end.
+     */
+    ProofSpec.Data[] memory tmp = new ProofSpec.Data[](self.proof_specs.length + 1);
+    for (uint256 i = 0; i < self.proof_specs.length; i++) {
+      tmp[i] = self.proof_specs[i];
+    }
+    tmp[self.proof_specs.length] = value;
+    self.proof_specs = tmp;
+  }
 
 
   //utility functions
