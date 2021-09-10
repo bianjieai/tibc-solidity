@@ -6,15 +6,15 @@ import { TestMerkleTree, TestLightClient } from '../typechain';
 
 const { expect } = chai;
 
-describe('Merkle', () => {
+describe('TestMerkleTree', () => {
     let accounts: Signer[]
-    let mk: TestMerkleTree
+    let testMerkleTree: TestMerkleTree
     let light: TestLightClient
 
     before('deploy TestMerkleTree', async () => {
         accounts = await ethers.getSigners();
         const mkFactory = await ethers.getContractFactory('TestMerkleTree', accounts[0])
-        mk = (await mkFactory.deploy()) as TestMerkleTree
+        testMerkleTree = (await mkFactory.deploy()) as TestMerkleTree
 
         const lcFactory = await ethers.getContractFactory('TestLightClient', accounts[0])
         light = (await lcFactory.deploy()) as TestLightClient
@@ -22,12 +22,9 @@ describe('Merkle', () => {
     })
 
     it("test hashFromByteSlices", async function () {
-        const mkFactory = await ethers.getContractFactory('TestMerkleTree', accounts[0])
-        const mk = (await mkFactory.deploy()) as TestMerkleTree
-
         //let data: any = []
         let data: any = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
-        let root = await mk.hashFromByteSlices(data);
+        let root = await testMerkleTree.hashFromByteSlices(data);
         expect(root).to.eq("0xf326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18")
     })
 
@@ -40,7 +37,7 @@ describe('Merkle', () => {
         let rootBz = Buffer.from("0a20edc765d6a5287a238227cf19f101b201922cbaec0f915b2c7bc767aa6368c3b5", "hex")
         let pathBz = Buffer.from("0a0c6961766c53746f72654b65790a054d594b4559", "hex")
         let value = Buffer.from("4d5956414c5545", "hex")
-        await mk.verifyMembership(proofBz, specsBz, rootBz, pathBz, value);
+        await testMerkleTree.verifyMembership(proofBz, specsBz, rootBz, pathBz, value);
     })
 
     it("test genValidatorSetHash", async function () {
