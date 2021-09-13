@@ -27,7 +27,7 @@ yarn hardhat deployClientManager --network rinkeby
 
 * Deploy Tendermint Client
 ```shell
-yarn hardhat deployClientManager --network rinkeby
+yarn hardhat deployTendermint --network rinkeby
 ```
 
 * Deploy Packet
