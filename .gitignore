@@ -12,3 +12,5 @@ typechain
 yarn.lock
 package-lock.json
 
+# IDE
+.idea

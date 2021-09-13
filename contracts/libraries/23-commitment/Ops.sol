@@ -22,7 +22,7 @@ library LeafOpLib {
         require(op.length == spec.leaf_spec.length, "Unexpected LengthOp");
         require(
             Bytes.hasPrefix(op.prefix, spec.leaf_spec.prefix),
-            "Wrong prefix"
+            "LeafOpLib: wrong prefix"
         );
     }
 
@@ -70,7 +70,7 @@ library InnerOpLib {
         require(op.hash == spec.leaf_spec.hash, "Unexpected HashOp");
         require(
             !Bytes.hasPrefix(op.prefix, spec.leaf_spec.prefix),
-            "Wrong prefix"
+            "InnerOpLib: wrong prefix"
         );
         require(
             op.prefix.length >= uint256(spec.inner_spec.min_prefix_length),
