@@ -3,6 +3,11 @@ import '@typechain/hardhat'
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer"
 import "hardhat-abi-exporter"
+import "./tasks/deployLibraries"
+import "./tasks/deployTendermintClient"
+import "./tasks/deployClientManager"
+import "./tasks/deployPacket"
+import "./tasks/deployRouting"
 
 import { HardhatUserConfig } from 'hardhat/types'
 
@@ -23,6 +28,12 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       //blockGasLimit: 80000000,
     },
+    rinkeby : {
+      url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
+      gasPrice: 1500000000,
+      chainId: 4,
+      accounts: [],
+    }
   },
   gasReporter: {
     enabled: true,
