@@ -23,9 +23,9 @@ describe('Packet', () => {
         const msrFactory = await ethers.getContractFactory('ClientManager', accounts[0])
         clientManager = (await msrFactory.deploy()) as ClientManager
         const rtFactory = await ethers.getContractFactory('Routing', accounts[0])
-        routing = (await msrFactory.deploy(rules)) as Routing
+        routing = (await rtFactory.deploy(rules)) as Routing
         const pkFactory = await ethers.getContractFactory('Packet', accounts[0])
-        packet = (await msrFactory.deploy(clientManager.address, routing.address)) as Packet
+        packet = (await pkFactory.deploy(clientManager.address, routing.address)) as Packet
     })
 
     it("Should success if rule in rules", async function () {
