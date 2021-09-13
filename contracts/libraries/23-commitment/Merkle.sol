@@ -69,7 +69,7 @@ library Merkle {
         }
         // Check that chained proof root equals passed-in root
         require(
-            Bytes.equal(subroot, root),
+            Bytes.equals(subroot, root),
             "chained proof root does not match given root"
         );
     }

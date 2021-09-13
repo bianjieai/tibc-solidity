@@ -37,8 +37,22 @@ contract Tendermint is IClient, Ownable {
     /*  @notice   return the status of the current light client
      *
      */
-    //TODO
-    function status() external view override returns (int8) {}
+    function status() external view override returns (Status) {
+        ConsensusState.Data storage consState = consensusStates[
+            clientState.latest_height.revision_height
+        ];
+        if (consState.root.length == 0) {
+            return Status.Unknown;
+        }
+
+        if (
+            !(uint256(consState.timestamp.secs + clientState.trusting_period) >
+                block.timestamp)
+        ) {
+            return Status.Expired;
+        }
+        return Status.Active;
+    }
 
     /*  @notice                 this function is called by the ClientManager contract, the purpose is to initialize light client state
 
@@ -53,7 +67,8 @@ contract Tendermint is IClient, Ownable {
         consensusStates[
             clientState.latest_height.revision_height
         ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = now;
+        processedTime[clientState.latest_height.revision_height] = block
+            .timestamp;
     }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
@@ -69,7 +84,8 @@ contract Tendermint is IClient, Ownable {
         consensusStates[
             clientState.latest_height.revision_height
         ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = now;
+        processedTime[clientState.latest_height.revision_height] = block
+            .timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
@@ -87,13 +103,13 @@ contract Tendermint is IClient, Ownable {
         ];
 
         // check heaer
-        // require(
-        //     Bytes.equal(
-        //         LightClient.genValidatorSetHash(header.trusted_validators),
-        //         tmConsState.next_validators_hash
-        //     ),
-        //     "invalid validator set"
-        // );
+        require(
+            Bytes.equals(
+                LightClient.genValidatorSetHash(header.trusted_validators),
+                tmConsState.next_validators_hash
+            ),
+            "invalid validator set"
+        );
         require(
             uint64(header.signed_header.header.height) >
                 header.trusted_height.revision_height,
@@ -149,7 +165,8 @@ contract Tendermint is IClient, Ownable {
         consensusStates[
             clientState.latest_height.revision_height
         ] = newConsState;
-        processedTime[clientState.latest_height.revision_height] = now;
+        processedTime[clientState.latest_height.revision_height] = block
+            .timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
@@ -168,7 +185,7 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence,
         bytes calldata commitmentBytes
-    ) external override {
+    ) external view override {
         Verifier.verifyCommitment(
             clientState,
             consensusStates[height.revision_height],
@@ -197,7 +214,7 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence,
         bytes calldata acknowledgement
-    ) external override {
+    ) external view override {
         Verifier.verifyAcknowledgement(
             clientState,
             consensusStates[height.revision_height],
@@ -224,7 +241,7 @@ contract Tendermint is IClient, Ownable {
         string calldata sourceChain,
         string calldata destChain,
         uint64 sequence
-    ) external override {
+    ) external view override {
         Verifier.verifyCleanCommitment(
             clientState,
             consensusStates[height.revision_height],

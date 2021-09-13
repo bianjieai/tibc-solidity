@@ -8,17 +8,18 @@ import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
-    // chain_name -> IClient implementation address
+    string private nativeChainName;
     mapping(string => IClient) public clients;
-    mapping(string => mapping(address => uint64)) public relayers;
+    mapping(string => mapping(address => bool)) public relayers;
 
     // check if caller is relayer
     modifier onlyRelayer(string memory chainName) {
-        require(
-            relayers[chainName][msg.sender] > 0x0,
-            "caller is not a relayer"
-        );
+        require(relayers[chainName][msg.sender], "caller not register");
         _;
+    }
+
+    constructor(string memory name) public {
+        nativeChainName = name;
     }
 
     /* @notice                  this function is intended to be called by owner to create a light client and initialize light client data.
@@ -59,6 +60,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         nonReentrant
     {
         IClient client = clients[chainName];
+        require(client.status() == IClient.Status.Active, "client not active");
         client.checkHeaderAndUpdateState(header);
     }
 
@@ -86,13 +88,14 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         external
         onlyOwner
     {
-        require(
-            relayers[chainName][relayer] == 0x0,
-            "relayer already registered"
-        );
-        relayers[chainName][relayer] = 1;
+        require(!relayers[chainName][relayer], "relayer already registered");
+        relayers[chainName][relayer] = true;
     }
 
+    /** @notice  obtain the contract address of the client according to the registered client name
+      * @param chainName  the counterparty chain name
+    
+     */
     function getClient(string memory chainName)
         public
         override
@@ -101,11 +104,22 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         return clients[chainName];
     }
 
-    function getChainName()
-        external
+    /** @notice  get the name of this chain
+     */
+    function getChainName() external view override returns (string memory) {
+        return nativeChainName;
+    }
+
+    /** @notice  get the latest height of the specified client update
+      * @param chainName  the counterparty chain name
+    
+     */
+    function getLatestHeight(string memory chainName)
+        public
+        view
         override
-        returns (string memory)
+        returns (Height.Data memory)
     {
-        return "";
+        return (clients[chainName]).getLatestHeight();
     }
 }

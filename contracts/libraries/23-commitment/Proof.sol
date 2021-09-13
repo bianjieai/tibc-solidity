@@ -16,15 +16,15 @@ library ExistProof {
     ) internal pure {
         checkAgainstSpec(proof, spec);
         require(
-            Bytes.equal(proof.key, key),
+            Bytes.equals(proof.key, key),
             "Provided key doesn't match proof"
         );
         require(
-            Bytes.equal(proof.value, value),
+            Bytes.equals(proof.value, value),
             "Provided value doesn't match proof"
         );
         require(
-            Bytes.equal(calculate(proof), root),
+            Bytes.equals(calculate(proof), root),
             "Calculcated root doesn't match provided root"
         );
     }
