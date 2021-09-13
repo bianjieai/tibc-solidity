@@ -13,8 +13,9 @@ import "../../interfaces/IModule.sol";
 import "../../interfaces/IPacket.sol";
 import "../../interfaces/IRouting.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
-contract Packet is ReentrancyGuard, IPacket {
+contract Packet is Ownable, ReentrancyGuard, IPacket {
     IClientManager public clientManager;
     IRouting public routing;
 
@@ -392,5 +393,13 @@ contract Packet is ReentrancyGuard, IPacket {
             seq = 1;
         }
         return seq;
+    }
+
+    function setClientManager(address _clientManager) external onlyOwner {
+        clientManager = IClientManager(_clientManager);
+    }
+
+    function setRouting(address _routing) external onlyOwner {
+        routing = IRouting(_routing);
     }
 }
