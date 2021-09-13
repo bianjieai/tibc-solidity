@@ -9,7 +9,7 @@ const { expect } = chai;
 
 describe('Client', () => {
     let accounts: Signer[]
-    let tmClient: Tendermint
+    let tendermint: Tendermint
     let clientManager: ClientManager
     const chainName = "irishub"
 
@@ -44,19 +44,19 @@ describe('Client', () => {
             root: Buffer.from("gd17k2js3LzwChS4khcRYMwVFWMPQX4TfJ9wG3MP4gs=", "base64"),
             nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
         }
-        await createClient(chainName, tmClient.address, clientState, consensusState)
+        await createClient(chainName, tendermint.address, clientState, consensusState)
 
         let irishubClient = await clientManager.clients(chainName)
-        expect(irishubClient).to.eq(tmClient.address)
+        expect(irishubClient).to.eq(tendermint.address)
 
         let latestHeight = await clientManager.getLatestHeight(chainName)
         expect(latestHeight[0].toNumber()).to.eq(clientState.latestHeight.revisionNumber)
         expect(latestHeight[1].toNumber()).to.eq(clientState.latestHeight.revisionHeight)
 
-        let expClientState = (await tmClient.clientState())
+        let expClientState = (await tendermint.clientState())
         expect(expClientState.chain_id).to.eq(clientState.chainId)
 
-        let expConsensusState = (await tmClient.consensusStates(clientState.latestHeight.revisionHeight))
+        let expConsensusState = (await tendermint.consensusStates(clientState.latestHeight.revisionHeight))
         expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
         expect(expConsensusState.next_validators_hash.slice(2)).to.eq(consensusState.nextValidatorsHash.toString("hex"))
 
@@ -98,7 +98,7 @@ describe('Client', () => {
                 secs: 1631517854,
                 nanos: 5829,
             },
-            root: Buffer.from("99f2fe6e2cb20c8e9bfaa8e490a3967efe44a2a9f4b505d21fec0c08090370f1=", "base64"),
+            root: Buffer.from("99f2fe6e2cb20c8e9bfaa8e490a3967efe44a2a9f4b505d21fec0c08090370f1", "hex"),
             nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
         }
 
@@ -111,8 +111,8 @@ describe('Client', () => {
 
         let value: any = Buffer.from("4d5956414c5545", "hex")
 
-        await createClient("chainName", tmClient.address, clientState, consensusState)
-        await tmClient.verifyPacketCommitment(
+        await createClient("chainName", tendermint.address, clientState, consensusState)
+        await tendermint.verifyPacketCommitment(
             proofHeight,
             proof,
             "irishub",
@@ -167,7 +167,7 @@ describe('Client', () => {
                 Verifier: verifierLib.address
             },
         })
-        tmClient = (await tmFactory.deploy(clientManager.address)) as Tendermint
+        tendermint = (await tmFactory.deploy(clientManager.address)) as Tendermint
     }
 
     const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
