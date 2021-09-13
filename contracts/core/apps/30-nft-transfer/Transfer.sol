@@ -55,7 +55,8 @@ contract Transfer is ITransfer, ERC1155Holder{
         TransferDataTypes.TransferData calldata transferData
     )external override virtual {
         // sourceChain cannot be equal to destChain
-        string memory sourceChain = clientManager.getChainName();
+        //string memory sourceChain = clientManager.getChainName();
+        string memory sourceChain = "eth";
         require(!sourceChain.toSlice().equals(transferData.destChain.toSlice()), "sourceChain can't equal to destChain");
 
         bool awayFromOrigin = _determineAwayFromOrigin(transferData.class, transferData.destChain);
@@ -67,7 +68,6 @@ contract Transfer is ITransfer, ERC1155Holder{
         } else{
             // nft is be closed to origin
             // burn nft
-            console.log("burnburnburn ");
             require(_burn(msg.sender, transferData.tokenId, uint256(1)));
         }
     
@@ -91,26 +91,14 @@ contract Transfer is ITransfer, ERC1155Holder{
             sourceChain : sourceChain,
             destChain : transferData.destChain,
             relayChain : transferData.relayChain,
-            data : data = NftTransfer.encode(
-                    NftTransfer.Data({
-                    class : mapData.class,
-                    id : mapData.id,
-                    uri : mapData.uri,
-                    sender: Bytes.addressToString(msg.sender),
-                    receiver: transferData.receiver,
-                    awayFromOrigin :  awayFromOrigin
-                    })
-                )
+            data : data
         });
-       // packet.sendPacket(pac);
+        //packet.sendPacket(pac);
     }
 
     // Module callbacks
     function onRecvPacket(PacketTypes.Packet calldata pac) external override returns (bytes memory acknowledgement) {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
-        console.log("ggggg:", data.id);
-        console.logBytes32(data.id.stringToBytes32()) ;
-        
         
         // sourceChain/nftClass
         string memory scNft;
@@ -197,17 +185,12 @@ contract Transfer is ITransfer, ERC1155Holder{
 
     function onAcknowledgementPacket(PacketTypes.Packet calldata pac, bytes calldata acknowledgement) external override {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
-            console.log("enter");
             _refundTokens(NftTransfer.decode(pac.data), pac.sourceChain);
         }
     }
 
     /// Internal functions ///
     function _burn(address account,uint256 id,uint256 amount) internal virtual returns(bool){
-        console.log("start to burn ");
-        console.logAddress(account);
-        console.logUint(id);
-        console.logUint(amount);
         bank.burn(account, id, amount);
         return true;
     }
@@ -262,8 +245,6 @@ contract Transfer is ITransfer, ERC1155Holder{
     }
 
     function _refundTokens(NftTransfer.Data memory data, string memory sourceChain) internal virtual {
-        console.log("into _refundTokens");
-        console.log(data.class);
         string[] memory classSplit = _splitStringIntoArray(data.class, "/");
         string memory scNft;
         if (strings.startsWith(strings.toSlice(data.class), strings.toSlice(PREFIX))){
@@ -279,7 +260,6 @@ contract Transfer is ITransfer, ERC1155Holder{
                                .concat("/".toSlice()).toSlice()
                                .concat(data.class.toSlice());
         }
-        console.log(scNft);
         // generate tokenId
         uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
         if (data.awayFromOrigin) {
