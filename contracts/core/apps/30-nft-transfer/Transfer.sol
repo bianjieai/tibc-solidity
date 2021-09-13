@@ -5,12 +5,11 @@ pragma experimental ABIEncoderV2;
 import "../../../proto/NftTransfer.sol";
 import "../uu/Bytes.sol";
 import "../uu/Strings.sol";
+import "../../02-client/ClientManager.sol";
 import "../../../libraries/04-packet/Packet.sol";
 import "../../../libraries/30-nft-transfer/NftTransfer.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
-import "../../04-packet/Packet.sol";
-import "../../02-client/ClientManager.sol";
 import "./ERC1155Bank.sol";
 import "hardhat/console.sol";
 import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
@@ -25,15 +24,15 @@ contract Transfer is ITransfer, ERC1155Holder{
 
 
     // referenced contract
-    ERC1155Bank bank;
-    Packet packet;
-    ClientManager clientManager;
+    IPacket public packet;
+    IERC1155Bank public bank; 
+    IClientManager public clientManager;
 
 
-    constructor(ERC1155Bank bank_, Packet packet_, ClientManager clientManager_) public{
-        bank = bank_;
-        packet = packet_;
-        clientManager = clientManager_;
+    constructor(address bank_, address packet_, address clientManager_) public{
+        bank = IERC1155Bank(bank_);
+        packet = IPacket(packet_);
+        clientManager = IClientManager(clientManager_);
     }
 
     /*
@@ -54,9 +53,8 @@ contract Transfer is ITransfer, ERC1155Holder{
     function sendTransfer(
         TransferDataTypes.TransferData calldata transferData
     )external override virtual {
-        // sourceChain cannot be equal to destChain
-        //string memory sourceChain = clientManager.getChainName();
-        string memory sourceChain = "eth";
+        
+        string memory sourceChain = clientManager.getChainName();
         require(!sourceChain.toSlice().equals(transferData.destChain.toSlice()), "sourceChain can't equal to destChain");
 
         bool awayFromOrigin = _determineAwayFromOrigin(transferData.class, transferData.destChain);

@@ -32,7 +32,7 @@ describe('Transfer', () => {
         await host.deployed();
 
         const clientFac = await ethers.getContractFactory("ClientManager");
-        clientManager = (await clientFac.deploy()) as ClientManager;
+        clientManager = (await clientFac.deploy("ethereum")) as ClientManager;
 
         const routingFac = await ethers.getContractFactory("Routing");
         routing = (await routingFac.deploy(mRules)) as Routing;
