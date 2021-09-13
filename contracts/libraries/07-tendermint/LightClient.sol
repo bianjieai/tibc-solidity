@@ -153,7 +153,7 @@ library LightClient {
         );
 
         require(
-            Bytes.equal(
+            Bytes.equals(
                 untrustedHeader.header.validators_hash,
                 trustedHeader.header.next_validators_hash
             ),
@@ -194,7 +194,7 @@ library LightClient {
         require(height == commit.height, "Invalid commit -- wrong height");
 
         require(
-            Bytes.equal(blockID.hash, commit.block_id.hash),
+            Bytes.equals(blockID.hash, commit.block_id.hash),
             "invalid block_id.hash"
         );
         require(
@@ -203,7 +203,7 @@ library LightClient {
             "invalid part_set_header.total"
         );
         require(
-            Bytes.equal(
+            Bytes.equals(
                 blockID.part_set_header.hash,
                 commit.block_id.part_set_header.hash
             ),
@@ -331,7 +331,7 @@ library LightClient {
         // validate header hash
         // TODO
         require(
-            Bytes.equal(
+            Bytes.equals(
                 genHeaderHash(untrustedHeader.header),
                 untrustedHeader.commit.block_id.hash
             ),
@@ -356,7 +356,7 @@ library LightClient {
 
         bytes memory valHash = genValidatorSetHash(untrustedVals);
         require(
-            Bytes.equal(valHash, untrustedHeader.header.validators_hash),
+            Bytes.equals(valHash, untrustedHeader.header.validators_hash),
             "invalid validator set hash"
         );
     }
@@ -509,7 +509,7 @@ library LightClient {
         CommitSig.Data[] memory sigs
     ) internal pure returns (bool) {
         for (uint256 i = beginIdx + 1; i < sigs.length; i++) {
-            if (Bytes.equal(sigs[i].signature, ele)) {
+            if (Bytes.equals(sigs[i].signature, ele)) {
                 return true;
             }
         }

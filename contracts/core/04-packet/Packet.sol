@@ -377,6 +377,7 @@ contract Packet is ReentrancyGuard, IPacket {
             );
         }
     }
+
     function getNextSequenceSend(
         string calldata sourceChain,
         string calldata destChain

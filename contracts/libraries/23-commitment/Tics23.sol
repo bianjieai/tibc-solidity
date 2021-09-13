@@ -42,7 +42,7 @@ library ICS23 {
         }
         if (proof.batch.entries.length > 0) {
             for (uint256 i = 0; i < proof.batch.entries.length; i++) {
-                if (Bytes.equal(proof.batch.entries[i].exist.key, key)) {
+                if (Bytes.equals(proof.batch.entries[i].exist.key, key)) {
                     return proof.batch.entries[i].exist;
                 }
             }
