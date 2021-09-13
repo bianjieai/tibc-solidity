@@ -2,6 +2,8 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
+import "./Bytes.sol";
+
 library Strings {
     struct slice {
         uint256 _len;
@@ -117,19 +119,7 @@ library Strings {
         pure
         returns (string memory)
     {
-        bytes memory first = bytes(_first);
-        bytes memory second = bytes(_second);
-        bytes memory res = new bytes(first.length + second.length);
-
-        for (uint256 i = 0; i < first.length; i++) {
-            res[i] = first[i];
-        }
-
-        for (uint256 j = 0; j < second.length; j++) {
-            res[first.length + j] = second[j];
-        }
-
-        return string(res);
+        return string(Bytes.concat(bytes(_first), bytes(_second)));
     }
 
     /*
@@ -274,11 +264,14 @@ library Strings {
      * @param second The second slice to compare.
      * @return True if the string are equal, false otherwise.
      */
-    function equals(string memory first, string memory second) public pure returns (bool) {
+    function equals(string memory first, string memory second)
+        public
+        pure
+        returns (bool)
+    {
         if (bytes(first).length != bytes(second).length) {
             return false;
-        } else {
-            return keccak256(abi.encodePacked(first)) == keccak256(abi.encodePacked(second));
         }
+        return Bytes.equals(bytes(first), bytes(second));
     }
 }

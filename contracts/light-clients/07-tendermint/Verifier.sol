@@ -37,7 +37,7 @@ library Verifier {
         path[1] = Host.packetCommitmentPath(sourceChain, destChain, sequence);
         Merkle.verifyMembership(
             ProofCodec.decode(proof),
-            state.proof_specs,
+            getDefaultProofSpecs(state.proof_specs),
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
             commitmentBytes
@@ -76,7 +76,7 @@ library Verifier {
         );
         Merkle.verifyMembership(
             ProofCodec.decode(proof),
-            state.proof_specs,
+            getDefaultProofSpecs(state.proof_specs),
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
             acknowledgement
@@ -109,10 +109,64 @@ library Verifier {
         path[1] = Host.cleanPacketCommitmentPath(sourceChain, destChain);
         Merkle.verifyMembership(
             ProofCodec.decode(proof),
-            state.proof_specs,
+            getDefaultProofSpecs(state.proof_specs),
             MerkleRoot.Data(cs.root),
             MerklePath.Data(path),
             Bytes.uint64ToBigEndian(sequence)
         );
+    }
+
+    function getDefaultProofSpecs(ProofSpec.Data[] storage specs)
+        internal
+        view
+        returns (ProofSpec.Data[] memory)
+    {
+        if (specs.length > 0) {
+            return specs;
+        }
+
+        ProofSpec.Data[] memory defaultSpecs = new ProofSpec.Data[](2);
+        ProofSpec.Data memory iavlSpec;
+        ProofSpec.Data memory tmSpec;
+
+        int32[] memory childOrder = new int32[](2);
+        childOrder[0] = 0;
+        childOrder[1] = 1;
+
+        iavlSpec.leaf_spec = LeafOp.Data(
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.NO_HASH,
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
+            PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO,
+            "0x0"
+        );
+
+        iavlSpec.inner_spec = InnerSpec.Data(
+            childOrder,
+            33,
+            4,
+            12,
+            "",
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256
+        );
+        defaultSpecs[0] = iavlSpec;
+
+        tmSpec.leaf_spec = LeafOp.Data(
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.NO_HASH,
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
+            PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO,
+            "0x0"
+        );
+
+        tmSpec.inner_spec = InnerSpec.Data(
+            childOrder,
+            33,
+            1,
+            1,
+            "",
+            PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256
+        );
+        defaultSpecs[1] = tmSpec;
     }
 }

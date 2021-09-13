@@ -7,5 +7,11 @@ import "./IClient.sol";
 
 interface IClientManager {
     function getClient(string calldata chainName) external returns (IClient);
-    function getChainName() external returns (string memory);
+
+    function getChainName() external view returns (string memory);
+
+    function getLatestHeight(string calldata chainName)
+        external
+        view
+        returns (Height.Data memory);
 }
