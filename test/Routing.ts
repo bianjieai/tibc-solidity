@@ -7,7 +7,6 @@ import { Routing } from '../typechain';
 const { expect } = chai;
 
 describe('Routing', () => {
-    let rules: string[] = ["wenchangchain,iris-hub,nft", "wenchangchain,bsn-hub,*"]
     let accounts: Signer[]
     let routing: Routing
 
@@ -15,10 +14,12 @@ describe('Routing', () => {
     before('deploy Routing', async () => {
         accounts = await ethers.getSigners();
         const msrFactory = await ethers.getContractFactory('Routing', accounts[0])
-        routing = (await msrFactory.deploy(rules)) as Routing
+        routing = (await msrFactory.deploy()) as Routing
     })
 
     it("Should success if rule in rules", async function () {
+        let rules: string[] = ["wenchangchain,iris-hub,nft", "wenchangchain,bsn-hub,*"]
+        routing.setRoutingRules(rules)
         let source = "wenchangchain";
         let dest = "iris-hub";
         let port = "nft";
@@ -27,6 +28,8 @@ describe('Routing', () => {
     });
 
     it("Should fail if rule not in rules", async function () {
+        let rules: string[] = ["wenchangchain,iris-hub,nft", "wenchangchain,bsn-hub,*"]
+        routing.setRoutingRules(rules)
         let source = "iris-hub";
         let dest = "wenchangchain";
         let port = "nft";

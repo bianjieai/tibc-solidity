@@ -21,9 +21,7 @@ contract Routing is Ownable, IRouting {
     mapping(string => IModule) public moduleMap;
     mapping(string => ruleData) public ruleMap;
 
-    constructor(string[] memory _rules) public {
-        rules = _rules;
-        _setRuleMap(_rules);
+    constructor() public {
     }
 
     function getMoudle(string calldata _moduleName)
