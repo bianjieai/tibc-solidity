@@ -185,7 +185,7 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence,
         bytes calldata commitmentBytes
-    ) external override {
+    ) external view override {
         Verifier.verifyCommitment(
             clientState,
             consensusStates[height.revision_height],
@@ -214,7 +214,7 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence,
         bytes calldata acknowledgement
-    ) external override {
+    ) external view override {
         Verifier.verifyAcknowledgement(
             clientState,
             consensusStates[height.revision_height],
@@ -241,7 +241,7 @@ contract Tendermint is IClient, Ownable {
         string calldata sourceChain,
         string calldata destChain,
         uint64 sequence
-    ) external override {
+    ) external view override {
         Verifier.verifyCleanCommitment(
             clientState,
             consensusStates[height.revision_height],

@@ -32,7 +32,7 @@ interface IClient {
         string calldata destChain,
         uint64 sequence,
         bytes calldata commitmentBytes
-    ) external;
+    ) external view;
 
     function verifyPacketAcknowledgement(
         Height.Data calldata height,
@@ -41,7 +41,7 @@ interface IClient {
         string calldata destChain,
         uint64 sequence,
         bytes calldata acknowledgement
-    ) external;
+    ) external view;
 
     function verifyPacketCleanCommitment(
         Height.Data calldata height,
@@ -49,5 +49,5 @@ interface IClient {
         string calldata sourceChain,
         string calldata destChain,
         uint64 sequence
-    ) external;
+    ) external view;
 }
