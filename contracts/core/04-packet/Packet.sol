@@ -198,6 +198,11 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         }
     }
 
+    /**
+     * @dev writeAcknowledgement is called by a module in order to send back a ack message
+     * @param packet tibc packet
+     * @param acknowledgement return by modules
+     */
     function writeAcknowledgement(
         PacketTypes.Packet memory packet,
         bytes memory acknowledgement
@@ -227,6 +232,13 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         );
     }
 
+    /**
+     * @dev acknowledgePacket is called by relayer in order to receive an TIBC acknowledgement
+     * @param packet tibc packet
+     * @param acknowledgement acknowledgement from dest chain
+     * @param proofAcked ack proof commit
+     * @param height ack proof height
+     */
     function acknowledgePacket(
         PacketTypes.Packet calldata packet,
         bytes calldata acknowledgement,
@@ -287,6 +299,10 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         }
     }
 
+    /**
+     * @dev cleanPacket is called in order to send an clean packet.
+     * @param packet tibc clean packet
+     */
     function cleanPacket(
         PacketTypes.CleanPacket calldata packet
     ) external override nonReentrant {
@@ -318,6 +334,12 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         );
     }
 
+    /**
+     * @dev recvCleanPacket is called by relayer in order to receive & process an TIBC clean packet
+     * @param packet tibc clean packet
+     * @param proof proof commit
+     * @param height proof height
+     */
     function recvCleanPacket(
         PacketTypes.CleanPacket calldata packet,
         bytes calldata proof,
@@ -379,6 +401,11 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         }
     }
 
+    /**
+    * @dev Get packet next sequence to send
+    * @param sourceChain name of source chain
+    * @param destChain name of destination chain
+    */
     function getNextSequenceSend(
         string calldata sourceChain,
         string calldata destChain
@@ -395,10 +422,18 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         return seq;
     }
 
+    /**
+    * @dev Set client manager contract
+    * @param _clientManager contract address
+    */
     function setClientManager(address _clientManager) external onlyOwner {
         clientManager = IClientManager(_clientManager);
     }
 
+    /**
+    * @dev Set routing contract
+    * @param _routing contract address
+    */
     function setRouting(address _routing) external onlyOwner {
         routing = IRouting(_routing);
     }
