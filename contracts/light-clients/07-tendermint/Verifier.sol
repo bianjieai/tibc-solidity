@@ -35,6 +35,7 @@ library Verifier {
         string[] memory path = new string[](2);
         path[0] = string(state.merkle_prefix.key_prefix);
         path[1] = Host.packetCommitmentPath(sourceChain, destChain, sequence);
+
         Merkle.verifyMembership(
             ProofCodec.decode(proof),
             getDefaultProofSpecs(state.proof_specs),
@@ -168,5 +169,6 @@ library Verifier {
             PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256
         );
         defaultSpecs[1] = tmSpec;
+        return defaultSpecs;
     }
 }
