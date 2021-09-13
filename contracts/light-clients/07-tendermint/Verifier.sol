@@ -35,6 +35,7 @@ library Verifier {
         string[] memory path = new string[](2);
         path[0] = string(state.merkle_prefix.key_prefix);
         path[1] = Host.packetCommitmentPath(sourceChain, destChain, sequence);
+
         Merkle.verifyMembership(
             ProofCodec.decode(proof),
             getDefaultProofSpecs(state.proof_specs),
@@ -138,7 +139,7 @@ library Verifier {
             PROOFS_PROTO_GLOBAL_ENUMS.HashOp.NO_HASH,
             PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
             PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO,
-            "0x0"
+            hex"00"
         );
 
         iavlSpec.inner_spec = InnerSpec.Data(
@@ -156,7 +157,7 @@ library Verifier {
             PROOFS_PROTO_GLOBAL_ENUMS.HashOp.NO_HASH,
             PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256,
             PROOFS_PROTO_GLOBAL_ENUMS.LengthOp.VAR_PROTO,
-            "0x0"
+            hex"00"
         );
 
         tmSpec.inner_spec = InnerSpec.Data(
@@ -168,5 +169,6 @@ library Verifier {
             PROOFS_PROTO_GLOBAL_ENUMS.HashOp.SHA256
         );
         defaultSpecs[1] = tmSpec;
+        return defaultSpecs;
     }
 }
