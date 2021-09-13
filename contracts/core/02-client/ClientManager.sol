@@ -10,14 +10,11 @@ import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     string private nativeChainName;
     mapping(string => IClient) public clients;
-    mapping(string => mapping(address => uint64)) public relayers;
+    mapping(string => mapping(address => bool)) public relayers;
 
     // check if caller is relayer
     modifier onlyRelayer(string memory chainName) {
-        require(
-            relayers[chainName][msg.sender] > 0x0,
-            "caller is not a relayer"
-        );
+        require(relayers[chainName][msg.sender], "caller not register");
         _;
     }
 
@@ -91,13 +88,14 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         external
         onlyOwner
     {
-        require(
-            relayers[chainName][relayer] == 0x0,
-            "relayer already registered"
-        );
-        relayers[chainName][relayer] = 1;
+        require(!relayers[chainName][relayer], "relayer already registered");
+        relayers[chainName][relayer] = true;
     }
 
+    /** @notice  obtain the contract address of the client according to the registered client name
+      * @param chainName  the counterparty chain name
+    
+     */
     function getClient(string memory chainName)
         public
         override
@@ -106,10 +104,16 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         return clients[chainName];
     }
 
+    /** @notice  get the name of this chain
+     */
     function getChainName() external view override returns (string memory) {
         return nativeChainName;
     }
 
+    /** @notice  get the latest height of the specified client update
+      * @param chainName  the counterparty chain name
+    
+     */
     function getLatestHeight(string memory chainName)
         public
         view
