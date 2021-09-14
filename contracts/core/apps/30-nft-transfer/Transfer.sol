@@ -91,7 +91,7 @@ contract Transfer is ITransfer, ERC1155Holder{
             relayChain : transferData.relayChain,
             data : data
         });
-        //packet.sendPacket(pac);
+        packet.sendPacket(pac);
     }
 
     // Module callbacks

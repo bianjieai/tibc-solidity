@@ -2,13 +2,14 @@ import { Signer } from "ethers";
 import chai from "chai";
 
 
-import {Transfer, ERC1155Bank, Packet, ClientManager, Routing} from '../typechain';
+import {Transfer, ERC1155Bank, Packet, ClientManager, Routing, Tendermint} from '../typechain';
 import { randomBytes } from "crypto";
 
 const { expect } = chai;
 const { ethers } = require("hardhat");
 
 let nft = require("./proto/nftTransfer.js");
+let client = require("./proto/compiled.js");
 
 describe('Transfer', () => {
     let mRules: string[] = ["bsn-hub,iris-hub,nft", "iris-hub,bsn-hub,*"]
@@ -18,9 +19,11 @@ describe('Transfer', () => {
     let pac : Packet
     let clientManager : ClientManager
     let routing : Routing
+    let tendermint: Tendermint
 
     before('deploy Transfer', async () => {
         accounts = await ethers.getSigners();
+        const chainName = "irishub"
 
         const stringsFac = await ethers.getContractFactory("Strings");
         const strs = await stringsFac.deploy();
@@ -31,11 +34,42 @@ describe('Transfer', () => {
         const host = await hostFac.deploy();
         await host.deployed();
 
-        const clientFac = await ethers.getContractFactory("ClientManager");
-        clientManager = (await clientFac.deploy("ethereum")) as ClientManager;
+        // deploy clientManager
+        await deployContract();
+
+        // create light client
+        let clientState = {
+            chainId: "chain-f6C1TF",
+            trustLevel: {
+                numerator: 1,
+                denominator: 3
+            },
+            trustingPeriod: 10 * 24 * 60 * 60,
+            unbondingPeriod: 1814400,
+            maxClockDrift: 10,
+            latestHeight: {
+                revisionNumber: 0,
+                revisionHeight: 3893
+            },
+            merklePrefix: {
+                key_prefix: Buffer.from("74696263", "hex"),
+            },
+            timeDelay: 10,
+        };
+
+        let consensusState = {
+            timestamp: {
+                secs: 1631155726,
+                nanos: 5829,
+            },
+            root: Buffer.from("gd17k2js3LzwChS4khcRYMwVFWMPQX4TfJ9wG3MP4gs=", "base64"),
+            nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
+        }
+        await createClient(chainName, tendermint.address, clientState, consensusState)
+
 
         const routingFac = await ethers.getContractFactory("Routing");
-        routing = (await routingFac.deploy(mRules)) as Routing;
+        routing = (await routingFac.deploy()) as Routing;
 
         const pacFac = await ethers.getContractFactory("Packet",{signer: accounts[0],
             libraries: {
@@ -187,6 +221,58 @@ describe('Transfer', () => {
         
     })
          
+    const deployContract = async function () {
+        accounts = await ethers.getSigners();
+        const msrFactory = await ethers.getContractFactory('ClientManager', {
+            signer: accounts[0],
+            libraries: {},
+        })
+        clientManager = (await msrFactory.deploy("ethereum")) as ClientManager
 
+        let originChainName = await clientManager.getChainName();
+        expect(originChainName).to.eq("ethereum")
+
+        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec')
+        const clientStateCodec = await ClientStateCodec.deploy();
+        await clientStateCodec.deployed();
+
+        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec')
+        const consensusStateCodec = await ConsensusStateCodec.deploy();
+        await consensusStateCodec.deployed();
+
+        const HeaderCodec = await ethers.getContractFactory('HeaderCodec')
+        const headerCodec = await HeaderCodec.deploy();
+        await headerCodec.deployed();
+
+        const ProofCodec = await ethers.getContractFactory('ProofCodec')
+        const proofCodec = await ProofCodec.deploy();
+        await proofCodec.deployed();
+
+        const Verifier = await ethers.getContractFactory('Verifier', {
+            signer: accounts[0],
+            libraries: {
+                ProofCodec: proofCodec.address,
+            },
+        })
+        const verifierLib = await Verifier.deploy();
+        await verifierLib.deployed();
+
+        const tmFactory = await ethers.getContractFactory('Tendermint', {
+            signer: accounts[0],
+            libraries: {
+                ClientStateCodec: clientStateCodec.address,
+                ConsensusStateCodec: consensusStateCodec.address,
+                HeaderCodec: headerCodec.address,
+                Verifier: verifierLib.address
+            },
+        })
+        tendermint = (await tmFactory.deploy(clientManager.address)) as Tendermint
+    }
+
+    const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
+        let clientStateBuf = client.ClientState.encode(clientState).finish();
+        let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
+        await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf)
+    }
     
 })
