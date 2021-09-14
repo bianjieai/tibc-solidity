@@ -8,6 +8,9 @@ import "./tasks/deployTendermintClient"
 import "./tasks/deployClientManager"
 import "./tasks/deployPacket"
 import "./tasks/deployRouting"
+import "./tasks/deployERC1155Bank"
+import "./tasks/deployTransfer"
+
 
 import { HardhatUserConfig } from 'hardhat/types'
 
