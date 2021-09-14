@@ -32,7 +32,8 @@ const config: HardhatUserConfig = {
       url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
       gasPrice: 1500000000,
       chainId: 4,
-      accounts: [],
+      gas: 4100000,
+      accounts: ["0x45760456b8181a0c3a313e8d9031b1f9343b1f45baaf5043262c19b63b163d5f"],
     }
   },
   gasReporter: {

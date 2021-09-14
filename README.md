@@ -35,7 +35,7 @@ yarn hardhat deployTendermint --network rinkeby
 yarn hardhat deployPacket --network rinkeby
 ```
 
-* Deploy Packet
+* Deploy Routing
 ```shell
 yarn hardhat deployRouting --network rinkeby
 ```
