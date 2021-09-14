@@ -3,23 +3,22 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../../../proto/NftTransfer.sol";
-import "../uu/Bytes.sol";
-import "../uu/Strings.sol";
 import "../../02-client/ClientManager.sol";
 import "../../../libraries/04-packet/Packet.sol";
 import "../../../libraries/30-nft-transfer/NftTransfer.sol";
+import "../../../libraries/utils/Bytes.sol";
+import "../../../libraries/utils/Strings.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "./ERC1155Bank.sol";
-import "hardhat/console.sol";
 import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
 
 
 contract Transfer is ITransfer, ERC1155Holder{
-    using strings for *;
+    using Strings for *;
     using Bytes for *;
 
-    // prefix
+    string private constant PORT = "NFT";
     string private constant PREFIX = "tibc/nft";
 
 
@@ -40,22 +39,24 @@ contract Transfer is ITransfer, ERC1155Holder{
         keep track of id :   tokenId -> id
         keep track of uri :  tokenId -> uri
     */
-    mapping(uint256 => string) public classMapping;
-    mapping(uint256 => string) public idMapping;
-    mapping(uint256 => string) public uriMapping;
-
     struct NftMapValue {
         string  class;
         string  id;
         string  uri;
     }
+    mapping(uint256 => NftMapValue) public nftMapValue;
 
+    
+    /*  @notice                 this function is to send nft and construct data packet
+     *
+     *  @param transferData      Send the data needed by nft
+     */
     function sendTransfer(
         TransferDataTypes.TransferData calldata transferData
     )external override virtual {
         
         string memory sourceChain = clientManager.getChainName();
-        require(!sourceChain.toSlice().equals(transferData.destChain.toSlice()), "sourceChain can't equal to destChain");
+        require(!sourceChain.equals(transferData.destChain), "sourceChain can't equal to destChain");
 
         bool awayFromOrigin = _determineAwayFromOrigin(transferData.class, transferData.destChain);
 
@@ -69,7 +70,7 @@ contract Transfer is ITransfer, ERC1155Holder{
             require(_burn(msg.sender, transferData.tokenId, uint256(1)));
         }
     
-        NftMapValue memory mapData = _getInfoByTokenId(transferData.tokenId);
+        NftMapValue memory mapData = getMapValue(transferData.tokenId);
 
         bytes memory data = NftTransfer.encode(
             NftTransfer.Data({
@@ -85,7 +86,7 @@ contract Transfer is ITransfer, ERC1155Holder{
         // send packet
         PacketTypes.Packet memory pac = PacketTypes.Packet({
             sequence : packet.getNextSequenceSend(sourceChain, transferData.destChain),
-            port : "NFT",
+            port : PORT,
             sourceChain : sourceChain,
             destChain : transferData.destChain,
             relayChain : transferData.relayChain,
@@ -95,6 +96,10 @@ contract Transfer is ITransfer, ERC1155Holder{
     }
 
     // Module callbacks
+    /*  @notice                 this function is to receive packet 
+     *
+     *  @param pac              Data package containing nft data
+     */
     function onRecvPacket(PacketTypes.Packet calldata pac) external override returns (bytes memory acknowledgement) {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
         
@@ -102,7 +107,7 @@ contract Transfer is ITransfer, ERC1155Holder{
         string memory scNft;
         string memory newClass;
         if (data.awayFromOrigin) {
-            if (strings.startsWith(strings.toSlice(data.class), strings.toSlice(PREFIX))){
+            if (Strings.startsWith(Strings.toSlice(data.class), Strings.toSlice(PREFIX))){
                 // tibc/nft/A/nftClass -> tibc/nft/A/B/nftClass
                 // tibc/nft/A/nftClass -> [tibc][nft][A][nftClass]
                 string[] memory classSplit = _splitStringIntoArray(data.class, "/");
@@ -112,7 +117,7 @@ contract Transfer is ITransfer, ERC1155Holder{
                 classSplit[classSplit.length-1] = pac.sourceChain; 
 
                 // [tibc][nft][A][B] -> "tibc/nft/A/B"
-                newClass = strings.join(strings.toSlice("/"), _convertStringArrayIntoSliceArray(classSplit));
+                newClass = Strings.join(Strings.toSlice("/"), _convertStringArrayIntoSliceArray(classSplit));
 
                 // "tibc/nft/A/B" -> "tibc/nft/A/B/nftClass"
                 newClass = newClass.toSlice().concat("/".toSlice()).toSlice().concat(temp.toSlice());
@@ -140,15 +145,18 @@ contract Transfer is ITransfer, ERC1155Holder{
 
             if (success){
                 // keep trace of class and id and uri
-                setIdMapping(tokenId, data.id);
-                setUriMapping(tokenId, data.uri);
-                setClassMapping(tokenId, newClass);
+                NftMapValue memory value = NftMapValue({
+                    class : newClass,
+                    id : data.id,
+                    uri : data.uri
+                });
+                setMapValue(tokenId, value);
             }
            
             return _newAcknowledgement(success);
         } else{
             // go back to source chain
-            require(strings.startsWith(data.class.toSlice(), PREFIX.toSlice()), "class has no prefix");
+            require(Strings.startsWith(data.class.toSlice(), PREFIX.toSlice()), "class has no prefix");
             string[] memory classSplit = _splitStringIntoArray(data.class, "/");
 
             if (classSplit.length == 4) {
@@ -167,7 +175,7 @@ contract Transfer is ITransfer, ERC1155Holder{
                                         .concat(classSplit[2].toSlice()).toSlice()
                                         .concat(classSplit[classSplit.length - 1].toSlice());
 
-                newClass = strings.join("/".toSlice(), _convertStringArrayIntoSliceArray(classSplit));
+                newClass = Strings.join("/".toSlice(), _convertStringArrayIntoSliceArray(classSplit));
             }
 
             // generate tokenId
@@ -175,12 +183,16 @@ contract Transfer is ITransfer, ERC1155Holder{
 
             // unlock
             return _newAcknowledgement(
-                _transferFrom(address(bank), data.receiver.parseAddr(), tokenId, uint256(1), bytes("testData"))
+                _transferFrom(address(bank), data.receiver.parseAddr(), tokenId, uint256(1), bytes(""))
             );
         }
 
     }
 
+    /* @notice                  This method is start ack method
+     * @param pac               Packets transmitted
+    * @param acknowledgement    ack
+     */
     function onAcknowledgementPacket(PacketTypes.Packet calldata pac, bytes calldata acknowledgement) external override {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data), pac.sourceChain);
@@ -203,16 +215,6 @@ contract Transfer is ITransfer, ERC1155Holder{
         return true;
     }
 
-
-    function _getInfoByTokenId(uint256 tokenId)internal view returns(NftMapValue memory){
-        NftMapValue memory data =  NftMapValue({
-                class : classMapping[tokenId],
-                id    : idMapping[tokenId],
-                uri   : uriMapping[tokenId]
-        });
-        return data;
-    }
-
     /* @notice   This method is to obtain the splicing of the source chain and nftclass from the cross-chain nft prefix
      * The realization is aimed at the following two situations
      * 1. tibc/nft/A/nftClass   -> A/nftClass
@@ -221,12 +223,16 @@ contract Transfer is ITransfer, ERC1155Holder{
      */
     function _getSCNft(string memory class) internal pure returns(string memory){
         string[] memory classSplit = _splitStringIntoArray(class, "/");
-        string memory scNft; 
-        scNft = classSplit[2].toSlice().concat("/".toSlice()).toSlice().concat(classSplit[classSplit.length-1].toSlice());
-        return scNft;
+        return classSplit[2].toSlice()
+                            .concat("/".toSlice()).toSlice()
+                            .concat(classSplit[classSplit.length-1].toSlice());
     }
 
 
+    /*  @notice                 this function is to create ack 
+     *
+     *  @param success   
+     */
     function _newAcknowledgement(bool success) internal virtual pure returns (bytes memory) {
         bytes memory acknowledgement = new bytes(1);
         if (success) {
@@ -237,15 +243,24 @@ contract Transfer is ITransfer, ERC1155Holder{
         return acknowledgement;
     }
 
+    /*  @notice                 this function is return a successful ack
+     *
+     *  @param acknowledgement   
+     */
     function _isSuccessAcknowledgement(bytes memory acknowledgement) internal virtual pure returns (bool) {
         require(acknowledgement.length == 1, "acknowledgement length must equals 1");
         return acknowledgement[0] == 0x01;
     }
 
+    /*  @notice                 this function is refund nft
+     *
+     *  @param data             Data in the transmitted packet
+     *  @param sourceChain      The chain that executes this method
+     */
     function _refundTokens(NftTransfer.Data memory data, string memory sourceChain) internal virtual {
         string[] memory classSplit = _splitStringIntoArray(data.class, "/");
         string memory scNft;
-        if (strings.startsWith(strings.toSlice(data.class), strings.toSlice(PREFIX))){
+        if (Strings.startsWith(Strings.toSlice(data.class), Strings.toSlice(PREFIX))){
             if (classSplit.length == 5) {
             // tibc/nft//A/B/nftClass
             scNft = classSplit[2].toSlice()
@@ -262,11 +277,11 @@ contract Transfer is ITransfer, ERC1155Holder{
         uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
         if (data.awayFromOrigin) {
             // unlock
-            _transferFrom(address(this), data.sender.parseAddr(), tokenId, uint256(1), bytes("testdata"));
+            _transferFrom(address(this), data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
         } else{
             // tibc/nft/A/B/nftClass
             // mint nft
-            _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes("testdata"));
+            _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
         }
     }
 
@@ -283,12 +298,12 @@ contract Transfer is ITransfer, ERC1155Holder{
      * @param destChain  
      */
     function _determineAwayFromOrigin(string memory class, string memory destChain) internal pure returns (bool){
-        if (!strings.startsWith(class.toSlice(), PREFIX.toSlice())){
+        if (!Strings.startsWith(class.toSlice(), PREFIX.toSlice())){
             return true;
         }
 
         string[] memory classSplit = _splitStringIntoArray(class, "/");
-        return !strings.equals(classSplit[classSplit.length-2].toSlice(), destChain.toSlice());
+        return !Strings.equals(classSplit[classSplit.length-2], destChain);
     }
 
     /* @notice   This method is to split string into string array
@@ -297,8 +312,8 @@ contract Transfer is ITransfer, ERC1155Holder{
      * @param delim      delim
      */
     function _splitStringIntoArray(string memory newClass, string memory delim)internal pure returns (string[] memory){
-        strings.slice memory newClassSlice = newClass.toSlice();
-        strings.slice memory delimSlice = delim.toSlice();
+        Strings.slice memory newClassSlice = newClass.toSlice();
+        Strings.slice memory delimSlice = delim.toSlice();
         string[]memory parts = new string[](newClassSlice.count(delimSlice) + 1);
         for(uint i = 0; i < parts.length; i++) {
             parts[i] = newClassSlice.split(delimSlice).toString();
@@ -309,8 +324,8 @@ contract Transfer is ITransfer, ERC1155Holder{
     /* @notice   This method is to convert stringArray into sliceArray
      * @param    src   
      */
-    function _convertStringArrayIntoSliceArray(string[] memory src) internal pure returns(strings.slice[] memory){
-        strings.slice[] memory res = new strings.slice[](src.length);
+    function _convertStringArrayIntoSliceArray(string[] memory src) internal pure returns(Strings.slice[] memory){
+        Strings.slice[] memory res = new Strings.slice[](src.length);
         for(uint i = 0; i < src.length; i++) {
             res[i] = src[i].toSlice();
         }
@@ -327,32 +342,23 @@ contract Transfer is ITransfer, ERC1155Holder{
         bytes memory   c1 = Bytes.cutBytes32(sha256(bytes(scNft)));
         bytes memory   c2 = Bytes.cutBytes32(sha256(bytes(id)));
         bytes memory   tokenId = Bytes.concat(c1, c2);
-        return string(tokenId).stringToBytes32();
+        return tokenId.toBytes32();
     }
 
-    function setClassMapping(uint256 tokenId, string memory class)internal{
-        classMapping[tokenId] = class;
+    /*  @notice                  this function is to set value
+     *
+     *  @param tokenId          token Id
+     *  @param value            value
+     */
+    function setMapValue(uint256 tokenId, NftMapValue memory value) public{ 
+        nftMapValue[tokenId] = value;
     }
 
-    function setIdMapping(uint256 tokenId, string memory id)internal{
-        idMapping[tokenId] = id;
+    /*  @notice                  this function is to get value
+     *
+     *  @param tokenId          token Id
+     */
+    function getMapValue(uint256 tokenId) public view returns(NftMapValue memory){
+        return nftMapValue[tokenId];
     }
-
-    function setUriMapping(uint256 tokenId, string memory uri)internal{
-        uriMapping[tokenId] = uri;
-    }
-
-
-    function getClass(uint256 tokenId)public view returns (string memory){
-            return classMapping[tokenId];
-    }
-
-    function getid(uint256 tokenId)public view returns (string memory){
-            return idMapping[tokenId];
-    }
-
-    function getUri(uint256 tokenId)public view returns (string memory){
-            return uriMapping[tokenId];
-    }
-
 }

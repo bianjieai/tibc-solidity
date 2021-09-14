@@ -143,4 +143,63 @@ library Bytes {
         Memory.copy(src2, dest2, src2Len);
         return ret;
     }
+
+    function bytes32ToUint(bytes32 b) internal pure returns (uint256){
+        uint256 number;
+        for(uint i= 0; i < b.length; i++) {
+            number = number + uint8(b[i])*(2**(8*(b.length-(i+1))));
+        }
+        return  number;
+    }
+
+    function addressToString(address _address) internal pure returns(string memory) {
+        bytes memory alphabet = "0123456789abcdef";
+        bytes20 data = bytes20(_address);
+
+        bytes memory str = new bytes(42);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint i = 0; i < 20; i++) {
+            str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
+            str[2+1+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
+        }
+        return string(str);
+    }
+
+    function parseAddr(string memory _a) internal pure returns (address _parsedAddress) {
+        bytes memory tmp = bytes(_a);
+        uint160 iaddr = 0;
+        uint160 b1;
+        uint160 b2;
+        for (uint i = 2; i < 2 + 2 * 20; i += 2) {
+            iaddr *= 256;
+            b1 = uint160(uint8(tmp[i]));
+            b2 = uint160(uint8(tmp[i + 1]));
+            if ((b1 >= 97) && (b1 <= 102)) {
+                b1 -= 87;
+            } else if ((b1 >= 65) && (b1 <= 70)) {
+                b1 -= 55;
+            } else if ((b1 >= 48) && (b1 <= 57)) {
+                b1 -= 48;
+            }
+            if ((b2 >= 97) && (b2 <= 102)) {
+                b2 -= 87;
+            } else if ((b2 >= 65) && (b2 <= 70)) {
+                b2 -= 55;
+            } else if ((b2 >= 48) && (b2 <= 57)) {
+                b2 -= 48;
+            }
+            iaddr += (b1 * 16 + b2);
+        }
+        return address(iaddr);
+    }
+
+    // 32 bytes take high 128 bits
+    function cutBytes32(bytes32 source) internal pure returns (bytes memory){
+        bytes memory half = new bytes(16);
+        for (uint j = 0; j < 16; j++) {
+                half[j] = source[j];
+        }
+        return half;
+    }
 }

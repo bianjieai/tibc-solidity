@@ -12,7 +12,6 @@ let nft = require("./proto/nftTransfer.js");
 let client = require("./proto/compiled.js");
 
 describe('Transfer', () => {
-    let mRules: string[] = ["bsn-hub,iris-hub,nft", "iris-hub,bsn-hub,*"]
     let accounts: Signer[]
     let transfer: Transfer
     let erc1155bank : ERC1155Bank
@@ -83,7 +82,11 @@ describe('Transfer', () => {
 
     
 
-        const tsFac = await ethers.getContractFactory("Transfer");
+        const tsFac = await ethers.getContractFactory("Transfer", {signer: accounts[0],
+            libraries: {
+                Strings : strs.address
+            }
+        });
         transfer = (await tsFac.deploy(erc1155bank.address, pac.address, clientManager.address)) as Transfer;
     });
    
