@@ -8,12 +8,12 @@ import "../../../interfaces/IERC1155Bank.sol";
 contract ERC1155Bank is ERC1155, IERC1155Bank {
     constructor() public ERC1155("") {}
 
-    /**
-     * @dev Creates `amount` tokens of token type `id`, and assigns them to `account`.
+    /*  @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
      *
-     *
-     * Requirements:
-     *
+     *  @param account
+     *  @param id
+     *  @param amount
+     *  @param data
      * - `account` cannot be the zero address.
      * - If `account` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
@@ -27,13 +27,11 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         _mint(account, id, amount, data);
     }
 
-    /**
-     * @dev Destroys `amount` tokens of token type `id` from `account`
+    /*  @notice        this function is to destroys `amount` tokens of token type `id` from `account`
      *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
-     * - `account` must have at least `amount` tokens of token type `id`.
+     *  @param account
+     *  @param id
+     *  @param amount
      */
     function burn(
         address account,
@@ -43,12 +41,12 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         _burn(account, id, amount);
     }
 
-    /**
-     * @dev Transfers `amount` tokens of token type `id` from `from` to `to`.
+    /*  @notice        this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
      *
-     *
-     * Requirements:
-     *
+     *  @param from
+     *  @param to
+     *  @param amount
+     *  @param data
      * - `to` cannot be the zero address.
      * - If the caller is not `from`, it must be have been approved to spend ``from``'s tokens via {setApprovalForAll}.
      * - `from` must have a balance of tokens of type `id` of at least `amount`.
@@ -65,10 +63,10 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
-    /**
+    /*  @notice        this function is to destroys `amount` tokens of token type `id` from `account`
      *
-     * Requirements:
-     *
+     *  @param account
+     *  @param id
      * - `account` cannot be the zero address.
      */
     function balanceOfAddr(address account, uint256 id)
