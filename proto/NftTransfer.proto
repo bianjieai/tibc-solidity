@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message NftTransfer {
+    string class         = 1;
+    string id            = 2;
+    string uri           = 3;
+    string sender        = 4;
+    string receiver      = 5;
+    bool awayFromOrigin  = 6;
+}
+       
