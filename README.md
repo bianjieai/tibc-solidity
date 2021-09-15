@@ -30,12 +30,12 @@ yarn hardhat deployClientManager --network rinkeby --chain eth
 yarn hardhat deployTendermint --network rinkeby
 ```
 
-* Deploy Packet
-```shell
-yarn hardhat deployPacket --network rinkeby
-```
-
 * Deploy Routing
 ```shell
 yarn hardhat deployRouting --network rinkeby
+```
+
+* Deploy Packet
+```shell
+yarn hardhat deployPacket --network rinkeby
 ```
