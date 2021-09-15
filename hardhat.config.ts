@@ -1,5 +1,6 @@
-import '@nomiclabs/hardhat-waffle'
-import '@typechain/hardhat'
+import "@nomiclabs/hardhat-waffle"
+import "@openzeppelin/hardhat-upgrades"
+import "@typechain/hardhat"
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer"
 import "hardhat-abi-exporter"
@@ -9,7 +10,7 @@ import "./tasks/deployClientManager"
 import "./tasks/deployPacket"
 import "./tasks/deployRouting"
 import "./tasks/deployERC1155Bank"
-import "./tasks/deployTransfer"
+import "./tasks/deployNFTTransfer"
 
 
 import { HardhatUserConfig } from 'hardhat/types'
@@ -36,7 +37,7 @@ const config: HardhatUserConfig = {
       gasPrice: 1500000000,
       chainId: 4,
       gas: 4100000,
-      accounts: [],
+      accounts: ["0x45760456b8181a0c3a313e8d9031b1f9343b1f45baaf5043262c19b63b163d5f"],
     }
   },
   gasReporter: {

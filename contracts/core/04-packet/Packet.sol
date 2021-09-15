@@ -12,16 +12,19 @@ import "../../interfaces/IClient.sol";
 import "../../interfaces/IModule.sol";
 import "../../interfaces/IPacket.sol";
 import "../../interfaces/IRouting.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract Packet is Ownable, ReentrancyGuard, IPacket {
+contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, IPacket {
     IClientManager public clientManager;
     IRouting public routing;
 
     mapping(bytes => uint64) public sequences;
     mapping(bytes => bytes32) public commitments;
     mapping(bytes => bool) public receipts;
+
+    function initialize() public initializer {}
 
     /**
     * @dev Event triggered when the packet is sent

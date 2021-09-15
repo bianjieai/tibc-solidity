@@ -2,15 +2,15 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
-
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../../libraries/utils/Strings.sol";
 import "../../interfaces/IRouting.sol";
 import "../../interfaces/IModule.sol";
 
 // import "hardhat/console.sol";
 
-contract Routing is Ownable, IRouting {
+contract Routing is Initializable, OwnableUpgradeable, IRouting {
     struct ruleData {
         string val;
         bool isValue;
@@ -22,6 +22,10 @@ contract Routing is Ownable, IRouting {
     mapping(string => ruleData) public ruleMap;
 
     constructor() public {
+    }
+
+    function initialize() public initializer {
+        __Ownable_init();
     }
 
     function getMoudle(string calldata _moduleName)

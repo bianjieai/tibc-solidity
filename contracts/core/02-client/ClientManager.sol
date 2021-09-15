@@ -4,22 +4,29 @@ pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
+contract ClientManager is
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    IClientManager
+{
     string private nativeChainName;
     mapping(string => IClient) public clients;
     mapping(string => mapping(address => bool)) public relayers;
+
+    function initialize(string memory name) public initializer {
+        nativeChainName = name;
+        __Ownable_init();
+    }
 
     // check if caller is relayer
     modifier onlyRelayer(string memory chainName) {
         require(relayers[chainName][msg.sender], "caller not register");
         _;
-    }
-
-    constructor(string memory name) public {
-        nativeChainName = name;
     }
 
     /* @notice                  this function is intended to be called by owner to create a light client and initialize light client data.
@@ -45,7 +52,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         );
 
         IClient client = IClient(clientAddress);
-        client.initialize(clientState, consensusState);
+        client.initializeState(clientState, consensusState);
         clients[chainName] = client;
     }
 

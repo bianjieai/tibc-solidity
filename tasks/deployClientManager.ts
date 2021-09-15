@@ -1,5 +1,5 @@
 import "@nomiclabs/hardhat-web3";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { task, types } from "hardhat/config"
 
 const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
@@ -9,9 +9,20 @@ task("deployClientManager", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
 
-        const clientManager = await clientManagerFactory.deploy(taskArgs.chain);
+        const clientManager = await hre.upgrades.deployProxy(clientManagerFactory,[taskArgs.chain]);
         await clientManager.deployed();
         console.log("Client Manager deployed to:", clientManager.address);
+        console.log("export CLIENT_MANAGER_ADDRES=%s", clientManager.address);
+    });
+
+task("upgradeClientManager", "Upgrade Client Manager")
+    .addParam("chain", "Chain Name")
+    .setAction(async (taskArgs, hre) => {
+        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+
+        const clientManager = await hre.upgrades.upgradeProxy(String(CLIENT_MANAGER_ADDRES), clientManagerFactory);
+        await clientManager.deployed();
+        console.log("Client Manager upgraded to:", clientManager.address);
         console.log("export CLIENT_MANAGER_ADDRES=%s", clientManager.address);
     });
 

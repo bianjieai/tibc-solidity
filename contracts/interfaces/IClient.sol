@@ -13,7 +13,7 @@ interface IClient {
 
     function getLatestHeight() external view returns (Height.Data memory);
 
-    function initialize(
+    function initializeState(
         bytes calldata clientState,
         bytes calldata consensusState
     ) external;

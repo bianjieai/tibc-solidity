@@ -12,8 +12,9 @@ import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "./ERC1155Bank.sol";
 import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract Transfer is ITransfer, ERC1155Holder {
+contract Transfer is Initializable, ITransfer, ERC1155Holder {
     using Strings for *;
     using Bytes for *;
 
@@ -34,6 +35,8 @@ contract Transfer is ITransfer, ERC1155Holder {
         packet = IPacket(packet_);
         clientManager = IClientManager(clientManager_);
     }
+
+    function initialize() public initializer {}
 
     /*
         keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass

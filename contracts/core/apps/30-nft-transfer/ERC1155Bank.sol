@@ -2,11 +2,12 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 
-contract ERC1155Bank is ERC1155, IERC1155Bank {
-    constructor() public ERC1155("") {}
+contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
+    function initialize() public initializer {}
 
     /*  @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
      *

@@ -1,8 +1,7 @@
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { Signer, BigNumber } from "ethers";
 import chai from "chai";
 import { ClientManager, Tendermint } from '../typechain';
-
 
 let client = require("./proto/compiled.js");
 const { expect } = chai;
@@ -124,20 +123,17 @@ describe('Client', () => {
 
     const deployContract = async function () {
         accounts = await ethers.getSigners();
-        const msrFactory = await ethers.getContractFactory('ClientManager', {
-            signer: accounts[0],
-            libraries: {},
-        })
-        clientManager = (await msrFactory.deploy("etherum")) as ClientManager
+        const msrFactory = await ethers.getContractFactory('ClientManager');
+        clientManager = (await upgrades.deployProxy(msrFactory, ["etherum"])) as ClientManager;
 
         let originChainName = await clientManager.getChainName();
-        expect(originChainName).to.eq("etherum")
+        expect(originChainName).to.eq("etherum");
 
-        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec')
+        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec');
         const clientStateCodec = await ClientStateCodec.deploy();
         await clientStateCodec.deployed();
 
-        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec')
+        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec');
         const consensusStateCodec = await ConsensusStateCodec.deploy();
         await consensusStateCodec.deployed();
 
@@ -145,7 +141,7 @@ describe('Client', () => {
         const headerCodec = await HeaderCodec.deploy();
         await headerCodec.deployed();
 
-        const ProofCodec = await ethers.getContractFactory('ProofCodec')
+        const ProofCodec = await ethers.getContractFactory('ProofCodec');
         const proofCodec = await ProofCodec.deploy();
         await proofCodec.deployed();
 
@@ -159,20 +155,21 @@ describe('Client', () => {
         await verifierLib.deployed();
 
         const tmFactory = await ethers.getContractFactory('Tendermint', {
-            signer: accounts[0],
             libraries: {
                 ClientStateCodec: clientStateCodec.address,
                 ConsensusStateCodec: consensusStateCodec.address,
                 HeaderCodec: headerCodec.address,
-                Verifier: verifierLib.address
+                Verifier: verifierLib.address,
             },
         })
-        tendermint = (await tmFactory.deploy(clientManager.address)) as Tendermint
+        tendermint = (await upgrades.deployProxy(tmFactory, [clientManager.address],
+            { "unsafeAllowLinkedLibraries": true }
+        )) as Tendermint;
     }
 
     const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
         let clientStateBuf = client.ClientState.encode(clientState).finish();
         let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
-        await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf)
+        await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf);
     }
 })
