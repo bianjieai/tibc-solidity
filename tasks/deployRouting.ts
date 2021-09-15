@@ -26,18 +26,6 @@ task("setRoutingRules", "Set Routing Rules")
         console.log(result);
     });
 
-task("setRoutingRules", "Set Routing Rules")
-    .addParam("rules", "routing rules")
-    .setAction(async (taskArgs, hre) => {
-        const routingFactory = await hre.ethers.getContractFactory('Routing')
-
-        const routing = await routingFactory.attach(String(ROUTING_ADDRES));
-
-        let rules: string[] = taskArgs.rules
-        const result = await routing.setRoutingRules(rules)
-        console.log(result);
-    });
-
 task("addRouting", "Add module routing")
     .addParam("module", "module name")
     .addParam("address", "module address")
