@@ -274,4 +274,45 @@ library Strings {
         }
         return Bytes.equals(bytes(first), bytes(second));
     }
+
+    /*
+     * @dev Returns true if `self` starts with `needle`.
+     * @param self The slice to operate on.
+     * @param needle The slice to search for.
+     * @return True if the slice starts with the provided text, false otherwise.
+     */
+    function startsWith(slice memory self, slice memory needle) internal pure returns (bool) {
+        if (self._len < needle._len) {
+            return false;
+        }
+
+        if (self._ptr == needle._ptr) {
+            return true;
+        }
+
+        bool equal;
+        assembly {
+            let length := mload(needle)
+            let selfptr := mload(add(self, 0x20))
+            let needleptr := mload(add(needle, 0x20))
+            equal := eq(keccak256(selfptr, length), keccak256(needleptr, length))
+        }
+        return equal;
+    }
+
+    /*
+     * @dev Returns a newly allocated string containing the concatenation of
+     *      `self` and `other`.
+     * @param self The first slice to concatenate.
+     * @param other The second slice to concatenate.
+     * @return The concatenation of the two strings.
+     */
+    function concat(slice memory self, slice memory other) internal pure returns (string memory) {
+        string memory ret = new string(self._len + other._len);
+        uint retptr;
+        assembly { retptr := add(ret, 32) }
+        memcpy(retptr, self._ptr, self._len);
+        memcpy(retptr + self._len, other._ptr, other._len);
+        return ret;
+    }
 }

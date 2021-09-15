@@ -8,6 +8,9 @@ import "./tasks/deployTendermintClient"
 import "./tasks/deployClientManager"
 import "./tasks/deployPacket"
 import "./tasks/deployRouting"
+import "./tasks/deployERC1155Bank"
+import "./tasks/deployTransfer"
+
 
 import { HardhatUserConfig } from 'hardhat/types'
 
@@ -32,6 +35,7 @@ const config: HardhatUserConfig = {
       url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
       gasPrice: 1500000000,
       chainId: 4,
+      gas: 4100000,
       accounts: [],
     }
   },
