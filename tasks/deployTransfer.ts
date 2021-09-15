@@ -1,14 +1,15 @@
 import "@nomiclabs/hardhat-web3";
 import { task, types } from "hardhat/config"
 
+const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
+const PACKET_ADDRES = process.env.PACKET_ADDRES;
+const ERC1155BANK_ADDRES = process.env.ERC1155BANK_ADDRES;
+
 task("deployTransfer", "Deploy Transfer")
-.addParam("erc1155bank", "the erc1155Bank contract address")
-.addParam("packet", "the packet contract address")
-.addParam("clientmanager", "the packet contract address")
 .setAction(async (taskArgs, hre) => {
     const transferFactory = await hre.ethers.getContractFactory('Transfer')
 
-    const transfer = await transferFactory.deploy(taskArgs.erc1155bank, taskArgs.packet, taskArgs.clientmanager);
+    const transfer = await transferFactory.deploy(String(ERC1155BANK_ADDRES), String(PACKET_ADDRES), String(CLIENT_MANAGER_ADDRES));
     await transfer.deployed();
     console.log("Transfer deployed to:", transfer.address);
 });
