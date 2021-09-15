@@ -34,10 +34,11 @@ task("deployLibraries", "Deploy All Libraries")
         console.log("ProofCodec deployed to:", proofCodec.address);
         console.log("Verifier deployed to:", verifierLib.address);
 
-        console.log("export CLIENT_STATE_CODEC_ADDRES=%s",clientStateCodec.address);
-        console.log("export CONSENSUS_STATE_CODEC_ADDRES=%s",consensusStateCodec.address);
-        console.log("export PROOF_CODEC_ADDRES=%s",proofCodec.address);
-        console.log("export VERIFIER_ADDRES=%s",verifierLib.address);
+        console.log("export CLIENT_STATE_CODEC_ADDRES=%s", clientStateCodec.address);
+        console.log("export CONSENSUS_STATE_CODEC_ADDRES=%s", consensusStateCodec.address);
+        console.log("export HEADER_CODEC_ADDRES=%s", headerCodec.address);
+        console.log("export PROOF_CODEC_ADDRES=%s", proofCodec.address);
+        console.log("export VERIFIER_ADDRES=%s", verifierLib.address);
     });
 
 module.exports = {};

@@ -22,7 +22,7 @@ yarn hardhat deployLibraries --network rinkeby
 
 * Deploy ClientManager
 ```shell
-yarn hardhat deployClientManager --network rinkeby
+yarn hardhat deployClientManager --network rinkeby --chain eth
 ```
 
 * Deploy Tendermint Client
@@ -30,12 +30,12 @@ yarn hardhat deployClientManager --network rinkeby
 yarn hardhat deployTendermint --network rinkeby
 ```
 
-* Deploy Packet
+* Deploy Routing
 ```shell
-yarn hardhat deployPacket --network rinkeby
+yarn hardhat deployRouting --network rinkeby
 ```
 
 * Deploy Packet
 ```shell
-yarn hardhat deployRouting --network rinkeby
+yarn hardhat deployPacket --network rinkeby
 ```
