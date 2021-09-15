@@ -6,6 +6,9 @@ const PACKET_ADDRES = process.env.PACKET_ADDRES;
 const ERC1155BANK_ADDRES = process.env.ERC1155BANK_ADDRES;
 
 task("deployTransfer", "Deploy Transfer")
+.addParam("client", "client address")
+.addParam("packet", "packet address")
+.addParam("bank", "erc1155bank address")
 .setAction(async (taskArgs, hre) => {
     const transferFactory = await hre.ethers.getContractFactory('Transfer')
 
