@@ -143,7 +143,7 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         );
 
         require(
-            receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)],
+            !receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)],
             "packet has been received"
         );
         string memory targetChain;
@@ -407,12 +407,12 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
     * @param destChain name of destination chain
     */
     function getNextSequenceSend(
-        string calldata sourceChain,
-        string calldata destChain
+        string memory sourceChain,
+        string memory destChain
     )
-    external
+    view
+    public
     override
-    nonReentrant
     returns (uint64)
     {
         uint64 seq = sequences[Host.nextSequenceSendKey(sourceChain, destChain)];
