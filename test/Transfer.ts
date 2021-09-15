@@ -24,10 +24,6 @@ describe('Transfer', () => {
         accounts = await ethers.getSigners();
         const chainName = "irishub"
 
-        const stringsFac = await ethers.getContractFactory("Strings");
-        const strs = await stringsFac.deploy();
-        await strs.deployed();
-
         const hostFac = await ethers.getContractFactory("Host");
 
         const host = await hostFac.deploy();
@@ -70,11 +66,7 @@ describe('Transfer', () => {
         const routingFac = await ethers.getContractFactory("Routing");
         routing = (await routingFac.deploy()) as Routing;
 
-        const pacFac = await ethers.getContractFactory("Packet",{signer: accounts[0],
-            libraries: {
-                Strings : strs.address
-            }
-        });
+        const pacFac = await ethers.getContractFactory("Packet");
         pac = (await pacFac.deploy(clientManager.address, routing.address)) as Packet;
 
         const erc1155Fac = await ethers.getContractFactory("ERC1155Bank");
@@ -82,11 +74,7 @@ describe('Transfer', () => {
 
     
 
-        const tsFac = await ethers.getContractFactory("Transfer", {signer: accounts[0],
-            libraries: {
-                Strings : strs.address
-            }
-        });
+        const tsFac = await ethers.getContractFactory("Transfer");
         transfer = (await tsFac.deploy(erc1155bank.address, pac.address, clientManager.address)) as Transfer;
     });
    
