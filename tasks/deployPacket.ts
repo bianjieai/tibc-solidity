@@ -6,8 +6,6 @@ const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
 const ROUTING_ADDRES = process.env.ROUTING_ADDRES;
 
 task("deployPacket", "Deploy Packet")
-    .addParam("client", "Chain Name")
-    .addParam("routing", "Client Address")
     .setAction(async (taskArgs, hre) => {
         const packetFactory = await hre.ethers.getContractFactory('Packet')
 

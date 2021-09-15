@@ -265,7 +265,7 @@ library Strings {
      * @return True if the string are equal, false otherwise.
      */
     function equals(string memory first, string memory second)
-        public
+        internal
         pure
         returns (bool)
     {
