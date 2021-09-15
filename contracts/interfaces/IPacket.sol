@@ -37,6 +37,7 @@ interface IPacket {
         string calldata sourceChain,
         string calldata destChain
     )
+    view
     external
     returns (uint64);
 }
