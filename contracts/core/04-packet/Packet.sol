@@ -176,6 +176,10 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())){
             IModule module = routing.getMoudle(packet.port);
+            require(
+                address(module) != address(0),
+                "this module not found!"
+            );
             bytes memory ack = module.onRecvPacket(packet);
             PacketTypes.Packet memory packetCopy = PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data);
             if (ack.length > 0){
