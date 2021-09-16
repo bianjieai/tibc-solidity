@@ -7,6 +7,7 @@ import "../../proto/Types.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/04-packet/Packet.sol";
 import "../../libraries/24-host/Host.sol";
+import "../../libraries/utils/Bytes.sol";
 import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IModule.sol";
@@ -22,6 +23,7 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
     mapping(bytes => uint64) public sequences;
     mapping(bytes => bytes32) public commitments;
     mapping(bytes => bool) public receipts;
+    bytes public commitBytes ;
 
     /**
     * @dev Event triggered when the packet is sent
@@ -148,12 +150,8 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         );
         string memory targetChain;
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            if (bytes(packet.relayChain).length > 0){
-                targetChain = packet.relayChain;
-            }else{
-                targetChain = packet.sourceChain;
-            }
+        if (Strings.equals(packet.destChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
+            targetChain = packet.relayChain;
         }else{
             targetChain = packet.sourceChain;
         }
@@ -163,13 +161,14 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
             address(client) != address(0),
             "consensus state not found"
         );
+        commitBytes = Bytes.fromBytes32(sha256(packet.data));
         client.verifyPacketCommitment(
             height,
             proof,
             packet.sourceChain,
             packet.destChain,
             packet.sequence,
-            packet.data
+            commitBytes
         );
 
         receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)] = true;
@@ -252,12 +251,8 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
 
         string memory targetChain;
 
-        if (Strings.equals(packet.sourceChain, clientManager.getChainName())) {
-            if (bytes(packet.relayChain).length > 0){
-                targetChain = packet.relayChain;
-            }else{
-                targetChain = packet.destChain;
-            }
+        if (Strings.equals(packet.sourceChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
+            targetChain = packet.relayChain;
         }else{
             targetChain = packet.destChain;
         }
@@ -267,13 +262,14 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
             "consensus state not found"
         );
 
+        commitBytes = Bytes.fromBytes32(sha256(acknowledgement));
         clientManager.getClient(targetChain).verifyPacketAcknowledgement(
             height,
             proofAcked,
             packet.sourceChain,
             packet.destChain,
             packet.sequence,
-            acknowledgement
+            commitBytes
         );
 
         delete commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)];
