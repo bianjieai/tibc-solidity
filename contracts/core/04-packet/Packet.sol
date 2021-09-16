@@ -13,10 +13,9 @@ import "../../interfaces/IClient.sol";
 import "../../interfaces/IModule.sol";
 import "../../interfaces/IPacket.sol";
 import "../../interfaces/IRouting.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
-contract Packet is Ownable, ReentrancyGuard, IPacket {
+contract Packet is Ownable, IPacket {
     IClientManager public clientManager;
     IRouting public routing;
 
@@ -93,7 +92,6 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
     )
     external
     override
-    nonReentrant
     validateBasic(packet.sequence, packet.data) {
         string memory targetChain;
         targetChain = packet.destChain;
@@ -137,7 +135,6 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
     )
     external
     override
-    nonReentrant
     {
         require(
             packet.sequence > sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)],
@@ -175,6 +172,10 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())){
             IModule module = routing.getMoudle(packet.port);
+            require(
+                address(module) != address(0),
+                "this module not found!"
+            );
             bytes memory ack = module.onRecvPacket(packet);
             PacketTypes.Packet memory packetCopy = PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data);
             if (ack.length > 0){
@@ -205,9 +206,9 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
     function writeAcknowledgement(
         PacketTypes.Packet memory packet,
         bytes memory acknowledgement
-    ) internal nonReentrant {
+    ) internal {
         require(
-            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)].length == 0,
+            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)] == bytes32(0),
             "acknowledgement for packet already exists"
         );
         require(
@@ -243,7 +244,7 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         bytes calldata acknowledgement,
         bytes calldata proofAcked,
         Height.Data calldata height
-    ) external override nonReentrant {
+    ) external override {
         require(
             commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] == sha256(packet.data),
             "commitment bytes are not equal!"
@@ -301,7 +302,7 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
      */
     function cleanPacket(
         PacketTypes.CleanPacket calldata packet
-    ) external override nonReentrant {
+    ) external override {
         require(
             packet.sequence > 0,
             "sequence must be greater than 0"
@@ -340,7 +341,7 @@ contract Packet is Ownable, ReentrancyGuard, IPacket {
         PacketTypes.CleanPacket calldata packet,
         bytes calldata proof,
         Height.Data calldata height
-    ) external override nonReentrant {
+    ) external override {
         uint64 currentCleanSeq = sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)];
         require(
             packet.sequence > currentCleanSeq,
