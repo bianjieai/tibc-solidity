@@ -45,20 +45,6 @@ task("createClient", "Deploy Client Manager")
         console.log(result);
     });
 
-task("updateClient", "Deploy Client Manager")
-    .addParam("chain", "chain name")
-    .addParam("header", "HEX encoding header")
-    .setAction(async (taskArgs, hre) => {
-
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-
-        const result = await clientManager.updateClient(taskArgs.chain, Buffer.from(taskArgs.header, "hex"))
-
-        console.log(await result.wait());
-    });
-
 task("reisterRelayer", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
@@ -72,6 +58,19 @@ task("reisterRelayer", "Deploy Client Manager")
         console.log(result);
     });
 
+task("updateClient", "Deploy Client Manager")
+    .addParam("chain", "chain name")
+    .addParam("header", "HEX encoding header")
+    .setAction(async (taskArgs, hre) => {
+
+        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+
+        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
+
+        const result = await clientManager.updateClient(taskArgs.chain, Buffer.from(taskArgs.header, "hex"))
+
+        console.log(await result.wait());
+    });
 task("getRelayers", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")

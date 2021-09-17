@@ -23,10 +23,6 @@ describe('Transfer', () => {
         accounts = await ethers.getSigners();
         const chainName = "irishub"
 
-        const stringsFac = await ethers.getContractFactory("Strings");
-        const strs = await stringsFac.deploy();
-        await strs.deployed();
-
         const hostFac = await ethers.getContractFactory("Host");
 
         const host = await hostFac.deploy();
@@ -65,33 +61,18 @@ describe('Transfer', () => {
         }
         await createClient(chainName, tendermint.address, clientState, consensusState)
 
-
         const routingFac = await ethers.getContractFactory("Routing");
         routing = (await routingFac.deploy()) as Routing;
 
-        const pacFac = await ethers.getContractFactory("Packet", {
-            signer: accounts[0],
-            libraries: {
-                Strings: strs.address
-            }
-        });
+        const pacFac = await ethers.getContractFactory("Packet");
         pac = (await pacFac.deploy(clientManager.address, routing.address)) as Packet;
 
         const erc1155Fac = await ethers.getContractFactory("ERC1155Bank");
         erc1155bank = (await erc1155Fac.deploy()) as ERC1155Bank;
 
-
-
-        const tsFac = await ethers.getContractFactory("Transfer", {
-            signer: accounts[0],
-            libraries: {
-                Strings: strs.address
-            }
-        });
-        transfer = (await tsFac.deploy(erc1155bank.address, pac.address, clientManager.address)) as Transfer;
+        const tsFac = await ethers.getContractFactory("Transfer");
+        transfer = (await upgrades.deployProxy(tsFac, [erc1155bank.address, pac.address, clientManager.address])) as Transfer;
     });
-
-
 
     // receive packet from irishub 
     it("onRecvPacket: from irishub to ethereum", async function () {
@@ -119,9 +100,7 @@ describe('Transfer', () => {
         };
 
         let res = await transfer.onRecvPacket(packet);
-        console.log("res:", res);
     })
-
 
     // send nft back to irishub from ethereum 
     it("sendTransfer: send nft back to irishub from ethereum", async function () {
@@ -140,8 +119,6 @@ describe('Transfer', () => {
         let balance = await erc1155bank.balanceOf(sender, 1);
         expect(balance).to.eq(0);
     })
-
-
 
     // The test need fix the tokenID in the refundToken
     it("onAcknowledgementPacket when awayFromOrigin is false", async function () {
@@ -183,7 +160,6 @@ describe('Transfer', () => {
 
     })
 
-
     it("onAcknowledgementPacket when awayFromOrigin is true", async function () {
         let sender = (await accounts[0].getAddress()).toString();
         let receiver = (await accounts[1].getAddress()).toString();
@@ -208,7 +184,6 @@ describe('Transfer', () => {
         };
         let acknowledgement = "0x01";
 
-
         // mint 
         await erc1155bank.mint(sender, 88, 1, "0x123456");
 
@@ -222,7 +197,6 @@ describe('Transfer', () => {
         expect(balance2).to.eq(0);
 
         await transfer.onAcknowledgementPacket(packet, acknowledgement);
-
     })
 
     const deployContract = async function () {
@@ -280,5 +254,4 @@ describe('Transfer', () => {
         let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
         await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf);
     }
-
 })

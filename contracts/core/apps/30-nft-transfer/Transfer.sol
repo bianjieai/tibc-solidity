@@ -11,10 +11,10 @@ import "../../../libraries/utils/Strings.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "./ERC1155Bank.sol";
-import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract Transfer is Initializable, ITransfer, ERC1155Holder {
+contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
     using Bytes for *;
 
@@ -26,17 +26,15 @@ contract Transfer is Initializable, ITransfer, ERC1155Holder {
     IERC1155Bank public bank;
     IClientManager public clientManager;
 
-    constructor(
+    function initialize(
         address bank_,
         address packet_,
         address clientManager_
-    ) public {
+    ) public initializer {
         bank = IERC1155Bank(bank_);
         packet = IPacket(packet_);
         clientManager = IClientManager(clientManager_);
     }
-
-    function initialize() public initializer {}
 
     /*
         keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass

@@ -7,6 +7,7 @@ import "../../proto/Types.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/04-packet/Packet.sol";
 import "../../libraries/24-host/Host.sol";
+import "../../libraries/utils/Bytes.sol";
 import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
 import "../../interfaces/IModule.sol";
@@ -16,13 +17,14 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, IPacket {
+contract Packet is Initializable, OwnableUpgradeable, IPacket {
     IClientManager public clientManager;
     IRouting public routing;
 
     mapping(bytes => uint64) public sequences;
     mapping(bytes => bytes32) public commitments;
     mapping(bytes => bool) public receipts;
+    bytes public commitBytes ;
 
     function initialize() public initializer {}
 
@@ -94,7 +96,6 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
     )
     external
     override
-    nonReentrant
     validateBasic(packet.sequence, packet.data) {
         string memory targetChain;
         targetChain = packet.destChain;
@@ -138,7 +139,6 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
     )
     external
     override
-    nonReentrant
     {
         require(
             packet.sequence > sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)],
@@ -146,17 +146,13 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
         );
 
         require(
-            receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)],
+            !receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)],
             "packet has been received"
         );
         string memory targetChain;
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            if (bytes(packet.relayChain).length > 0){
-                targetChain = packet.relayChain;
-            }else{
-                targetChain = packet.sourceChain;
-            }
+        if (Strings.equals(packet.destChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
+            targetChain = packet.relayChain;
         }else{
             targetChain = packet.sourceChain;
         }
@@ -166,19 +162,24 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
             address(client) != address(0),
             "consensus state not found"
         );
+        commitBytes = Bytes.fromBytes32(sha256(packet.data));
         client.verifyPacketCommitment(
             height,
             proof,
             packet.sourceChain,
             packet.destChain,
             packet.sequence,
-            packet.data
+            commitBytes
         );
 
         receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence)] = true;
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())){
             IModule module = routing.getMoudle(packet.port);
+            require(
+                address(module) != address(0),
+                "this module not found!"
+            );
             bytes memory ack = module.onRecvPacket(packet);
             PacketTypes.Packet memory packetCopy = PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data);
             if (ack.length > 0){
@@ -209,9 +210,9 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
     function writeAcknowledgement(
         PacketTypes.Packet memory packet,
         bytes memory acknowledgement
-    ) internal nonReentrant {
+    ) internal {
         require(
-            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)].length == 0,
+            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)] == bytes32(0),
             "acknowledgement for packet already exists"
         );
         require(
@@ -247,7 +248,7 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
         bytes calldata acknowledgement,
         bytes calldata proofAcked,
         Height.Data calldata height
-    ) external override nonReentrant {
+    ) external override {
         require(
             commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] == sha256(packet.data),
             "commitment bytes are not equal!"
@@ -255,12 +256,8 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
 
         string memory targetChain;
 
-        if (Strings.equals(packet.sourceChain, clientManager.getChainName())) {
-            if (bytes(packet.relayChain).length > 0){
-                targetChain = packet.relayChain;
-            }else{
-                targetChain = packet.destChain;
-            }
+        if (Strings.equals(packet.sourceChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
+            targetChain = packet.relayChain;
         }else{
             targetChain = packet.destChain;
         }
@@ -270,13 +267,14 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
             "consensus state not found"
         );
 
+        commitBytes = Bytes.fromBytes32(sha256(acknowledgement));
         clientManager.getClient(targetChain).verifyPacketAcknowledgement(
             height,
             proofAcked,
             packet.sourceChain,
             packet.destChain,
             packet.sequence,
-            acknowledgement
+            commitBytes
         );
 
         delete commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)];
@@ -308,7 +306,7 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
      */
     function cleanPacket(
         PacketTypes.CleanPacket calldata packet
-    ) external override nonReentrant {
+    ) external override {
         require(
             packet.sequence > 0,
             "sequence must be greater than 0"
@@ -347,7 +345,7 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
         PacketTypes.CleanPacket calldata packet,
         bytes calldata proof,
         Height.Data calldata height
-    ) external override nonReentrant {
+    ) external override {
         uint64 currentCleanSeq = sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)];
         require(
             packet.sequence > currentCleanSeq,
@@ -410,12 +408,12 @@ contract Packet is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable
     * @param destChain name of destination chain
     */
     function getNextSequenceSend(
-        string calldata sourceChain,
-        string calldata destChain
+        string memory sourceChain,
+        string memory destChain
     )
-    external
+    view
+    public
     override
-    nonReentrant
     returns (uint64)
     {
         uint64 seq = sequences[Host.nextSequenceSendKey(sourceChain, destChain)];
