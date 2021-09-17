@@ -6,6 +6,18 @@ import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 
 contract ERC1155Bank is ERC1155, IERC1155Bank {
+    /*
+        keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass
+        keep track of id :   tokenId -> id
+        keep track of uri :  tokenId -> uri
+    */
+    struct NftMapValue {
+        string class;
+        string id;
+        string uri;
+    }
+    mapping(uint256 => NftMapValue) public nftMapValue;
+
     constructor() public ERC1155("") {}
 
     /*  @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
@@ -76,5 +88,74 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         returns (uint256)
     {
         super.balanceOf(account, id);
+    }
+
+    /*  @notice        this function is to get uri from tokenId
+     *
+     *  @param id
+     */
+    function uri(uint256 id)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return nftMapValue[id].uri;
+    }
+
+    /*  @notice                 this function is to set value
+     *
+     *  @param tokenId          token Id
+     *  @param cls              class
+     *  @param id               id
+     *  @param uri              uri
+     */
+    function setMapValue(
+        uint256 tokenId,
+        string calldata cls,
+        string calldata id,
+        string calldata uri
+    ) external virtual override {
+        nftMapValue[tokenId] = NftMapValue({class: cls, id: id, uri: uri});
+    }
+
+    /*  @notice                  this function is to get class
+     *
+     *  @param tokenId          token Id
+     */
+    function getClass(uint256 tokenId)
+        public
+        virtual
+        override
+        returns (string memory)
+    {
+        return nftMapValue[tokenId].class;
+    }
+
+    /*  @notice                  this function is to get id
+     *
+     *  @param tokenId          token Id
+     */
+    function getId(uint256 tokenId)
+        external
+        virtual
+        override
+        returns (string memory)
+    {
+        return nftMapValue[tokenId].id;
+    }
+
+    /*  @notice                  this function is to get uri
+     *
+     *  @param tokenId          token Id
+     */
+    function getUri(uint256 tokenId)
+        external
+        virtual
+        override
+        returns (string memory)
+    {
+        return nftMapValue[tokenId].uri;
     }
 }

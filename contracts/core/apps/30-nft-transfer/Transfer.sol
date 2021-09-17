@@ -35,18 +35,6 @@ contract Transfer is ITransfer, ERC1155Holder {
         clientManager = IClientManager(clientManager_);
     }
 
-    /*
-        keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass
-        keep track of id :   tokenId -> id
-        keep track of uri :  tokenId -> uri
-    */
-    struct NftMapValue {
-        string class;
-        string id;
-        string uri;
-    }
-    mapping(uint256 => NftMapValue) public nftMapValue;
-
     /*  @notice                 this function is to send nft and construct data packet
      *
      *  @param transferData      Send the data needed by nft
@@ -85,13 +73,13 @@ contract Transfer is ITransfer, ERC1155Holder {
             require(_burn(msg.sender, transferData.tokenId, uint256(1)));
         }
 
-        NftMapValue memory mapData = getMapValue(transferData.tokenId);
+        // NftMapValue memory mapData = getMapValue(transferData.tokenId);
 
         bytes memory data = NftTransfer.encode(
             NftTransfer.Data({
-                class: mapData.class,
-                id: mapData.id,
-                uri: mapData.uri,
+                class: bank.getClass(transferData.tokenId),
+                id: bank.getId(transferData.tokenId),
+                uri: bank.getUri(transferData.tokenId),
                 sender: Bytes.addressToString(msg.sender),
                 receiver: transferData.receiver,
                 awayFromOrigin: awayFromOrigin
@@ -196,12 +184,7 @@ contract Transfer is ITransfer, ERC1155Holder {
 
             if (success) {
                 // keep trace of class and id and uri
-                NftMapValue memory value = NftMapValue({
-                    class: newClass,
-                    id: data.id,
-                    uri: data.uri
-                });
-                setMapValue(tokenId, value);
+                bank.setMapValue(tokenId, newClass, data.id, data.uri);
             }
 
             return _newAcknowledgement(success);
@@ -281,8 +264,11 @@ contract Transfer is ITransfer, ERC1155Holder {
         uint256 id,
         uint256 amount
     ) internal virtual returns (bool) {
-        bank.burn(account, id, amount);
-        return true;
+        try bank.burn(account, id, amount) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
     }
 
     /*  @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
@@ -298,8 +284,11 @@ contract Transfer is ITransfer, ERC1155Holder {
         uint256 amount,
         bytes memory data
     ) internal virtual returns (bool) {
-        bank.mint(account, id, amount, data);
-        return true;
+        try bank.mint(account, id, amount, data) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
     }
 
     /*  @notice        this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
@@ -316,8 +305,11 @@ contract Transfer is ITransfer, ERC1155Holder {
         uint256 amount,
         bytes memory data
     ) internal virtual returns (bool) {
-        bank.transferFrom(from, to, id, amount, data);
-        return true;
+        try bank.transferFrom(from, to, id, amount, data) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
     }
 
     /* @notice   This method is to obtain the splicing of the source chain and nftclass from the cross-chain nft prefix
@@ -499,26 +491,5 @@ contract Transfer is ITransfer, ERC1155Holder {
         bytes memory c2 = Bytes.cutBytes32(sha256(bytes(id)));
         bytes memory tokenId = Bytes.concat(c1, c2);
         return tokenId.toBytes32();
-    }
-
-    /*  @notice                  this function is to set value
-     *
-     *  @param tokenId          token Id
-     *  @param value            value
-     */
-    function setMapValue(uint256 tokenId, NftMapValue memory value) public {
-        nftMapValue[tokenId] = value;
-    }
-
-    /*  @notice                  this function is to get value
-     *
-     *  @param tokenId          token Id
-     */
-    function getMapValue(uint256 tokenId)
-        public
-        view
-        returns (NftMapValue memory)
-    {
-        return nftMapValue[tokenId];
     }
 }
