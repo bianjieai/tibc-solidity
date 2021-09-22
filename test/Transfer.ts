@@ -10,6 +10,7 @@ const { ethers } = require("hardhat");
 
 let nft = require("./proto/nftTransfer.js");
 let client = require("./proto/compiled.js");
+let ack = require("./proto/ack.js");
 
 describe('Transfer', () => {
     let accounts: Signer[]
@@ -106,7 +107,6 @@ describe('Transfer', () => {
         };
 
         let res = await transfer.onRecvPacket(packet);
-        console.log("res:", res);
     })
 
 
@@ -153,7 +153,11 @@ describe('Transfer', () => {
             relayChain : "",
             data : databytes,
          };
-         let acknowledgement = "0x00";
+
+        let acknowledgement= {
+            result : Buffer.from("01", "hex"),
+        }
+        let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
 
          // mint 
@@ -162,10 +166,10 @@ describe('Transfer', () => {
         expect(balance).to.eq(1);
          // burn 
          await erc1155bank.burn(sender, 2, 1);
-         let balance1 = await erc1155bank.balanceOf(sender, 2);
+        let balance1 = await erc1155bank.balanceOf(sender, 2);
         expect(balance1).to.eq(0);
 
-         await transfer.onAcknowledgementPacket(packet, acknowledgement);
+         await transfer.onAcknowledgementPacket(packet, dd);
          let balance3 = await erc1155bank.balanceOf(sender, 2);
          
         })
@@ -193,7 +197,10 @@ describe('Transfer', () => {
                  relayChain : "",
                  data : databytes,
               };
-              let acknowledgement = "0x01";
+              let acknowledgement= {
+                result : Buffer.from("01", "hex"),
+            }
+            let dd = ack.Acknowledgement.encode(acknowledgement).finish();
      
      
               // mint 
@@ -208,10 +215,10 @@ describe('Transfer', () => {
               let balance2 = await erc1155bank.balanceOf(sender, 88);
               expect(balance2).to.eq(0);
      
-              await transfer.onAcknowledgementPacket(packet, acknowledgement);
+              await transfer.onAcknowledgementPacket(packet, dd);
         
     })
-         
+
     const deployContract = async function () {
         accounts = await ethers.getSigners();
         const msrFactory = await ethers.getContractFactory('ClientManager', {
