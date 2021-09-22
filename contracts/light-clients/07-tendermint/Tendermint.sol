@@ -19,10 +19,12 @@ contract Tendermint is IClient, Ownable {
         bytes32 next_validators_hash;
     }
 
+    // each version saves up to MAX_SIZE consensus states
+    uint16 constant MAX_SIZE = 100;
     // current light client status
     ClientState.Data public clientState;
     // consensus status of light clients
-    mapping(uint128 => ConsensusState.Data) public consensusStates;
+    mapping(uint128 => ConsensusState.Data) private consensusStates;
     // system time each time the client status is updated
     mapping(uint128 => uint256) private processedTime;
 
@@ -40,6 +42,19 @@ contract Tendermint is IClient, Ownable {
         returns (Height.Data memory)
     {
         return clientState.latest_height;
+    }
+
+    /*  @notice return the consensus status information of the specified height
+
+     *  @param height height of the consensus status
+     */
+    function getConsensusState(Height.Data memory height)
+        public
+        view
+        returns (ConsensusState.Data memory)
+    {
+        uint128 key = getStorageKey(height);
+        return consensusStates[key];
     }
 
     /*  @notice   return the status of the current light client
@@ -110,14 +125,6 @@ contract Tendermint is IClient, Ownable {
             "RevisionNumber not match"
         );
 
-        uint128 key = getStorageKey(
-            Height.Data({
-                revision_height: header.revision_height,
-                revision_number: header.revision_number
-            })
-        );
-        require(consensusStates[key].root.length == 0, "ConsensusState exist");
-
         // update the client state of the light client
         if (
             header.revision_height > clientState.latest_height.revision_height
@@ -136,6 +143,12 @@ contract Tendermint is IClient, Ownable {
             header.next_validators_hash
         );
 
+        uint128 key = getStorageKey(
+            Height.Data({
+                revision_height: header.revision_height,
+                revision_number: header.revision_number
+            })
+        );
         consensusStates[key] = newConsState;
         processedTime[key] = block.timestamp;
     }
@@ -234,7 +247,7 @@ contract Tendermint is IClient, Ownable {
     {
         ret = data.revision_number;
         ret = (ret << 64);
-        ret |= data.revision_height;
+        ret |= (data.revision_height % MAX_SIZE);
     }
     // function parseStorageKey(uint128 key)
     //     private
