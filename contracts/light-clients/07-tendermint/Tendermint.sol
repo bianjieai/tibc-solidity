@@ -11,12 +11,19 @@ import "../../proto/Commitment.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
 contract Tendermint is IClient, Ownable {
+    struct SimpleHeader {
+        uint64 height;
+        uint64 timestamp;
+        bytes32 root;
+        bytes32 next_validators_hash;
+    }
+
     // current light client status
     ClientState.Data public clientState;
     // consensus status of light clients
-    mapping(uint256 => ConsensusState.Data) public consensusStates;
+    mapping(uint64 => ConsensusState.Data) public consensusStates;
     //System time each time the client status is updated
-    mapping(uint256 => uint256) private processedTime;
+    mapping(uint64 => uint256) private processedTime;
 
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
@@ -97,71 +104,25 @@ contract Tendermint is IClient, Ownable {
         override
         onlyOwner
     {
-        Header.Data memory header = HeaderCodec.decode(headerBz);
-        ConsensusState.Data memory tmConsState = consensusStates[
-            header.trusted_height.revision_height
-        ];
-
-        // check heaer
+        SimpleHeader memory header = abi.decode(headerBz, (SimpleHeader));
         require(
-            Bytes.equals(
-                LightClient.genValidatorSetHash(header.trusted_validators),
-                tmConsState.next_validators_hash
-            ),
-            "invalid validator set"
+            consensusStates[header.height].timestamp.secs == 0,
+            "ConsensusState exist"
         );
-        require(
-            uint64(header.signed_header.header.height) >
-                header.trusted_height.revision_height,
-            "invalid block height"
-        );
-
-        // SignedHeader.Data memory trustedHeader;
-        // trustedHeader.header.chain_id = state.chain_id;
-        // trustedHeader.header.height = int64(
-        //     state.latest_height.revision_height
-        // );
-        // trustedHeader.header.time = tmConsState.timestamp;
-        // trustedHeader.header.next_validators_hash = tmConsState
-        //     .next_validators_hash;
-
-        // Timestamp.Data memory currentTimestamp;
-        // currentTimestamp.secs = int64(block.timestamp);
-
-        // Verify next header with the passed-in trustedVals
-        // - asserts trusting period not passed
-        // - assert header timestamp is not past the trusting period
-        // - assert header timestamp is past latest stored consensus state timestamp
-        // - assert that a TrustLevel proportion of TrustedValidators signed new Commit
-        // TODO
-        // LightClient.verify(
-        //     trustedHeader,
-        //     header.trusted_validators,
-        //     header.signed_header,
-        //     header.validator_set,
-        //     clientSate.trusting_period,
-        //     currentTimestamp,
-        //     clientSate.max_clock_drift,
-        //     clientSate.trust_level
-        // );
-
         // update the client state of the light client
-        if (
-            uint64(header.signed_header.header.height) >
-            clientState.latest_height.revision_height
-        ) {
-            clientState.latest_height.revision_height = uint64(
-                header.signed_header.header.height
-            );
+        if (header.height > clientState.latest_height.revision_height) {
+            clientState.latest_height.revision_height = header.height;
         }
         // save the consensus state of the light client
         ConsensusState.Data memory newConsState;
-        newConsState.timestamp = header.signed_header.header.time;
-        newConsState.root = header.signed_header.header.app_hash;
-        newConsState.next_validators_hash = header
-            .signed_header
-            .header
-            .next_validators_hash;
+        newConsState.timestamp = Timestamp.Data({
+            secs: int64(header.timestamp),
+            nanos: 0
+        });
+        newConsState.root = Bytes.fromBytes32(header.root);
+        newConsState.next_validators_hash = Bytes.fromBytes32(
+            header.next_validators_hash
+        );
         consensusStates[
             clientState.latest_height.revision_height
         ] = newConsState;
