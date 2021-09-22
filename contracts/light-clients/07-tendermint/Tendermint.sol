@@ -12,7 +12,8 @@ import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
 contract Tendermint is IClient, Ownable {
     struct SimpleHeader {
-        uint64 height;
+        uint64 revision_number;
+        uint64 revision_height;
         uint64 timestamp;
         bytes32 root;
         bytes32 next_validators_hash;
@@ -21,9 +22,9 @@ contract Tendermint is IClient, Ownable {
     // current light client status
     ClientState.Data public clientState;
     // consensus status of light clients
-    mapping(uint64 => ConsensusState.Data) public consensusStates;
+    mapping(uint128 => ConsensusState.Data) public consensusStates;
     //System time each time the client status is updated
-    mapping(uint64 => uint256) private processedTime;
+    mapping(uint128 => uint256) private processedTime;
 
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
@@ -46,7 +47,7 @@ contract Tendermint is IClient, Ownable {
      */
     function status() external view override returns (Status) {
         ConsensusState.Data storage consState = consensusStates[
-            clientState.latest_height.revision_height
+            buildHeight(clientState.latest_height)
         ];
         if (consState.root.length == 0) {
             return Status.Unknown;
@@ -71,11 +72,10 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
-        consensusStates[
-            clientState.latest_height.revision_height
-        ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = block
-            .timestamp;
+
+        uint128 key = buildHeight(clientState.latest_height);
+        consensusStates[key] = ConsensusStateCodec.decode(consensusStateBz);
+        processedTime[key] = block.timestamp;
     }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
@@ -88,11 +88,10 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
-        consensusStates[
-            clientState.latest_height.revision_height
-        ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = block
-            .timestamp;
+
+        uint128 key = buildHeight(clientState.latest_height);
+        consensusStates[key] = ConsensusStateCodec.decode(consensusStateBz);
+        processedTime[key] = block.timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
@@ -105,14 +104,25 @@ contract Tendermint is IClient, Ownable {
         onlyOwner
     {
         SimpleHeader memory header = abi.decode(headerBz, (SimpleHeader));
+        //revision_number must be consistent
         require(
-            consensusStates[header.height].root.length == 0,
-            "ConsensusState exist"
+            clientState.latest_height.revision_number == header.revision_number,
+            "RevisionNumber not match"
         );
 
+        uint128 key = buildHeight(
+            Height.Data({
+                revision_height: header.revision_height,
+                revision_number: header.revision_number
+            })
+        );
+        require(consensusStates[key].root.length == 0, "ConsensusState exist");
+
         // update the client state of the light client
-        if (header.height > clientState.latest_height.revision_height) {
-            clientState.latest_height.revision_height = header.height;
+        if (
+            header.revision_height > clientState.latest_height.revision_height
+        ) {
+            clientState.latest_height.revision_height = header.revision_height;
         }
 
         // save the consensus state of the light client
@@ -125,11 +135,9 @@ contract Tendermint is IClient, Ownable {
         newConsState.next_validators_hash = Bytes.fromBytes32(
             header.next_validators_hash
         );
-        consensusStates[
-            clientState.latest_height.revision_height
-        ] = newConsState;
-        processedTime[clientState.latest_height.revision_height] = block
-            .timestamp;
+
+        consensusStates[key] = newConsState;
+        processedTime[key] = block.timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
@@ -149,10 +157,11 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata commitmentBytes
     ) external view override {
+        uint128 key = buildHeight(height);
         Verifier.verifyCommitment(
             clientState,
-            consensusStates[height.revision_height],
-            processedTime[height.revision_height],
+            consensusStates[key],
+            processedTime[key],
             proof,
             sourceChain,
             destChain,
@@ -178,10 +187,11 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external view override {
+        uint128 key = buildHeight(height);
         Verifier.verifyAcknowledgement(
             clientState,
-            consensusStates[height.revision_height],
-            processedTime[height.revision_height],
+            consensusStates[key],
+            processedTime[key],
             proof,
             sourceChain,
             destChain,
@@ -205,14 +215,33 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence
     ) external view override {
+        uint128 key = buildHeight(height);
         Verifier.verifyCleanCommitment(
             clientState,
-            consensusStates[height.revision_height],
-            processedTime[height.revision_height],
+            consensusStates[key],
+            processedTime[key],
             proof,
             sourceChain,
             destChain,
             sequence
         );
     }
+
+    function buildHeight(Height.Data memory data)
+        private
+        pure
+        returns (uint128 ret)
+    {
+        ret = data.revision_number;
+        ret = (ret << 64);
+        ret |= data.revision_height;
+    }
+    // function parseHeight(uint128 height)
+    //     private
+    //     pure
+    //     returns (Height.Data memory data)
+    // {
+    //     data.revision_height = uint64(height);
+    //     data.revision_number = uint64(height >> 64);
+    // }
 }

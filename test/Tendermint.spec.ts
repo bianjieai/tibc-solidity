@@ -56,7 +56,11 @@ describe('Client', () => {
         let expClientState = (await tendermint.clientState())
         expect(expClientState.chain_id).to.eq(clientState.chainId)
 
-        let expConsensusState = (await tendermint.consensusStates(clientState.latestHeight.revisionHeight))
+        let key = clientState.latestHeight.revisionNumber;
+        key = (key << 64);
+        key |= clientState.latestHeight.revisionHeight;
+
+        let expConsensusState = (await tendermint.consensusStates(key))
         expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
         expect(expConsensusState.next_validators_hash.slice(2)).to.eq(consensusState.nextValidatorsHash.toString("hex"))
 
@@ -67,14 +71,23 @@ describe('Client', () => {
 
     it("test updateClient", async function () {
         let height = 3894;
-        let timestap = 1631186439;
+        let timestamp = 1631186439;
         let root = Buffer.from("TvYJ6Z0r30t86IoHhNtucrKrRwxqn2QYI59keWEnZ8w=", "base64");
         let next_validators_hash = Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64");
-        let headerBz = utils.defaultAbiCoder.encode(["uint64", "uint64", "bytes32", "bytes32"], [height, timestap, root, next_validators_hash])
+        let headerBz = utils.defaultAbiCoder.encode(["uint64", "uint64", "uint64", "bytes32", "bytes32"], [0, height, timestamp, root, next_validators_hash])
 
         let result = await clientManager.updateClient(chainName, headerBz)
         await result.wait();
-        console.log(result)
+
+        let clientState = (await tendermint.clientState())
+
+        let key = clientState.latest_height.revision_number.toNumber();
+        key = (key << 64);
+        key |= clientState.latest_height.revision_height.toNumber();
+
+        let expConsensusState = (await tendermint.consensusStates(key))
+        expect(expConsensusState.root.slice(2)).to.eq(root.toString("hex"))
+        expect(expConsensusState.next_validators_hash.slice(2)).to.eq(next_validators_hash.toString("hex"))
     })
 
     it("test verifyPacketCommitment", async function () {
