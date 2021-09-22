@@ -106,13 +106,15 @@ contract Tendermint is IClient, Ownable {
     {
         SimpleHeader memory header = abi.decode(headerBz, (SimpleHeader));
         require(
-            consensusStates[header.height].timestamp.secs == 0,
+            consensusStates[header.height].root.length == 0,
             "ConsensusState exist"
         );
+
         // update the client state of the light client
         if (header.height > clientState.latest_height.revision_height) {
             clientState.latest_height.revision_height = header.height;
         }
+
         // save the consensus state of the light client
         ConsensusState.Data memory newConsState;
         newConsState.timestamp = Timestamp.Data({
