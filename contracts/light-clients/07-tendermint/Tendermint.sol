@@ -23,7 +23,7 @@ contract Tendermint is IClient, Ownable {
     ClientState.Data public clientState;
     // consensus status of light clients
     mapping(uint128 => ConsensusState.Data) public consensusStates;
-    //System time each time the client status is updated
+    // system time each time the client status is updated
     mapping(uint128 => uint256) private processedTime;
 
     constructor(address clientManagerAddr) public {
@@ -47,7 +47,7 @@ contract Tendermint is IClient, Ownable {
      */
     function status() external view override returns (Status) {
         ConsensusState.Data storage consState = consensusStates[
-            buildHeight(clientState.latest_height)
+            getStorageKey(clientState.latest_height)
         ];
         if (consState.root.length == 0) {
             return Status.Unknown;
@@ -73,7 +73,7 @@ contract Tendermint is IClient, Ownable {
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
 
-        uint128 key = buildHeight(clientState.latest_height);
+        uint128 key = getStorageKey(clientState.latest_height);
         consensusStates[key] = ConsensusStateCodec.decode(consensusStateBz);
         processedTime[key] = block.timestamp;
     }
@@ -89,7 +89,7 @@ contract Tendermint is IClient, Ownable {
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
 
-        uint128 key = buildHeight(clientState.latest_height);
+        uint128 key = getStorageKey(clientState.latest_height);
         consensusStates[key] = ConsensusStateCodec.decode(consensusStateBz);
         processedTime[key] = block.timestamp;
     }
@@ -110,7 +110,7 @@ contract Tendermint is IClient, Ownable {
             "RevisionNumber not match"
         );
 
-        uint128 key = buildHeight(
+        uint128 key = getStorageKey(
             Height.Data({
                 revision_height: header.revision_height,
                 revision_number: header.revision_number
@@ -157,7 +157,7 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata commitmentBytes
     ) external view override {
-        uint128 key = buildHeight(height);
+        uint128 key = getStorageKey(height);
         Verifier.verifyCommitment(
             clientState,
             consensusStates[key],
@@ -187,7 +187,7 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external view override {
-        uint128 key = buildHeight(height);
+        uint128 key = getStorageKey(height);
         Verifier.verifyAcknowledgement(
             clientState,
             consensusStates[key],
@@ -215,7 +215,7 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence
     ) external view override {
-        uint128 key = buildHeight(height);
+        uint128 key = getStorageKey(height);
         Verifier.verifyCleanCommitment(
             clientState,
             consensusStates[key],
@@ -227,7 +227,7 @@ contract Tendermint is IClient, Ownable {
         );
     }
 
-    function buildHeight(Height.Data memory data)
+    function getStorageKey(Height.Data memory data)
         private
         pure
         returns (uint128 ret)
@@ -236,12 +236,12 @@ contract Tendermint is IClient, Ownable {
         ret = (ret << 64);
         ret |= data.revision_height;
     }
-    // function parseHeight(uint128 height)
+    // function parseStorageKey(uint128 key)
     //     private
     //     pure
     //     returns (Height.Data memory data)
     // {
-    //     data.revision_height = uint64(height);
-    //     data.revision_number = uint64(height >> 64);
+    //     data.revision_height = uint64(key);
+    //     data.revision_number = uint64(key >> 64);
     // }
 }
