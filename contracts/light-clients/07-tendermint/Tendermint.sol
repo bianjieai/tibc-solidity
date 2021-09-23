@@ -11,12 +11,22 @@ import "../../proto/Commitment.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
 contract Tendermint is IClient, Ownable {
+    struct SimpleHeader {
+        uint64 revision_number;
+        uint64 revision_height;
+        uint64 timestamp;
+        bytes32 root;
+        bytes32 next_validators_hash;
+    }
+
+    // each version saves up to MAX_SIZE consensus states
+    uint16 constant MAX_SIZE = 100;
     // current light client status
     ClientState.Data public clientState;
     // consensus status of light clients
-    mapping(uint256 => ConsensusState.Data) public consensusStates;
-    //System time each time the client status is updated
-    mapping(uint256 => uint256) private processedTime;
+    mapping(uint128 => ConsensusState.Data) private consensusStates;
+    // system time each time the client status is updated
+    mapping(uint128 => uint256) private processedTime;
 
     constructor(address clientManagerAddr) public {
         transferOwnership(clientManagerAddr);
@@ -34,12 +44,25 @@ contract Tendermint is IClient, Ownable {
         return clientState.latest_height;
     }
 
+    /*  @notice return the consensus status information of the specified height
+
+     *  @param height height of the consensus status
+     */
+    function getConsensusState(Height.Data memory height)
+        public
+        view
+        returns (ConsensusState.Data memory)
+    {
+        uint128 key = getStorageKey(height);
+        return consensusStates[key];
+    }
+
     /*  @notice   return the status of the current light client
      *
      */
     function status() external view override returns (Status) {
         ConsensusState.Data storage consState = consensusStates[
-            clientState.latest_height.revision_height
+            getStorageKey(clientState.latest_height)
         ];
         if (consState.root.length == 0) {
             return Status.Unknown;
@@ -64,11 +87,10 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
-        consensusStates[
-            clientState.latest_height.revision_height
-        ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = block
-            .timestamp;
+
+        uint128 key = getStorageKey(clientState.latest_height);
+        consensusStates[key] = ConsensusStateCodec.decode(consensusStateBz);
+        processedTime[key] = block.timestamp;
     }
 
     /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
@@ -81,11 +103,10 @@ contract Tendermint is IClient, Ownable {
         bytes calldata consensusStateBz
     ) external override onlyOwner {
         ClientStateCodec.decode(clientState, clientStateBz);
-        consensusStates[
-            clientState.latest_height.revision_height
-        ] = ConsensusStateCodec.decode(consensusStateBz);
-        processedTime[clientState.latest_height.revision_height] = block
-            .timestamp;
+
+        uint128 key = getStorageKey(clientState.latest_height);
+        consensusStates[key] = ConsensusStateCodec.decode(consensusStateBz);
+        processedTime[key] = block.timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
@@ -97,76 +118,39 @@ contract Tendermint is IClient, Ownable {
         override
         onlyOwner
     {
-        Header.Data memory header = HeaderCodec.decode(headerBz);
-        ConsensusState.Data memory tmConsState = consensusStates[
-            header.trusted_height.revision_height
-        ];
-
-        // check heaer
+        SimpleHeader memory header = abi.decode(headerBz, (SimpleHeader));
+        //revision_number must be consistent
         require(
-            Bytes.equals(
-                LightClient.genValidatorSetHash(header.trusted_validators),
-                tmConsState.next_validators_hash
-            ),
-            "invalid validator set"
+            clientState.latest_height.revision_number == header.revision_number,
+            "RevisionNumber not match"
         );
-        require(
-            uint64(header.signed_header.header.height) >
-                header.trusted_height.revision_height,
-            "invalid block height"
-        );
-
-        // SignedHeader.Data memory trustedHeader;
-        // trustedHeader.header.chain_id = state.chain_id;
-        // trustedHeader.header.height = int64(
-        //     state.latest_height.revision_height
-        // );
-        // trustedHeader.header.time = tmConsState.timestamp;
-        // trustedHeader.header.next_validators_hash = tmConsState
-        //     .next_validators_hash;
-
-        // Timestamp.Data memory currentTimestamp;
-        // currentTimestamp.secs = int64(block.timestamp);
-
-        // Verify next header with the passed-in trustedVals
-        // - asserts trusting period not passed
-        // - assert header timestamp is not past the trusting period
-        // - assert header timestamp is past latest stored consensus state timestamp
-        // - assert that a TrustLevel proportion of TrustedValidators signed new Commit
-        // TODO
-        // LightClient.verify(
-        //     trustedHeader,
-        //     header.trusted_validators,
-        //     header.signed_header,
-        //     header.validator_set,
-        //     clientSate.trusting_period,
-        //     currentTimestamp,
-        //     clientSate.max_clock_drift,
-        //     clientSate.trust_level
-        // );
 
         // update the client state of the light client
         if (
-            uint64(header.signed_header.header.height) >
-            clientState.latest_height.revision_height
+            header.revision_height > clientState.latest_height.revision_height
         ) {
-            clientState.latest_height.revision_height = uint64(
-                header.signed_header.header.height
-            );
+            clientState.latest_height.revision_height = header.revision_height;
         }
+
         // save the consensus state of the light client
         ConsensusState.Data memory newConsState;
-        newConsState.timestamp = header.signed_header.header.time;
-        newConsState.root = header.signed_header.header.app_hash;
-        newConsState.next_validators_hash = header
-            .signed_header
-            .header
-            .next_validators_hash;
-        consensusStates[
-            clientState.latest_height.revision_height
-        ] = newConsState;
-        processedTime[clientState.latest_height.revision_height] = block
-            .timestamp;
+        newConsState.timestamp = Timestamp.Data({
+            secs: int64(header.timestamp),
+            nanos: 0
+        });
+        newConsState.root = Bytes.fromBytes32(header.root);
+        newConsState.next_validators_hash = Bytes.fromBytes32(
+            header.next_validators_hash
+        );
+
+        uint128 key = getStorageKey(
+            Height.Data({
+                revision_height: header.revision_height,
+                revision_number: header.revision_number
+            })
+        );
+        consensusStates[key] = newConsState;
+        processedTime[key] = block.timestamp;
     }
 
     /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
@@ -186,10 +170,11 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata commitmentBytes
     ) external view override {
+        uint128 key = getStorageKey(height);
         Verifier.verifyCommitment(
             clientState,
-            consensusStates[height.revision_height],
-            processedTime[height.revision_height],
+            consensusStates[key],
+            processedTime[key],
             proof,
             sourceChain,
             destChain,
@@ -215,10 +200,11 @@ contract Tendermint is IClient, Ownable {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external view override {
+        uint128 key = getStorageKey(height);
         Verifier.verifyAcknowledgement(
             clientState,
-            consensusStates[height.revision_height],
-            processedTime[height.revision_height],
+            consensusStates[key],
+            processedTime[key],
             proof,
             sourceChain,
             destChain,
@@ -242,14 +228,33 @@ contract Tendermint is IClient, Ownable {
         string calldata destChain,
         uint64 sequence
     ) external view override {
+        uint128 key = getStorageKey(height);
         Verifier.verifyCleanCommitment(
             clientState,
-            consensusStates[height.revision_height],
-            processedTime[height.revision_height],
+            consensusStates[key],
+            processedTime[key],
             proof,
             sourceChain,
             destChain,
             sequence
         );
     }
+
+    function getStorageKey(Height.Data memory data)
+        private
+        pure
+        returns (uint128 ret)
+    {
+        ret = data.revision_number;
+        ret = (ret << 64);
+        ret |= (data.revision_height % MAX_SIZE);
+    }
+    // function parseStorageKey(uint128 key)
+    //     private
+    //     pure
+    //     returns (Height.Data memory data)
+    // {
+    //     data.revision_height = uint64(key);
+    //     data.revision_number = uint64(key >> 64);
+    // }
 }
