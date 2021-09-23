@@ -19,12 +19,22 @@ library Bytes {
         }
     }
 
-    function fromBytes32(bytes32 data) internal pure returns (bytes memory) {
-        bytes memory result = new bytes(32);
-        for (uint256 i = 0; i < 32; ++i) {
-            result[i] = data[i];
+    function fromBytes32(bytes32 data)
+        internal
+        pure
+        returns (bytes memory bts)
+    {
+        bts = new bytes(32);
+        assembly {
+            mstore(
+                add(
+                    bts,
+                    /*BYTES_HEADER_SIZE*/
+                    32
+                ),
+                data
+            )
         }
-        return result;
     }
 
     function fromBytes1(bytes1 data) internal pure returns (bytes memory) {
@@ -144,34 +154,42 @@ library Bytes {
         return ret;
     }
 
-    function bytes32ToUint(bytes32 b) internal pure returns (uint256){
+    function bytes32ToUint(bytes32 b) internal pure returns (uint256) {
         uint256 number;
-        for(uint i= 0; i < b.length; i++) {
-            number = number + uint8(b[i])*(2**(8*(b.length-(i+1))));
+        for (uint256 i = 0; i < b.length; i++) {
+            number = number + uint8(b[i]) * (2**(8 * (b.length - (i + 1))));
         }
-        return  number;
+        return number;
     }
 
-    function addressToString(address _address) internal pure returns(string memory) {
+    function addressToString(address _address)
+        internal
+        pure
+        returns (string memory)
+    {
         bytes memory alphabet = "0123456789abcdef";
         bytes20 data = bytes20(_address);
 
         bytes memory str = new bytes(42);
         str[0] = "0";
         str[1] = "x";
-        for (uint i = 0; i < 20; i++) {
-            str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
-            str[2+1+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
+        for (uint256 i = 0; i < 20; i++) {
+            str[2 + i * 2] = alphabet[uint256(uint8(data[i] >> 4))];
+            str[2 + 1 + i * 2] = alphabet[uint256(uint8(data[i] & 0x0f))];
         }
         return string(str);
     }
 
-    function parseAddr(string memory _a) internal pure returns (address _parsedAddress) {
+    function parseAddr(string memory _a)
+        internal
+        pure
+        returns (address _parsedAddress)
+    {
         bytes memory tmp = bytes(_a);
         uint160 iaddr = 0;
         uint160 b1;
         uint160 b2;
-        for (uint i = 2; i < 2 + 2 * 20; i += 2) {
+        for (uint256 i = 2; i < 2 + 2 * 20; i += 2) {
             iaddr *= 256;
             b1 = uint160(uint8(tmp[i]));
             b2 = uint160(uint8(tmp[i + 1]));
@@ -195,10 +213,10 @@ library Bytes {
     }
 
     // 32 bytes take high 128 bits
-    function cutBytes32(bytes32 source) internal pure returns (bytes memory){
+    function cutBytes32(bytes32 source) internal pure returns (bytes memory) {
         bytes memory half = new bytes(16);
-        for (uint j = 0; j < 16; j++) {
-                half[j] = source[j];
+        for (uint256 j = 0; j < 16; j++) {
+            half[j] = source[j];
         }
         return half;
     }
