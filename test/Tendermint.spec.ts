@@ -23,7 +23,7 @@ describe('Client', () => {
                 numerator: 1,
                 denominator: 3
             },
-            trustingPeriod: 10 * 24 * 60 * 60,
+            trustingPeriod: 100 * 24 * 60 * 60,
             unbondingPeriod: 1814400,
             maxClockDrift: 10,
             latestHeight: {
@@ -80,7 +80,7 @@ describe('Client', () => {
                 numerator: 1,
                 denominator: 3
             },
-            trustingPeriod: 10 * 24 * 60 * 60,
+            trustingPeriod: 100 * 24 * 60 * 60,
             unbondingPeriod: 1814400,
             maxClockDrift: 10,
             latestHeight: {
