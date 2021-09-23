@@ -8,125 +8,121 @@ import "../../libraries/utils/Strings.sol";
 import "../../interfaces/IRouting.sol";
 import "../../interfaces/IModule.sol";
 
-// import "hardhat/console.sol";
-
 contract Routing is Ownable, IRouting {
-    struct ruleData {
+    using Strings for *;
+
+    struct Rule {
         string val;
         bool isValue;
     }
 
-    using Strings for *;
     string[] public rules;
-    mapping(string => IModule) public moduleMap;
-    mapping(string => ruleData) public ruleMap;
+    mapping(string => IModule) public modules;
+    mapping(string => Rule) public router;
 
-    constructor() public {
-    }
-
-    function getMoudle(string calldata _moduleName)
+    /**
+     *  @notice return the module contract instance with the specified name
+     *  @param moduleName  the module name
+     */
+    function getMoudle(string calldata moduleName)
         external
         view
         override
         returns (IModule)
     {
-        return moduleMap[_moduleName];
+        return modules[moduleName];
     }
 
-    /*
-     * @notice Authenticate:
-     * @param _sourceChain First string
-     * @param _destChain Second string
-     * @param _port Third string
+    /**
+     * @notice verify that the routing rules are correct
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     * @param port application module name
      */
     function authenticate(
-        string calldata _sourceChain,
-        string calldata _destChain,
-        string calldata _port
+        string calldata sourceChain,
+        string calldata destChain,
+        string calldata port
     ) external view override returns (bool) {
         string memory wildcard = "*";
 
         // 1. *,*,*
-        string memory condition = _genCondition(wildcard, wildcard, wildcard);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(wildcard, wildcard, wildcard))) {
             return true;
         }
 
         // 2. source,dest,moudle
-        condition = _genCondition(_sourceChain, _destChain, _port);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(sourceChain, destChain, port))) {
             return true;
         }
 
         //3. source,*,model
-        condition = _genCondition(_sourceChain, wildcard, _port);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(sourceChain, wildcard, port))) {
             return true;
         }
 
         //4. source,dest,*
-        condition = _genCondition(_sourceChain, _destChain, wildcard);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(sourceChain, destChain, wildcard))) {
             return true;
         }
 
         //5. source,*,*
-        condition = _genCondition(_sourceChain, wildcard, wildcard);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(sourceChain, wildcard, wildcard))) {
             return true;
         }
 
         //6. *,dest,model
-        condition = _genCondition(_sourceChain, _destChain, _port);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(sourceChain, destChain, port))) {
             return true;
         }
 
         //7. *,dest,*,
-        condition = _genCondition(wildcard, _destChain, wildcard);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(wildcard, sourceChain, wildcard))) {
             return true;
         }
 
         // 8. *,*,model
-        condition = _genCondition(wildcard, wildcard, _port);
-        if (_isExistRule(condition)) {
+        if (_isExistRule(_genCondition(wildcard, wildcard, port))) {
             return true;
         }
 
         return false;
     }
 
+    /**
+     * @notice add new routing rules
+     * @param _rules routing rules
+     */
     function setRoutingRules(string[] calldata _rules) external onlyOwner {
         string[] memory mRules = new string[](_rules.length);
         for (uint256 i = 0; i < _rules.length; i++) {
             mRules[i] = _rules[i];
         }
         rules = mRules;
-        _setRuleMap(mRules);
+        _setRuleMap(rules);
     }
 
-    /*
+    /**
      * @notice add a module:
-     * @param _moduleName First string
-     * @param _moduleAddr Second address
+     * @param moduleName module name
+     * @param moduleAddr module contract address
      */
-    function addRouting(string calldata _moduleName, address _moduleAddr)
+    function addRouting(string calldata moduleName, address moduleAddr)
         external
         onlyOwner
     {
-        moduleMap[_moduleName] = IModule(_moduleAddr);
+        modules[moduleName] = IModule(moduleAddr);
     }
 
     function _setRuleMap(string[] memory _rules) private {
         for (uint256 i = 0; i < _rules.length; i++) {
-            ruleMap[_rules[i]].val = _rules[i];
-            ruleMap[_rules[i]].isValue = true;
+            router[_rules[i]].val = _rules[i];
+            router[_rules[i]].isValue = true;
         }
     }
 
     function _isExistRule(string memory _rule) private view returns (bool) {
-        return ruleMap[_rule].isValue;
+        return router[_rule].isValue;
     }
 
     function _genCondition(

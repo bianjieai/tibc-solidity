@@ -8,9 +8,16 @@ import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
 contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
+    // the name of this chain cannot be changed once initialized
     string private nativeChainName;
+    // light client currently registered in this chain
     mapping(string => IClient) public clients;
+    // relayer registered by each light client
     mapping(string => mapping(address => bool)) public relayers;
+
+    constructor(string memory name) public {
+        nativeChainName = name;
+    }
 
     // check if caller is relayer
     modifier onlyRelayer(string memory chainName) {
@@ -18,12 +25,8 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         _;
     }
 
-    constructor(string memory name) public {
-        nativeChainName = name;
-    }
-
-    /* @notice                  this function is intended to be called by owner to create a light client and initialize light client data.
-     *
+    /**
+     *  @notice this function is intended to be called by owner to create a light client and initialize light client data.
      *  @param chainName        the counterparty chain name
      *  @param clientAddress    light client contract address
      *  @param clientState      light client status
@@ -49,10 +52,10 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         clients[chainName] = client;
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to update the state of the light client
-     *
-     *  @param chainName        the counterparty chain name
-     *  @param header           block header of the counterparty chain
+    /**
+     *  @notice this function is called by the relayer, the purpose is to update the state of the light client
+     *  @param chainName  the counterparty chain name
+     *  @param header     block header of the counterparty chain
      */
     function updateClient(string calldata chainName, bytes calldata header)
         external
@@ -64,8 +67,8 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         client.checkHeaderAndUpdateState(header);
     }
 
-    /* @notice                  this function is called by the owner, the purpose is to update the state of the light client
-     *
+    /**
+     *  @notice this function is called by the owner, the purpose is to update the state of the light client
      *  @param chainName        the counterparty chain name
      *  @param clientState      light client status
      *  @param consensusState   light client consensus status
@@ -79,10 +82,10 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         client.upgrade(clientState, consensusState);
     }
 
-    /* @notice                  this function is called by the owner, the purpose is to register the relayer address of a light client
-     *
-     *  @param chainName        the counterparty chain name
-     *  @param address          relayer address
+    /**
+     *  @notice this function is called by the owner, the purpose is to register the relayer address of a light client
+     *  @param chainName  the counterparty chain name
+     *  @param relayer    relayer address
      */
     function registerRelayer(string calldata chainName, address relayer)
         external
@@ -92,9 +95,9 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         relayers[chainName][relayer] = true;
     }
 
-    /** @notice  obtain the contract address of the client according to the registered client name
-      * @param chainName  the counterparty chain name
-    
+    /**
+     *  @notice obtain the contract address of the client according to the registered client name
+     *  @param chainName  the counterparty chain name
      */
     function getClient(string memory chainName)
         public
@@ -104,15 +107,16 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         return clients[chainName];
     }
 
-    /** @notice  get the name of this chain
+    /**
+     *  @notice get the name of this chain
      */
     function getChainName() external view override returns (string memory) {
         return nativeChainName;
     }
 
-    /** @notice  get the latest height of the specified client update
-      * @param chainName  the counterparty chain name
-    
+    /**
+     *  @notice get the latest height of the specified client update
+     *  @param chainName  the counterparty chain name
      */
     function getLatestHeight(string memory chainName)
         public
