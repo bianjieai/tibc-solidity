@@ -1,6 +1,5 @@
 import { Signer } from "ethers";
 import chai from "chai";
-
 import { Transfer, ERC1155Bank, Packet, ClientManager, Routing, Tendermint } from '../typechain';
 import { randomBytes } from "crypto";
 
@@ -9,6 +8,7 @@ const { ethers, upgrades } = require("hardhat");
 
 let nft = require("./proto/nftTransfer.js");
 let client = require("./proto/compiled.js");
+let ack = require("./proto/ack.js");
 
 describe('Transfer', () => {
     let accounts: Signer[]
@@ -143,7 +143,11 @@ describe('Transfer', () => {
             relayChain: "",
             data: databytes,
         };
-        let acknowledgement = "0x00";
+
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
+        }
+        let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
 
         // mint 
@@ -155,9 +159,8 @@ describe('Transfer', () => {
         let balance1 = await erc1155bank.balanceOf(sender, 2);
         expect(balance1).to.eq(0);
 
-        await transfer.onAcknowledgementPacket(packet, acknowledgement);
+        await transfer.onAcknowledgementPacket(packet, dd);
         let balance3 = await erc1155bank.balanceOf(sender, 2);
-
     })
 
     it("onAcknowledgementPacket when awayFromOrigin is true", async function () {
@@ -182,7 +185,11 @@ describe('Transfer', () => {
             relayChain: "",
             data: databytes,
         };
-        let acknowledgement = "0x01";
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
+        }
+        let dd = ack.Acknowledgement.encode(acknowledgement).finish();
+
 
         // mint 
         await erc1155bank.mint(sender, 88, 1, "0x123456");
@@ -196,7 +203,8 @@ describe('Transfer', () => {
         let balance2 = await erc1155bank.balanceOf(sender, 88);
         expect(balance2).to.eq(0);
 
-        await transfer.onAcknowledgementPacket(packet, acknowledgement);
+        await transfer.onAcknowledgementPacket(packet, dd);
+
     })
 
     const deployContract = async function () {
@@ -218,10 +226,6 @@ describe('Transfer', () => {
         const consensusStateCodec = await ConsensusStateCodec.deploy();
         await consensusStateCodec.deployed();
 
-        const HeaderCodec = await ethers.getContractFactory('HeaderCodec')
-        const headerCodec = await HeaderCodec.deploy();
-        await headerCodec.deployed();
-
         const ProofCodec = await ethers.getContractFactory('ProofCodec')
         const proofCodec = await ProofCodec.deploy();
         await proofCodec.deployed();
@@ -240,8 +244,7 @@ describe('Transfer', () => {
             libraries: {
                 ClientStateCodec: clientStateCodec.address,
                 ConsensusStateCodec: consensusStateCodec.address,
-                HeaderCodec: headerCodec.address,
-                Verifier: verifierLib.address,
+                Verifier: verifierLib.address
             },
         })
         tendermint = (await upgrades.deployProxy(tmFactory, [clientManager.address],

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message Acknowledgement {
+  // response contains either a result or an error and must be non-empty
+  oneof response {
+    bytes  result = 21;
+    string error  = 22;
+  }
+}

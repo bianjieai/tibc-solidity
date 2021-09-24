@@ -5,7 +5,6 @@ import { task, types } from "hardhat/config"
 const CLIENT_STATE_CODEC_ADDRES = process.env.CLIENT_STATE_CODEC_ADDRES;
 const CONSENSUS_STATE_CODEC_ADDRES = process.env.CONSENSUS_STATE_CODEC_ADDRES;
 const PROOF_CODEC_ADDRES = process.env.PROOF_CODEC_ADDRES;
-const HEADER_CODEC_ADDRES = process.env.HEADER_CODEC_ADDRES;
 const VERIFIER_ADDRES = process.env.VERIFIER_ADDRES;
 const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
 
@@ -15,7 +14,6 @@ task("deployTendermint", "Deploy Tendermint Client")
             libraries: {
                 ClientStateCodec: String(CLIENT_STATE_CODEC_ADDRES),
                 ConsensusStateCodec: String(CONSENSUS_STATE_CODEC_ADDRES),
-                HeaderCodec: String(HEADER_CODEC_ADDRES),
                 Verifier: String(VERIFIER_ADDRES),
             }
         })

@@ -3,6 +3,7 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "../../../proto/NftTransfer.sol";
+import "../../../proto/Ack.sol";
 import "../../02-client/ClientManager.sol";
 import "../../../libraries/04-packet/Packet.sol";
 import "../../../libraries/30-nft-transfer/NftTransfer.sol";
@@ -17,11 +18,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
     using Bytes for *;
-
+    using Strings for *;
+    
     string private constant PORT = "NFT";
     string private constant PREFIX = "tibc/nft";
 
-    // referenced contract
     IPacket public packet;
     IERC1155Bank public bank;
     IClientManager public clientManager;
@@ -36,21 +37,9 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         clientManager = IClientManager(clientManager_);
     }
 
-    /*
-        keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass
-        keep track of id :   tokenId -> id
-        keep track of uri :  tokenId -> uri
-    */
-    struct NftMapValue {
-        string class;
-        string id;
-        string uri;
-    }
-    mapping(uint256 => NftMapValue) public nftMapValue;
-
     /*  @notice                 this function is to send nft and construct data packet
      *
-     *  @param transferData      Send the data needed by nft
+     *  @param transferData     send the data needed by nft
      */
     function sendTransfer(TransferDataTypes.TransferData calldata transferData)
         external
@@ -86,13 +75,13 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             require(_burn(msg.sender, transferData.tokenId, uint256(1)));
         }
 
-        NftMapValue memory mapData = getMapValue(transferData.tokenId);
+        // NftMapValue memory mapData = getMapValue(transferData.tokenId);
 
         bytes memory data = NftTransfer.encode(
             NftTransfer.Data({
-                class: mapData.class,
-                id: mapData.id,
-                uri: mapData.uri,
+                class: bank.getClass(transferData.tokenId),
+                id: bank.getId(transferData.tokenId),
+                uri: bank.getUri(transferData.tokenId),
                 sender: Bytes.addressToString(msg.sender),
                 receiver: transferData.receiver,
                 awayFromOrigin: awayFromOrigin
@@ -126,9 +115,11 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
 
-        // sourceChain/nftClass
-        string memory scNft;
+        string memory scNft; // sourceChain/nftClass
         string memory newClass;
+        string memory errMsg;
+        bool success;
+
         if (data.awayFromOrigin) {
             if (
                 Strings.startsWith(
@@ -160,8 +151,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                     .toSlice()
                     .concat(temp.toSlice());
 
-                // get sourceChain/nftClass
-                //example : tibc/nft/A/B/nftClass -> A/nftClass || tibc/nft/A/nftClass -> A/nftClass
                 scNft = _getSCNft(data.class);
             } else {
                 // class -> tibc/nft/A/class
@@ -188,24 +177,16 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
 
             // mint nft
-            bool success = _mint(
-                data.receiver.parseAddr(),
-                tokenId,
-                uint256(1),
-                ""
-            );
+            success = _mint(data.receiver.parseAddr(), tokenId, uint256(1), "");
 
             if (success) {
                 // keep trace of class and id and uri
-                NftMapValue memory value = NftMapValue({
-                    class: newClass,
-                    id: data.id,
-                    uri: data.uri
-                });
-                setMapValue(tokenId, value);
+                bank.setMapValue(tokenId, newClass, data.id, data.uri);
+            } else {
+                errMsg = "onrecvPackt : mint nft error";
             }
-
-            return _newAcknowledgement(success);
+            
+            return _newAcknowledgement(success, errMsg);
         } else {
             // go back to source chain
             require(
@@ -243,16 +224,18 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
 
             // unlock
-            return
-                _newAcknowledgement(
-                    _transferFrom(
-                        address(bank),
-                        data.receiver.parseAddr(),
-                        tokenId,
-                        uint256(1),
-                        bytes("")
-                    )
-                );
+            success = _transferFrom(
+                address(bank),
+                data.receiver.parseAddr(),
+                tokenId,
+                uint256(1),
+                bytes("")
+            );
+
+            if (!success) {
+                errMsg = "onrecvPackt : unlock nft error";
+            }
+            return _newAcknowledgement(success, errMsg);
         }
     }
 
@@ -282,8 +265,11 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         uint256 id,
         uint256 amount
     ) internal virtual returns (bool) {
-        bank.burn(account, id, amount);
-        return true;
+        try bank.burn(account, id, amount) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
     }
 
     /*  @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
@@ -299,8 +285,11 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         uint256 amount,
         bytes memory data
     ) internal virtual returns (bool) {
-        bank.mint(account, id, amount, data);
-        return true;
+        try bank.mint(account, id, amount, data) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
     }
 
     /*  @notice        this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
@@ -317,8 +306,11 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         uint256 amount,
         bytes memory data
     ) internal virtual returns (bool) {
-        bank.transferFrom(from, to, id, amount, data);
-        return true;
+        try bank.transferFrom(from, to, id, amount, data) {
+            return true;
+        } catch (bytes memory) {
+            return false;
+        }
     }
 
     /* @notice   This method is to obtain the splicing of the source chain and nftclass from the cross-chain nft prefix
@@ -341,21 +333,35 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
     /*  @notice                 this function is to create ack
      *
-     *  @param success
+     *  @param success          identify whether ack succeeded or failed
+     *  @param errMsg           ack error message
      */
-    function _newAcknowledgement(bool success)
+    function _newAcknowledgement(bool success, string memory errMsg)
         internal
         pure
         virtual
         returns (bytes memory)
     {
-        bytes memory acknowledgement = new bytes(1);
+        Acknowledgement.Data memory ack;
         if (success) {
-            acknowledgement[0] = 0x01;
+            ack.result = hex"01";
         } else {
-            acknowledgement[0] = 0x00;
+            ack.error = errMsg;
         }
-        return acknowledgement;
+        return Acknowledgement.encode(ack);
+    }
+
+    /*  @notice                 this function is to decode ack
+     *
+     *  @param ack              ack after protobuf encoding
+     */
+    function _decodeAcknowledgement(bytes memory ack)
+        internal
+        pure
+        virtual
+        returns (Acknowledgement.Data memory)
+    {
+        return Acknowledgement.decode(ack);
     }
 
     /*  @notice                 this function is return a successful ack
@@ -368,11 +374,11 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         virtual
         returns (bool)
     {
-        require(
-            acknowledgement.length == 1,
-            "acknowledgement length must equals 1"
+        Acknowledgement.Data memory ack = _decodeAcknowledgement(
+            acknowledgement
         );
-        return acknowledgement[0] == 0x01;
+        
+        return Bytes.equals(ack.result, hex"01");
     }
 
     /*  @notice                 this function is refund nft
@@ -500,26 +506,5 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         bytes memory c2 = Bytes.cutBytes32(sha256(bytes(id)));
         bytes memory tokenId = Bytes.concat(c1, c2);
         return tokenId.toBytes32();
-    }
-
-    /*  @notice                  this function is to set value
-     *
-     *  @param tokenId          token Id
-     *  @param value            value
-     */
-    function setMapValue(uint256 tokenId, NftMapValue memory value) public {
-        nftMapValue[tokenId] = value;
-    }
-
-    /*  @notice                  this function is to get value
-     *
-     *  @param tokenId          token Id
-     */
-    function getMapValue(uint256 tokenId)
-        public
-        view
-        returns (NftMapValue memory)
-    {
-        return nftMapValue[tokenId];
     }
 }
