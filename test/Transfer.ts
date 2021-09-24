@@ -1,12 +1,10 @@
 import { Signer } from "ethers";
 import chai from "chai";
-
-
 import { Transfer, ERC1155Bank, Packet, ClientManager, Routing, Tendermint } from '../typechain';
 import { randomBytes } from "crypto";
 
 const { expect } = chai;
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 
 let nft = require("./proto/nftTransfer.js");
 let client = require("./proto/compiled.js");
@@ -63,7 +61,6 @@ describe('Transfer', () => {
         }
         await createClient(chainName, tendermint.address, clientState, consensusState)
 
-
         const routingFac = await ethers.getContractFactory("Routing");
         routing = (await routingFac.deploy()) as Routing;
 
@@ -74,12 +71,10 @@ describe('Transfer', () => {
         erc1155bank = (await erc1155Fac.deploy()) as ERC1155Bank;
 
         const tsFac = await ethers.getContractFactory("Transfer");
-        transfer = (await tsFac.deploy(erc1155bank.address, pac.address, clientManager.address)) as Transfer;
+        transfer = (await upgrades.deployProxy(tsFac, [erc1155bank.address, pac.address, clientManager.address])) as Transfer;
 
         routing.addRouting("NFT", transfer.address)
     });
-
-
 
     // receive packet from irishub 
     it("onRecvPacket: from irishub to ethereum", async function () {
@@ -109,7 +104,6 @@ describe('Transfer', () => {
         let res = await transfer.onRecvPacket(packet);
     })
 
-
     // send nft back to irishub from ethereum 
     it("sendTransfer: send nft back to irishub from ethereum", async function () {
         let sender = (await accounts[0].getAddress()).toString();
@@ -128,8 +122,6 @@ describe('Transfer', () => {
         expect(balance).to.eq(0);
     })
 
-
-
     // The test need fix the tokenID in the refundToken
     it("onAcknowledgementPacket when awayFromOrigin is false", async function () {
         let sender = (await accounts[0].getAddress()).toString();
@@ -146,16 +138,16 @@ describe('Transfer', () => {
 
         let databytes = nft.NftTransfer.encode(data).finish();
         let packet = {
-            sequence : 1,
-            port : "nft",
-            sourceChain : "ethereum",
-            destChain : "irishub",
-            relayChain : "",
-            data : databytes,
-         };
+            sequence: 1,
+            port: "nft",
+            sourceChain: "ethereum",
+            destChain: "irishub",
+            relayChain: "",
+            data: databytes,
+        };
 
-        let acknowledgement= {
-            result : Buffer.from("01", "hex"),
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
         }
         let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
@@ -171,9 +163,7 @@ describe('Transfer', () => {
 
         await transfer.onAcknowledgementPacket(packet, dd);
         let balance3 = await erc1155bank.balanceOf(sender, 2);
-
     })
-
 
     it("onAcknowledgementPacket when awayFromOrigin is true", async function () {
         let sender = (await accounts[0].getAddress()).toString();
@@ -197,8 +187,8 @@ describe('Transfer', () => {
             relayChain: "",
             data: databytes,
         };
-        let acknowledgement= {
-            result : Buffer.from("01", "hex"),
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
         }
         let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
@@ -225,7 +215,7 @@ describe('Transfer', () => {
             signer: accounts[0],
             libraries: {},
         })
-        clientManager = (await msrFactory.deploy("ethereum")) as ClientManager
+        clientManager = (await upgrades.deployProxy(msrFactory, ["ethereum"])) as ClientManager
 
         let originChainName = await clientManager.getChainName();
         expect(originChainName).to.eq("ethereum")
@@ -259,13 +249,14 @@ describe('Transfer', () => {
                 Verifier: verifierLib.address
             },
         })
-        tendermint = (await tmFactory.deploy(clientManager.address)) as Tendermint
+        tendermint = (await upgrades.deployProxy(tmFactory, [clientManager.address],
+            { "unsafeAllowLinkedLibraries": true }
+        )) as Tendermint;
     }
 
     const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
         let clientStateBuf = client.ClientState.encode(clientState).finish();
         let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
-        await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf)
+        await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf);
     }
-
 })

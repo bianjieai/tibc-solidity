@@ -9,7 +9,7 @@ task("deployPacket", "Deploy Packet")
     .setAction(async (taskArgs, hre) => {
         const packetFactory = await hre.ethers.getContractFactory('Packet')
 
-        const packet = await packetFactory.deploy(String(CLIENT_MANAGER_ADDRES), String(ROUTING_ADDRES));
+        const packet = await hre.upgrades.deployProxy(packetFactory,[String(CLIENT_MANAGER_ADDRES), String(ROUTING_ADDRES)]);
         await packet.deployed();
         console.log("Packet deployed to:", packet.address);
         console.log("export PACKET_ADDRES=%s", packet.address);

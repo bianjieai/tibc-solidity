@@ -18,7 +18,8 @@ task("deployTendermint", "Deploy Tendermint Client")
             }
         })
 
-        const tendermint = await tendermintFactory.deploy(String(CLIENT_MANAGER_ADDRES));
+        const tendermint = await hre.upgrades.deployProxy(tendermintFactory, [String(CLIENT_MANAGER_ADDRES)],
+            { "unsafeAllowLinkedLibraries": true });
         await tendermint.deployed();
         console.log("Tendermint deployed to:", tendermint.address);
     });
