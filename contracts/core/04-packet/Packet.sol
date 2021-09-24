@@ -84,7 +84,10 @@ contract Packet is Ownable, IPacket {
         IClient client = clientManager.getClient(sentChain);
         require(address(client) != address(0), "light client not found");
 
-        bytes memory nextSequenceSendKey = Host.nextSequenceSendKey(packet.sourceChain, packet.destChain);
+        bytes memory nextSequenceSendKey = Host.nextSequenceSendKey(
+            packet.sourceChain,
+            packet.destChain
+        );
         if (sequences[nextSequenceSendKey] == 0) {
             sequences[nextSequenceSendKey] = 1;
         }
@@ -114,16 +117,47 @@ contract Packet is Ownable, IPacket {
         PacketTypes.Packet calldata packet,
         bytes calldata proof,
         Height.Data calldata height
-    ) external override
-    {
-        if (packet.sequence <= sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)]) {
-            writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("sequence illegal!"));
+    ) external override {
+        if (
+            packet.sequence <=
+            sequences[
+                Host.cleanPacketCommitmentKey(
+                    packet.sourceChain,
+                    packet.destChain
+                )
+            ]
+        ) {
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("sequence illegal!")
+            );
             revert("sequence illegal!");
         }
 
-        bytes memory packetReceiptKey = Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence);
+        bytes memory packetReceiptKey = Host.packetReceiptKey(
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
+        );
         if (receipts[packetReceiptKey]) {
-            writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("packet has been received!"));
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("packet has been received!")
+            );
             revert("packet has been received!");
         }
         string memory sentChain;
@@ -139,20 +173,42 @@ contract Packet is Ownable, IPacket {
 
         IClient client = clientManager.getClient(sentChain);
         if (address(client) == address(0)) {
-            writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("light client not found!"));
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("light client not found!")
+            );
             revert("light client not found!");
         }
 
         commitBytes = Bytes.fromBytes32(sha256(packet.data));
-        try client.verifyPacketCommitment(
-            height,
-            proof,
-            packet.sourceChain,
-            packet.destChain,
-            packet.sequence,
-            commitBytes
-        ){}catch{
-            writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("packet verify failed!"));
+        try
+            client.verifyPacketCommitment(
+                height,
+                proof,
+                packet.sourceChain,
+                packet.destChain,
+                packet.sequence,
+                commitBytes
+            )
+        {} catch {
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("packet verify failed!")
+            );
             revert("packet verify failed!");
         }
 
@@ -161,27 +217,79 @@ contract Packet is Ownable, IPacket {
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             IModule module = routing.getMoudle(packet.port);
             if (address(module) == address(0)) {
-                writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("this module not found!"));
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    _newErrAcknowledgement("this module not found!")
+                );
                 revert("this module not found!");
             }
             bytes memory ack = module.onRecvPacket(packet);
             if (ack.length > 0) {
-                writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), ack);
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    ack
+                );
             }
         } else {
-            if (!routing.authenticate(packet.sourceChain, packet.destChain, packet.port)) {
-                writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("no rule in routing table to relay this packet"));
+            if (
+                !routing.authenticate(
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.port
+                )
+            ) {
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    _newErrAcknowledgement(
+                        "no rule in routing table to relay this packet"
+                    )
+                );
                 revert("no rule in routing table to relay this packet");
             }
             client = clientManager.getClient(packet.destChain);
             if (address(client) == address(0)) {
-                writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("light client not found"));
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    _newErrAcknowledgement("light client not found")
+                );
                 revert("light client not found");
             }
-            commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(packet.data);
-            emit PacketSent(
-                packet
-            );
+            commitments[
+                Host.packetCommitmentKey(
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.sequence
+                )
+            ] = sha256(packet.data);
+            emit PacketSent(packet);
         }
     }
 
@@ -204,19 +312,13 @@ contract Packet is Ownable, IPacket {
             ] == bytes32(0),
             "acknowledgement for packet already exists"
         );
-        require(
-            acknowledgement.length != 0,
-            "acknowledgement cannot be empty"
-        );
+        require(acknowledgement.length != 0, "acknowledgement cannot be empty");
         string memory sentChain = packet.sourceChain;
         if (bytes(packet.relayChain).length > 0) {
             sentChain = packet.relayChain;
         }
         IClient client = clientManager.getClient(sentChain);
-        require(
-            address(client) != address(0),
-            "light client not found"
-        );
+        require(address(client) != address(0), "light client not found");
 
         commitments[
             Host.packetAcknowledgementKey(
@@ -425,17 +527,14 @@ contract Packet is Ownable, IPacket {
             ];
         }
 
-        sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)] = packet.sequence;
+        sequences[
+            Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
+        ] = packet.sequence;
 
         if (!Strings.equals(packet.destChain, clientManager.getChainName())) {
             client = clientManager.getClient(packet.destChain);
-            require(
-                address(client) != address(0),
-                "light client not found"
-            );
-            emit CleanPacketSent(
-                packet
-            );
+            require(address(client) != address(0), "light client not found");
+            emit CleanPacketSent(packet);
         }
     }
 
@@ -478,10 +577,10 @@ contract Packet is Ownable, IPacket {
      * @param errMsg error message
      */
     function _newErrAcknowledgement(string memory errMsg)
-    internal
-    pure
-    virtual
-    returns (bytes memory)
+        internal
+        pure
+        virtual
+        returns (bytes memory)
     {
         Acknowledgement.Data memory ack;
         ack.error = errMsg;
