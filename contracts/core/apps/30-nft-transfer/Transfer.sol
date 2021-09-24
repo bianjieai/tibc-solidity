@@ -19,7 +19,7 @@ contract Transfer is ITransfer, ERC1155Holder {
     using Strings for *;
 
     string private constant PORT = "NFT";
-    string private constant PREFIX = "tibc/nft";
+    string private constant PREFIX = "nft";
 
     IPacket public packet;
     IERC1155Bank public bank;
@@ -111,129 +111,75 @@ contract Transfer is ITransfer, ERC1155Holder {
         returns (bytes memory acknowledgement)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
-
-        string memory scNft; // sourceChain/nftClass
         string memory newClass;
-        string memory errMsg;
-        bool success;
-
         if (data.awayFromOrigin) {
-            if (
-                Strings.startsWith(
-                    Strings.toSlice(data.class),
-                    Strings.toSlice(PREFIX)
-                )
-            ) {
-                // tibc/nft/A/nftClass -> tibc/nft/A/B/nftClass
-                // tibc/nft/A/nftClass -> [tibc][nft][A][nftClass]
-                string[] memory classSplit = _splitStringIntoArray(
-                    data.class,
-                    "/"
-                );
-                string memory temp = classSplit[classSplit.length - 1];
-
-                // [tibc][nft][A][nftClass] -> [tibc][nft][A][B]
-                classSplit[classSplit.length - 1] = pac.sourceChain;
-
-                // [tibc][nft][A][B] -> "tibc/nft/A/B"
-                newClass = Strings.join(
+            // nft/A/B/nftClass -> [nft][A][B][nftClass]
+            string[] memory paths = _splitStringIntoArray(data.class, "/");
+            // get the original class name (take the last item in the path array)
+            string memory originClass = paths[paths.length - 1];
+            // [nft][A][B][nftClass] -> [nft][A][B][C]
+            paths[paths.length - 1] = pac.destChain;
+            // [nft][A][B][C] -> nft/A/B/C/nftClass
+            newClass = Strings
+                .join(
                     Strings.toSlice("/"),
-                    _convertStringArrayIntoSliceArray(classSplit)
-                );
-
-                // "tibc/nft/A/B" -> "tibc/nft/A/B/nftClass"
-                newClass = newClass
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(temp.toSlice());
-
-                scNft = _getSCNft(data.class);
-            } else {
-                // class -> tibc/nft/A/class
-                newClass = PREFIX
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(pac.sourceChain.toSlice())
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(data.class.toSlice());
-
-                // A/class
-                scNft = pac
-                    .sourceChain
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(data.class.toSlice());
-            }
+                    _convertStringArrayIntoSliceArray(paths)
+                )
+                .toSlice()
+                .concat(originClass.toSlice());
 
             // generate tokenId
-            uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
+            uint256 tokenId = genTokenId(newClass, data.id);
 
             // mint nft
-            success = _mint(data.receiver.parseAddr(), tokenId, uint256(1), "");
-
-            if (success) {
+            if (_mint(data.receiver.parseAddr(), tokenId, uint256(1), "")) {
                 // keep trace of class and id and uri
                 bank.setMapValue(tokenId, newClass, data.id, data.uri);
-            } else {
-                errMsg = "onrecvPackt : mint nft error";
+                return _newAcknowledgement(true, "");
             }
+            return _newAcknowledgement(false, "onrecvPackt : mint nft error");
+        }
 
-            return _newAcknowledgement(success, errMsg);
-        } else {
-            // go back to source chain
-            require(
-                Strings.startsWith(data.class.toSlice(), PREFIX.toSlice()),
-                "class has no prefix"
-            );
-            string[] memory classSplit = _splitStringIntoArray(data.class, "/");
-
-            if (classSplit.length == 4) {
-                // scenes: A_chain receive packet from B_chain
-                scNft = _getSCNft(data.class);
-
-                // tibc/nft/A/nftClass -> nftClass
-                newClass = classSplit[classSplit.length - 1];
-            } else {
-                // scenes: B_chain receive packet from C_chain
-                scNft = _getSCNft(data.class);
-
-                // [tibc][nft][A][B][nftClass] -> [tibc][nft][A][nftClass]
-                newClass = classSplit[0]
-                    .toSlice()
-                    .concat(classSplit[1].toSlice())
-                    .toSlice()
-                    .concat(classSplit[2].toSlice())
-                    .toSlice()
-                    .concat(classSplit[classSplit.length - 1].toSlice());
-
-                newClass = Strings.join(
-                    "/".toSlice(),
-                    _convertStringArrayIntoSliceArray(classSplit)
-                );
-            }
-
-            // generate tokenId
-            uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
-
-            // unlock
-            success = _transferFrom(
+        // go back to source chain
+        require(
+            Strings.startsWith(data.class.toSlice(), PREFIX.toSlice()),
+            "class has no prefix"
+        );
+        string[] memory paths = _splitStringIntoArray(data.class, "/");
+        // go back to original chain
+        if (paths.length == 4) {
+            // TODO
+            // success = _transferFrom(
+            //     address(bank),
+            //     data.receiver.parseAddr(),
+            //     data.id,
+            //     uint256(1),
+            //     bytes("")
+            // );
+            // return;
+        }
+        // /nft/A/B/C/nftClass -> nft/A/B/nftClass
+        paths[paths.length - 2] = paths[paths.length - 1];
+        paths[paths.length - 1] = "";
+        newClass = Strings.join(
+            Strings.toSlice("/"),
+            _convertStringArrayIntoSliceArray(paths)
+        );
+        // generate tokenId
+        uint256 tokenId = genTokenId(newClass, data.id);
+        // unlock
+        if (
+            _transferFrom(
                 address(bank),
                 data.receiver.parseAddr(),
                 tokenId,
                 uint256(1),
                 bytes("")
-            );
-
-            if (!success) {
-                errMsg = "onrecvPackt : unlock nft error";
-            }
-            return _newAcknowledgement(success, errMsg);
+            )
+        ) {
+            return _newAcknowledgement(true, "");
         }
+        return _newAcknowledgement(false, "onrecvPackt : unlock nft error");
     }
 
     /**
@@ -413,7 +359,7 @@ contract Transfer is ITransfer, ERC1155Holder {
                 .concat(data.class.toSlice());
         }
         // generate tokenId
-        uint256 tokenId = Bytes.bytes32ToUint(_calTokenId(scNft, data.id));
+        uint256 tokenId = genTokenId(scNft, data.id);
         if (data.awayFromOrigin) {
             // unlock
             _transferFrom(
@@ -494,19 +440,19 @@ contract Transfer is ITransfer, ERC1155Holder {
 
     /**
      * @notice calculate the hash of scNft and id, take the high 128 bits, and concatenate them into new 32-byte data
-     * example : tokenId := high128(hash(wenchang/nftclass)) + high128(hash(id))
-     * @param scNft souceChain/nftClass
-     * @param id Nft id from other blockchain systems
+     * example : tokenId := high128(hash(nft/wenchang/nftclass)) + high128(hash(id))
+     * @param newClassStr the class name of the newly generated nft,ex. nft/{originChain}/{....}/nftClass
+     * @param originNftId nft id from the original chain
      */
-    function _calTokenId(string memory scNft, string memory id)
+    function genTokenId(string memory newClassStr, string memory originNftId)
         internal
         pure
-        returns (bytes32)
+        returns (uint256)
     {
         // calculate sha256
-        bytes memory c1 = Bytes.cutBytes32(sha256(bytes(scNft)));
-        bytes memory c2 = Bytes.cutBytes32(sha256(bytes(id)));
+        bytes memory c1 = Bytes.cutBytes32(sha256(bytes(newClassStr)));
+        bytes memory c2 = Bytes.cutBytes32(sha256(bytes(originNftId)));
         bytes memory tokenId = Bytes.concat(c1, c2);
-        return tokenId.toBytes32();
+        return Bytes.bytes32ToUint(tokenId.toBytes32());
     }
 }
