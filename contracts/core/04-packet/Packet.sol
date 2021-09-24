@@ -72,9 +72,9 @@ contract Packet is Ownable, IPacket {
      * @param packet tibc packet
      */
     function sendPacket(PacketTypes.Packet calldata packet)
-    external
-    override
-    validateBasic(packet.sequence, packet.data)
+        external
+        override
+        validateBasic(packet.sequence, packet.data)
     {
         string memory sentChain;
         sentChain = packet.destChain;
@@ -94,11 +94,11 @@ contract Packet is Ownable, IPacket {
         );
         sequences[nextSequenceSendKey]++;
         commitments[
-        Host.packetCommitmentKey(
-            packet.sourceChain,
-            packet.destChain,
-            packet.sequence
-        )
+            Host.packetCommitmentKey(
+                packet.sourceChain,
+                packet.destChain,
+                packet.sequence
+            )
         ] = sha256(packet.data);
 
         emit PacketSent(packet);
