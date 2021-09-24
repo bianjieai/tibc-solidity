@@ -22,7 +22,7 @@ interface IClient {
      * @param clientState initial configuration of light client
      * @param consensusState The consensus state of the light client under the current clientState
      */
-    function initialize(
+    function initializeState(
         bytes calldata clientState,
         bytes calldata consensusState
     ) external;

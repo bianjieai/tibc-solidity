@@ -8,7 +8,7 @@ task("deployRouting", "Deploy Routing")
     .setAction(async (taskArgs, hre) => {
         const routingFactory = await hre.ethers.getContractFactory('Routing')
 
-        const routing = await routingFactory.deploy();
+        const routing = await hre.upgrades.deployProxy(routingFactory);
         await routing.deployed();
         console.log("Routing deployed to:", routing.address);
         console.log("export ROUTING_ADDRES=%s", routing.address);
