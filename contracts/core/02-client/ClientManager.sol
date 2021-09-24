@@ -14,8 +14,11 @@ contract ClientManager is
     ReentrancyGuardUpgradeable,
     IClientManager
 {
+    // the name of this chain cannot be changed once initialized
     string private nativeChainName;
+    // light client currently registered in this chain
     mapping(string => IClient) public clients;
+    // relayer registered by each light client
     mapping(string => mapping(address => bool)) public relayers;
 
     function initialize(string memory name) public initializer {
@@ -29,8 +32,8 @@ contract ClientManager is
         _;
     }
 
-    /* @notice                  this function is intended to be called by owner to create a light client and initialize light client data.
-     *
+    /**
+     *  @notice this function is intended to be called by owner to create a light client and initialize light client data.
      *  @param chainName        the counterparty chain name
      *  @param clientAddress    light client contract address
      *  @param clientState      light client status
@@ -56,10 +59,10 @@ contract ClientManager is
         clients[chainName] = client;
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to update the state of the light client
-     *
-     *  @param chainName        the counterparty chain name
-     *  @param header           block header of the counterparty chain
+    /**
+     *  @notice this function is called by the relayer, the purpose is to update the state of the light client
+     *  @param chainName  the counterparty chain name
+     *  @param header     block header of the counterparty chain
      */
     function updateClient(string calldata chainName, bytes calldata header)
         external
@@ -71,8 +74,8 @@ contract ClientManager is
         client.checkHeaderAndUpdateState(header);
     }
 
-    /* @notice                  this function is called by the owner, the purpose is to update the state of the light client
-     *
+    /**
+     *  @notice this function is called by the owner, the purpose is to update the state of the light client
      *  @param chainName        the counterparty chain name
      *  @param clientState      light client status
      *  @param consensusState   light client consensus status
@@ -86,10 +89,10 @@ contract ClientManager is
         client.upgrade(clientState, consensusState);
     }
 
-    /* @notice                  this function is called by the owner, the purpose is to register the relayer address of a light client
-     *
-     *  @param chainName        the counterparty chain name
-     *  @param address          relayer address
+    /**
+     *  @notice this function is called by the owner, the purpose is to register the relayer address of a light client
+     *  @param chainName  the counterparty chain name
+     *  @param relayer    relayer address
      */
     function registerRelayer(string calldata chainName, address relayer)
         external
@@ -99,9 +102,9 @@ contract ClientManager is
         relayers[chainName][relayer] = true;
     }
 
-    /** @notice  obtain the contract address of the client according to the registered client name
-      * @param chainName  the counterparty chain name
-    
+    /**
+     *  @notice obtain the contract address of the client according to the registered client name
+     *  @param chainName  the counterparty chain name
      */
     function getClient(string memory chainName)
         public
@@ -111,15 +114,16 @@ contract ClientManager is
         return clients[chainName];
     }
 
-    /** @notice  get the name of this chain
+    /**
+     *  @notice get the name of this chain
      */
     function getChainName() external view override returns (string memory) {
         return nativeChainName;
     }
 
-    /** @notice  get the latest height of the specified client update
-      * @param chainName  the counterparty chain name
-    
+    /**
+     *  @notice get the latest height of the specified client update
+     *  @param chainName  the counterparty chain name
      */
     function getLatestHeight(string memory chainName)
         public

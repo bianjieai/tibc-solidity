@@ -9,14 +9,16 @@ import "../../proto/Proofs.sol";
 import "./Codec.sol";
 
 library Verifier {
-    /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
-     *
-     *  @param height           the height of cross-chain data packet proof
-     *  @param proof            proof of the existence of cross-chain data packets
-     *  @param sourceChain      the original chain of the cross-chain data package
-     *  @param destChain        the destination chain of the cross-chain data packet
-     *  @param sequence         the sequence of cross-chain data packets
-     *  @param commitmentBytes  the hash of the cross-chain data packet
+    /**
+     * @notice this function is called by the packet contract, the purpose is to use the current state of the light client to verify cross-chain data packets
+     * @param state the client state
+     * @param cs the consensus state
+     * @param lastProcessedTime the last time the client processed the cross-chain packets
+     * @param proof proof of the existence of cross-chain data packets
+     * @param sourceChain the source chain of the cross-chain data package
+     * @param destChain the destination chain of the cross-chain data packet
+     * @param sequence the sequence of cross-chain data packets
+     * @param commitmentBytes the hash of the cross-chain data packet
      */
     function verifyCommitment(
         ClientState.Data storage state,
@@ -45,14 +47,16 @@ library Verifier {
         );
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify the acknowledgement of cross-chain data packets
-     *
-     *  @param height           the height of cross-chain data packet proof
-     *  @param proof            proof of the existence of cross-chain data packets
-     *  @param sourceChain      the original chain of the cross-chain data package
-     *  @param destChain        the destination chain of the cross-chain data packet
-     *  @param sequence         the sequence of cross-chain data packets
-     *  @param acknowledgement  the hash of the acknowledgement of the cross-chain data packet
+    /**
+     * @notice this function is called by the packet contract, the purpose is to use the current state of the light client to verify cross-chain data packets
+     * @param state the client state
+     * @param cs the consensus state
+     * @param lastProcessedTime the last time the client processed the cross-chain packets
+     * @param proof proof of the existence of cross-chain data packets
+     * @param sourceChain the source chain of the cross-chain data package
+     * @param destChain the destination chain of the cross-chain data packet
+     * @param sequence the sequence of cross-chain data packets
+     * @param acknowledgement the hash of the cross-chain confirmation packet
      */
     function verifyAcknowledgement(
         ClientState.Data storage state,
@@ -84,13 +88,15 @@ library Verifier {
         );
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify the cross-chain data packets
-     *
-     *  @param height           the height of cross-chain data packet proof
-     *  @param proof            proof of the existence of cross-chain data packets
-     *  @param sourceChain      the original chain of the cross-chain data package
-     *  @param destChain        the destination chain of the cross-chain data packet
-     *  @param sequence         the sequence of cross-chain data packets
+    /**
+     * @notice this function is called by the packet contract, the purpose is to use the current state of the light client to verify cross-chain data packets
+     * @param state the client state
+     * @param cs the consensus state
+     * @param lastProcessedTime the last time the client processed the cross-chain packets
+     * @param proof proof of the existence of cross-chain data packets
+     * @param sourceChain the source chain of the cross-chain data package
+     * @param destChain the destination chain of the cross-chain data packet
+     * @param sequence the sequence of cross-chain data packets
      */
     function verifyCleanCommitment(
         ClientState.Data storage state,

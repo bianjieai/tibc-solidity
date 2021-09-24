@@ -34,8 +34,8 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         transferOwnership(clientManagerAddr);
     }
 
-    /*  @notice   returns the latest height of the current light client
-     *
+    /**
+     * @notice returns the latest height of the current light client
      */
     function getLatestHeight()
         external
@@ -46,9 +46,9 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         return clientState.latest_height;
     }
 
-    /*  @notice return the consensus status information of the specified height
-
-     *  @param height height of the consensus status
+    /**
+     * @notice return the consensus status information of the specified height
+     * @param height height of the consensus status
      */
     function getConsensusState(Height.Data memory height)
         public
@@ -59,8 +59,8 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         return consensusStates[key];
     }
 
-    /*  @notice   return the status of the current light client
-     *
+    /**
+     * @notice return the status of the current light client
      */
     function status() external view override returns (Status) {
         ConsensusState.Data storage consState = consensusStates[
@@ -79,10 +79,10 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         return Status.Active;
     }
 
-    /*  @notice                 this function is called by the ClientManager contract, the purpose is to initialize light client state
-
-     *  @param clientStateBz      light client status
-     *  @param consensusStateBz   light client consensus status
+    /**
+     * @notice this function is called by the ClientManager contract, the purpose is to initialize light client state
+     * @param clientStateBz light client status
+     * @param consensusStateBz light client consensus status
      */
     function initializeState(
         bytes calldata clientStateBz,
@@ -95,10 +95,10 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         processedTime[key] = block.timestamp;
     }
 
-    /* @notice                  this function is called by the ClientManager contract, the purpose is to update the state of the light client
-     *
-     *  @param clientStateBz      light client status
-     *  @param consensusStateBz   light client consensus status
+    /**
+     * @notice this function is called by the ClientManager contract, the purpose is to update the state of the light client
+     * @param clientStateBz light client status
+     * @param consensusStateBz light client consensus status
      */
     function upgrade(
         bytes calldata clientStateBz,
@@ -111,9 +111,9 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         processedTime[key] = block.timestamp;
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to update and verify the state of the light client
-     *
-     *  @param headerBz          block header of the counterparty chain
+    /**
+     * @notice this function is called by the relayer, the purpose is to update and verify the state of the light client
+     * @param headerBz block header of the counterparty chain
      */
     function checkHeaderAndUpdateState(bytes calldata headerBz)
         external
@@ -155,14 +155,14 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         processedTime[key] = block.timestamp;
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
-     *
-     *  @param height           the height of cross-chain data packet proof
-     *  @param proof            proof of the existence of cross-chain data packets
-     *  @param sourceChain      the original chain of the cross-chain data package
-     *  @param destChain        the destination chain of the cross-chain data packet
-     *  @param sequence         the sequence of cross-chain data packets
-     *  @param commitmentBytes  the hash of the cross-chain data packet
+    /**
+     * @notice this function is called by the relayer, the purpose is to use the current state of the light client to verify cross-chain data packets
+     * @param height the height of cross-chain data packet proof
+     * @param proof proof of the existence of cross-chain data packets
+     * @param sourceChain the original chain of the cross-chain data package
+     * @param destChain the destination chain of the cross-chain data packet
+     * @param sequence the sequence of cross-chain data packets
+     * @param commitmentBytes the hash of the cross-chain data packet
      */
     function verifyPacketCommitment(
         Height.Data calldata height,
@@ -185,14 +185,14 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         );
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify the acknowledgement of cross-chain data packets
-     *
-     *  @param height           the height of cross-chain data packet proof
-     *  @param proof            proof of the existence of cross-chain data packets
-     *  @param sourceChain      the original chain of the cross-chain data package
-     *  @param destChain        the destination chain of the cross-chain data packet
-     *  @param sequence         the sequence of cross-chain data packets
-     *  @param acknowledgement  the hash of the acknowledgement of the cross-chain data packet
+    /**
+     * @notice this function is called by the relayer, the purpose is to use the current state of the light client to verify the acknowledgement of cross-chain data packets
+     * @param height the height of cross-chain data packet proof
+     * @param proof proof of the existence of cross-chain data packets
+     * @param sourceChain the original chain of the cross-chain data package
+     * @param destChain the destination chain of the cross-chain data packet
+     * @param sequence the sequence of cross-chain data packets
+     * @param acknowledgement the hash of the acknowledgement of the cross-chain data packet
      */
     function verifyPacketAcknowledgement(
         Height.Data calldata height,
@@ -215,13 +215,13 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         );
     }
 
-    /* @notice                  this function is called by the relayer, the purpose is to use the current state of the light client to verify the cross-chain data packets
-     *
-     *  @param height           the height of cross-chain data packet proof
-     *  @param proof            proof of the existence of cross-chain data packets
-     *  @param sourceChain      the original chain of the cross-chain data package
-     *  @param destChain        the destination chain of the cross-chain data packet
-     *  @param sequence         the sequence of cross-chain data packets
+    /**
+     * @notice this function is called by the relayer, the purpose is to use the current state of the light client to verify the cross-chain data packets
+     * @param height the height of cross-chain data packet proof
+     * @param proof proof of the existence of cross-chain data packets
+     * @param sourceChain the original chain of the cross-chain data package
+     * @param destChain the destination chain of the cross-chain data packet
+     * @param sequence the sequence of cross-chain data packets
      */
     function verifyPacketCleanCommitment(
         Height.Data calldata height,
@@ -251,12 +251,4 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
         ret = (ret << 64);
         ret |= (data.revision_height % MAX_SIZE);
     }
-    // function parseStorageKey(uint128 key)
-    //     private
-    //     pure
-    //     returns (Height.Data memory data)
-    // {
-    //     data.revision_height = uint64(key);
-    //     data.revision_number = uint64(key >> 64);
-    // }
 }
