@@ -18,7 +18,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
     using Bytes for *;
-    using Strings for *;
 
     string private constant PORT = "NFT";
     string private constant PREFIX = "tibc/nft";

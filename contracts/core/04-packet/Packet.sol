@@ -26,7 +26,9 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
     mapping(bytes => bool) public receipts;
     bytes public commitBytes;
 
-    function initialize() public initializer {}
+    function initialize() public initializer {
+        __Ownable_init();
+    }
 
     /**
      * @notice Event triggered when the packet is sent
