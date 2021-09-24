@@ -73,10 +73,10 @@ describe('Transfer', () => {
         const erc1155Fac = await ethers.getContractFactory("ERC1155Bank");
         erc1155bank = (await erc1155Fac.deploy()) as ERC1155Bank;
 
-
-
         const tsFac = await ethers.getContractFactory("Transfer");
         transfer = (await tsFac.deploy(erc1155bank.address, pac.address, clientManager.address)) as Transfer;
+
+        routing.addRouting("NFT", transfer.address)
     });
 
 
