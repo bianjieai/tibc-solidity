@@ -23,69 +23,52 @@ contract Packet is Ownable, IPacket {
     mapping(bytes => uint64) public sequences;
     mapping(bytes => bytes32) public commitments;
     mapping(bytes => bool) public receipts;
-    bytes public commitBytes ;
+    bytes public commitBytes;
 
     /**
-    * @dev Event triggered when the packet is sent
-    * @param packet packet data
-    */
-    event PacketSent(
-        PacketTypes.Packet packet
-    );
+     * @notice Event triggered when the packet is sent
+     * @param packet packet data
+     */
+    event PacketSent(PacketTypes.Packet packet);
 
     /**
-    * @dev Event triggered when the write ack
-    * @param packet packet data
-    * @param ack ack bytes
-    */
-    event AckWritten(
-        PacketTypes.Packet packet,
-        bytes ack
-    );
+     * @notice Event triggered when the write ack
+     * @param packet packet data
+     * @param ack ack bytes
+     */
+    event AckWritten(PacketTypes.Packet packet, bytes ack);
 
     /**
-    * @dev Event triggered when the clean packet sent
-    * @param packet clean packet data
-    */
-    event CleanPacketSent(
-        PacketTypes.CleanPacket packet
-    );
+     * @notice Event triggered when the clean packet sent
+     * @param packet clean packet data
+     */
+    event CleanPacketSent(PacketTypes.CleanPacket packet);
 
     /**
-    * @dev Constructor
-    * @param _clientManager clientManager address
-    * @param _routing routing address
-    */
-    constructor(address _clientManager, address _routing) public {
+     * @notice Constructor
+     * @param clientMgrContract clientManager address
+     * @param routingContract routing address
+     */
+    constructor(address clientMgrContract, address routingContract) public {
         require(
-            _clientManager != address(0) && _routing != address(0),
+            clientMgrContract != address(0) && routingContract != address(0),
             "clientManager or routing cannot be empty"
         );
-        clientManager = IClientManager(_clientManager);
-        routing = IRouting(_routing);
-
+        clientManager = IClientManager(clientMgrContract);
+        routing = IRouting(routingContract);
     }
 
     /**
-     * @dev Make sure that the packet is valid
+     * @notice Make sure that the packet is valid
      */
-    modifier validateBasic(
-        uint64 sequence,
-        bytes memory data
-    ) {
-        require(
-            sequence > 0,
-            "packet sequence cannot be 0"
-        );
-        require(
-            data.length > 0,
-            "packet data bytes cannot be empty"
-        );
+    modifier validateBasic(uint64 sequence, bytes memory data) {
+        require(sequence > 0, "packet sequence cannot be 0");
+        require(data.length > 0, "packet data bytes cannot be empty");
         _;
     }
 
     /**
-     * @dev SendPacket is called by a module in order to send an TIBC packet.
+     * @notice SendPacket is called by a module in order to send an TIBC packet.
      * @param packet tibc packet
      */
     function sendPacket(
@@ -116,13 +99,11 @@ contract Packet is Ownable, IPacket {
         sequences[nextSequenceSendKey]++;
         commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(packet.data);
 
-        emit PacketSent(
-            packet
-        );
+        emit PacketSent(packet);
     }
 
     /**
-     * @dev recvPacket is called by a module in order to receive & process an TIBC packet
+     * @notice recvPacket is called by a module in order to receive & process an TIBC packet
      * @param packet tibc packet
      * @param proof proof commit
      * @param height proof height
@@ -174,7 +155,7 @@ contract Packet is Ownable, IPacket {
 
         receipts[packetReceiptKey] = true;
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())){
+        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             IModule module = routing.getMoudle(packet.port);
             if(address(module) == address(0)){
                 writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("this module not found!"));
@@ -202,7 +183,7 @@ contract Packet is Ownable, IPacket {
     }
 
     /**
-     * @dev writeAcknowledgement is called by a module in order to send back a ack message
+     * @notice writeAcknowledgement is called by a module in order to send back a ack message
      * @param packet tibc packet
      * @param acknowledgement return by modules
      */
@@ -211,7 +192,13 @@ contract Packet is Ownable, IPacket {
         bytes memory acknowledgement
     ) internal {
         require(
-            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)] == bytes32(0),
+            commitments[
+                Host.packetAcknowledgementKey(
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.sequence
+                )
+            ] == bytes32(0),
             "acknowledgement for packet already exists"
         );
         require(
@@ -228,15 +215,18 @@ contract Packet is Ownable, IPacket {
             "light client not found"
         );
 
-        commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(acknowledgement);
-        emit AckWritten(
-            packet,
-            acknowledgement
-        );
+        commitments[
+            Host.packetAcknowledgementKey(
+                packet.sourceChain,
+                packet.destChain,
+                packet.sequence
+            )
+        ] = sha256(acknowledgement);
+        emit AckWritten(packet, acknowledgement);
     }
 
     /**
-     * @dev acknowledgePacket is called by relayer in order to receive an TIBC acknowledgement
+     * @notice acknowledgePacket is called by relayer in order to receive an TIBC acknowledgement
      * @param packet tibc packet
      * @param acknowledgement acknowledgement from dest chain
      * @param proofAcked ack proof commit
@@ -249,15 +239,24 @@ contract Packet is Ownable, IPacket {
         Height.Data calldata height
     ) external override {
         require(
-            commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] == sha256(packet.data),
+            commitments[
+                Host.packetCommitmentKey(
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.sequence
+                )
+            ] == sha256(packet.data),
             "commitment bytes are not equal!"
         );
 
         string memory sentChain;
 
-        if (Strings.equals(packet.sourceChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
+        if (
+            Strings.equals(packet.sourceChain, clientManager.getChainName()) &&
+            bytes(packet.relayChain).length > 0
+        ) {
             sentChain = packet.relayChain;
-        }else{
+        } else {
             sentChain = packet.destChain;
         }
 
@@ -276,66 +275,91 @@ contract Packet is Ownable, IPacket {
             commitBytes
         );
 
-        delete commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)];
+        delete commitments[
+            Host.packetCommitmentKey(
+                packet.sourceChain,
+                packet.destChain,
+                packet.sequence
+            )
+        ];
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())){
+        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             IModule module = routing.getMoudle(packet.port);
             module.onAcknowledgementPacket(packet, acknowledgement);
-        }else{
+        } else {
             require(
-                routing.authenticate(packet.sourceChain, packet.destChain, packet.port),
+                routing.authenticate(
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.port
+                ),
                 "no rule in routing table to relay this packet"
             );
 
             require(
-                address(clientManager.getClient(packet.sourceChain)) != address(0),
+                address(clientManager.getClient(packet.sourceChain)) !=
+                    address(0),
                 "light client not found"
             );
-            commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(acknowledgement);
-            emit AckWritten(
-                packet,
-                acknowledgement
-            );
+            commitments[
+                Host.packetAcknowledgementKey(
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.sequence
+                )
+            ] = sha256(acknowledgement);
+            emit AckWritten(packet, acknowledgement);
         }
     }
 
     /**
-     * @dev cleanPacket is called in order to send an clean packet.
+     * @notice cleanPacket is called in order to send an clean packet.
      * @param packet tibc clean packet
      */
-    function cleanPacket(
-        PacketTypes.CleanPacket calldata packet
-    ) external override {
-        require(
-            packet.sequence > 0,
-            "sequence must be greater than 0"
-        );
+    function cleanPacket(PacketTypes.CleanPacket calldata packet)
+        external
+        override
+    {
+        require(packet.sequence > 0, "sequence must be greater than 0");
 
-        uint64 currentCleanSeq = sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)];
-        require(
-            packet.sequence > currentCleanSeq,
-            "sequence illegal!"
-        );
+        uint64 currentCleanSeq = sequences[
+            Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
+        ];
+        require(packet.sequence > currentCleanSeq, "sequence illegal!");
 
-        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
             require(
-                commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, i)].length == 0,
+                commitments[
+                    Host.packetCommitmentKey(
+                        packet.sourceChain,
+                        packet.destChain,
+                        i
+                    )
+                ].length == 0,
                 "still have packet not been ack!"
             );
         }
 
-        sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)] = packet.sequence;
-        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
-            delete commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, i)];
-            delete receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, i)];
+        sequences[
+            Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
+        ] = packet.sequence;
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
+            delete commitments[
+                Host.packetAcknowledgementKey(
+                    packet.sourceChain,
+                    packet.destChain,
+                    i
+                )
+            ];
+            delete receipts[
+                Host.packetReceiptKey(packet.sourceChain, packet.destChain, i)
+            ];
         }
-        emit CleanPacketSent(
-            packet
-        );
+        emit CleanPacketSent(packet);
     }
 
     /**
-     * @dev recvCleanPacket is called by relayer in order to receive & process an TIBC clean packet
+     * @notice recvCleanPacket is called by relayer in order to receive & process an TIBC clean packet
      * @param packet tibc clean packet
      * @param proof proof commit
      * @param height proof height
@@ -345,15 +369,20 @@ contract Packet is Ownable, IPacket {
         bytes calldata proof,
         Height.Data calldata height
     ) external override {
-        uint64 currentCleanSeq = sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)];
-        require(
-            packet.sequence > currentCleanSeq,
-            "sequence illegal!"
-        );
+        uint64 currentCleanSeq = sequences[
+            Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
+        ];
+        require(packet.sequence > currentCleanSeq, "sequence illegal!");
 
-        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
             require(
-                commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, i)].length == 0,
+                commitments[
+                    Host.packetCommitmentKey(
+                        packet.sourceChain,
+                        packet.destChain,
+                        i
+                    )
+                ].length == 0,
                 "still have packet not been ack!"
             );
         }
@@ -361,20 +390,17 @@ contract Packet is Ownable, IPacket {
         string memory sentChain;
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            if (bytes(packet.relayChain).length > 0){
+            if (bytes(packet.relayChain).length > 0) {
                 sentChain = packet.relayChain;
-            }else{
+            } else {
                 sentChain = packet.sourceChain;
             }
-        }else{
+        } else {
             sentChain = packet.sourceChain;
         }
 
         IClient client = clientManager.getClient(sentChain);
-        require(
-            address(client) != address(0),
-            "light client not found"
-        );
+        require(address(client) != address(0), "light client not found");
         client.verifyPacketCleanCommitment(
             height,
             proof,
@@ -383,9 +409,17 @@ contract Packet is Ownable, IPacket {
             packet.sequence
         );
 
-        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++){
-            delete commitments[Host.packetAcknowledgementKey(packet.sourceChain, packet.destChain, i)];
-            delete receipts[Host.packetReceiptKey(packet.sourceChain, packet.destChain, i)];
+        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
+            delete commitments[
+                Host.packetAcknowledgementKey(
+                    packet.sourceChain,
+                    packet.destChain,
+                    i
+                )
+            ];
+            delete receipts[
+                Host.packetReceiptKey(packet.sourceChain, packet.destChain, i)
+            ];
         }
 
         sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)] = packet.sequence;
@@ -403,40 +437,37 @@ contract Packet is Ownable, IPacket {
     }
 
     /**
-    * @dev Get packet next sequence to send
-    * @param sourceChain name of source chain
-    * @param destChain name of destination chain
-    */
+     * @notice Get packet next sequence to send
+     * @param sourceChain name of source chain
+     * @param destChain name of destination chain
+     */
     function getNextSequenceSend(
         string memory sourceChain,
         string memory destChain
-    )
-    view
-    public
-    override
-    returns (uint64)
-    {
-        uint64 seq = sequences[Host.nextSequenceSendKey(sourceChain, destChain)];
-        if (seq == 0){
+    ) public view override returns (uint64) {
+        uint64 seq = sequences[
+            Host.nextSequenceSendKey(sourceChain, destChain)
+        ];
+        if (seq == 0) {
             seq = 1;
         }
         return seq;
     }
 
     /**
-    * @dev Set client manager contract
-    * @param _clientManager contract address
-    */
-    function setClientManager(address _clientManager) external onlyOwner {
-        clientManager = IClientManager(_clientManager);
+     * @notice Set client manager contract
+     * @param clientMgrContract contract address
+     */
+    function setClientManager(address clientMgrContract) external onlyOwner {
+        clientManager = IClientManager(clientMgrContract);
     }
 
     /**
-    * @dev Set routing contract
-    * @param _routing contract address
-    */
-    function setRouting(address _routing) external onlyOwner {
-        routing = IRouting(_routing);
+     * @notice Set routing contract
+     * @param routingContract contract address
+     */
+    function setRouting(address routingContract) external onlyOwner {
+        routing = IRouting(routingContract);
     }
 
     /*  @notice                 this function is to create ack

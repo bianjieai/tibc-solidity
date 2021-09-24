@@ -15,7 +15,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 library LightClient {
     using TimestampLib for Timestamp.Data;
 
-    /** @notice this function combines both VerifyAdjacent and VerifyNonAdjacent functions.
+    /**
+     *  @notice this function combines both VerifyAdjacent and VerifyNonAdjacent functions.
      *  @param trustedHeader      trusted header
      *  @param trustedVals        trusted validatorSet
      *  @param untrustedHeader    header that needs to be verified
@@ -58,7 +59,8 @@ library LightClient {
         );
     }
 
-    /** @notice this function verifies non-adjacent untrustedHeader against
+    /**
+     * @notice this function verifies non-adjacent untrustedHeader against
     trustedHeader. It ensures that:
     
     	a) trustedHeader can still be trusted (if not, ErrOldHeaderExpired is returned)

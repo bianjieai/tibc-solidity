@@ -6,6 +6,11 @@ import "../../proto/Tendermint.sol";
 import "../../proto/Commitment.sol";
 
 library ClientStateCodec {
+    /**
+     * @notice dncodes the client state into ClientState
+     * @param state ClientState
+     * @param clientStateBz the client state bytes
+     */
     function decode(ClientState.Data storage state, bytes memory clientStateBz)
         public
     {
@@ -14,6 +19,10 @@ library ClientStateCodec {
 }
 
 library ConsensusStateCodec {
+    /**
+     * @notice dncodes the client state into ConsensusState
+     * @param consensusStateBz the consensus state bytes
+     */
     function decode(bytes memory consensusStateBz)
         public
         pure
@@ -24,6 +33,10 @@ library ConsensusStateCodec {
 }
 
 library HeaderCodec {
+    /**
+     * @notice dncodes the header bytes into Header
+     * @param headerBz the header bytes
+     */
     function decode(bytes memory headerBz)
         public
         pure
@@ -34,6 +47,10 @@ library HeaderCodec {
 }
 
 library ProofCodec {
+    /**
+     * @notice dncodes the proof bytes into MerkleProof
+     * @param proofBz the merkleProof bytes
+     */
     function decode(bytes memory proofBz)
         public
         pure
