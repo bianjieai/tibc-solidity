@@ -71,25 +71,21 @@ contract Packet is Ownable, IPacket {
      * @notice SendPacket is called by a module in order to send an TIBC packet.
      * @param packet tibc packet
      */
-    function sendPacket(
-        PacketTypes.Packet calldata packet
-    )
+    function sendPacket(PacketTypes.Packet calldata packet)
     external
     override
-    validateBasic(packet.sequence, packet.data) {
+    validateBasic(packet.sequence, packet.data)
+    {
         string memory sentChain;
         sentChain = packet.destChain;
-        if (bytes(packet.relayChain).length > 0){
+        if (bytes(packet.relayChain).length > 0) {
             sentChain = packet.relayChain;
         }
         IClient client = clientManager.getClient(sentChain);
-        require(
-            address(client) != address(0),
-            "light client not found"
-        );
+        require(address(client) != address(0), "light client not found");
 
         bytes memory nextSequenceSendKey = Host.nextSequenceSendKey(packet.sourceChain, packet.destChain);
-        if (sequences[nextSequenceSendKey] == 0){
+        if (sequences[nextSequenceSendKey] == 0) {
             sequences[nextSequenceSendKey] = 1;
         }
         require(
@@ -97,7 +93,13 @@ contract Packet is Ownable, IPacket {
             "packet sequence ≠ next send sequence"
         );
         sequences[nextSequenceSendKey]++;
-        commitments[Host.packetCommitmentKey(packet.sourceChain, packet.destChain, packet.sequence)] = sha256(packet.data);
+        commitments[
+        Host.packetCommitmentKey(
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
+        )
+        ] = sha256(packet.data);
 
         emit PacketSent(packet);
     }
@@ -112,30 +114,31 @@ contract Packet is Ownable, IPacket {
         PacketTypes.Packet calldata packet,
         bytes calldata proof,
         Height.Data calldata height
-    )
-    external
-    override
+    ) external override
     {
-        if(packet.sequence <= sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)]){
+        if (packet.sequence <= sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)]) {
             writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("sequence illegal!"));
             revert("sequence illegal!");
         }
 
         bytes memory packetReceiptKey = Host.packetReceiptKey(packet.sourceChain, packet.destChain, packet.sequence);
-        if(receipts[packetReceiptKey]){
+        if (receipts[packetReceiptKey]) {
             writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("packet has been received!"));
             revert("packet has been received!");
         }
         string memory sentChain;
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
+        if (
+            Strings.equals(packet.destChain, clientManager.getChainName()) &&
+            bytes(packet.relayChain).length > 0
+        ) {
             sentChain = packet.relayChain;
-        }else{
+        } else {
             sentChain = packet.sourceChain;
         }
 
         IClient client = clientManager.getClient(sentChain);
-        if(address(client) == address(0)){
+        if (address(client) == address(0)) {
             writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("light client not found!"));
             revert("light client not found!");
         }
@@ -157,21 +160,21 @@ contract Packet is Ownable, IPacket {
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             IModule module = routing.getMoudle(packet.port);
-            if(address(module) == address(0)){
+            if (address(module) == address(0)) {
                 writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("this module not found!"));
                 revert("this module not found!");
             }
             bytes memory ack = module.onRecvPacket(packet);
-            if (ack.length > 0){
+            if (ack.length > 0) {
                 writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), ack);
             }
-        }else{
-            if(!routing.authenticate(packet.sourceChain, packet.destChain, packet.port)){
+        } else {
+            if (!routing.authenticate(packet.sourceChain, packet.destChain, packet.port)) {
                 writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("no rule in routing table to relay this packet"));
                 revert("no rule in routing table to relay this packet");
             }
             client = clientManager.getClient(packet.destChain);
-            if(address(client) == address(0)){
+            if (address(client) == address(0)) {
                 writeAcknowledgement(PacketTypes.Packet(packet.sequence, packet.port, packet.sourceChain, packet.destChain, packet.relayChain, packet.data), _newErrAcknowledgement("light client not found"));
                 revert("light client not found");
             }
@@ -424,7 +427,7 @@ contract Packet is Ownable, IPacket {
 
         sequences[Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)] = packet.sequence;
 
-        if (!Strings.equals(packet.destChain, clientManager.getChainName())){
+        if (!Strings.equals(packet.destChain, clientManager.getChainName())) {
             client = clientManager.getClient(packet.destChain);
             require(
                 address(client) != address(0),
