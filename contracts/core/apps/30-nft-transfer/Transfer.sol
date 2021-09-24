@@ -14,7 +14,7 @@ import "../../../interfaces/ITransfer.sol";
 import "./ERC1155Bank.sol";
 import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
 
-contract Transfer is ITransfer, ERC1155Holder {
+contract Transfer is ITransfer, ERC1155Holder, Ownable {
     using Bytes for *;
     using Strings for *;
 
@@ -33,6 +33,8 @@ contract Transfer is ITransfer, ERC1155Holder {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
+
+        transferOwnership(packetContract);
     }
 
     /**
@@ -50,7 +52,7 @@ contract Transfer is ITransfer, ERC1155Holder {
             "sourceChain can't equal to destChain"
         );
 
-        bool awayFromOrigin = _determineAwayFromOrigin(
+        bool awayFromOrigin = isAwayFromOrigin(
             transferData.class,
             transferData.destChain
         );
@@ -65,16 +67,17 @@ contract Transfer is ITransfer, ERC1155Holder {
                     transferData.tokenId,
                     uint256(1),
                     bytes("")
-                )
+                ),
+                "lock nft failed"
             );
         } else {
             // nft is be closed to origin
             // burn nft
-            require(_burn(msg.sender, transferData.tokenId, uint256(1)));
+            require(
+                _burn(msg.sender, transferData.tokenId, uint256(1)),
+                "burn nft failed"
+            );
         }
-
-        // NftMapValue memory mapData = getMapValue(transferData.tokenId);
-
         bytes memory data = NftTransfer.encode(
             NftTransfer.Data({
                 class: bank.getClass(transferData.tokenId),
@@ -87,7 +90,7 @@ contract Transfer is ITransfer, ERC1155Holder {
         );
 
         // send packet
-        PacketTypes.Packet memory pac = PacketTypes.Packet({
+        PacketTypes.Packet memory crossPacket = PacketTypes.Packet({
             sequence: packet.getNextSequenceSend(
                 sourceChain,
                 transferData.destChain
@@ -98,7 +101,7 @@ contract Transfer is ITransfer, ERC1155Holder {
             relayChain: transferData.relayChain,
             data: data
         });
-        packet.sendPacket(pac);
+        packet.sendPacket(crossPacket);
     }
 
     /**
@@ -108,6 +111,7 @@ contract Transfer is ITransfer, ERC1155Holder {
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
+        onlyOwner
         returns (bytes memory acknowledgement)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
@@ -190,7 +194,7 @@ contract Transfer is ITransfer, ERC1155Holder {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    ) external override {
+    ) external override onlyOwner {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data), pac.sourceChain);
         }
@@ -258,25 +262,6 @@ contract Transfer is ITransfer, ERC1155Holder {
     }
 
     /**
-     * @notice This method is to obtain the splicing of the source chain and nftclass from the cross-chain nft prefix
-     * The realization is aimed at the following two situations
-     * 1. tibc/nft/A/nftClass   -> A/nftClass
-     * 2. tibc/nft/A/B/nftClass -> A/nftClass
-     * @param class classification of cross-chain nft assets
-     */
-    function _getSCNft(string memory class)
-        internal
-        pure
-        returns (string memory)
-    {
-        string[] memory classSplit = _splitStringIntoArray(class, "/");
-        return
-            classSplit[2].toSlice().concat("/".toSlice()).toSlice().concat(
-                classSplit[classSplit.length - 1].toSlice()
-            );
-    }
-
-    /**
      * @notice this function is to create ack
      * @param success success or not
      */
@@ -295,19 +280,6 @@ contract Transfer is ITransfer, ERC1155Holder {
         return Acknowledgement.encode(ack);
     }
 
-    /*  @notice                 this function is to decode ack
-     *
-     *  @param ack              ack after protobuf encoding
-     */
-    function _decodeAcknowledgement(bytes memory ack)
-        internal
-        pure
-        virtual
-        returns (Acknowledgement.Data memory)
-    {
-        return Acknowledgement.decode(ack);
-    }
-
     /**
      * @notice this function is return a successful ack
      * @param acknowledgement ack
@@ -318,10 +290,9 @@ contract Transfer is ITransfer, ERC1155Holder {
         virtual
         returns (bool)
     {
-        Acknowledgement.Data memory ack = _decodeAcknowledgement(
+        Acknowledgement.Data memory ack = Acknowledgement.decode(
             acknowledgement
         );
-
         return Bytes.equals(ack.result, hex"01");
     }
 
@@ -377,27 +348,29 @@ contract Transfer is ITransfer, ERC1155Holder {
     }
 
     /**
+     * TODO
      * @notice   determineAwayFromOrigin determine whether nft is sent from the source chain or sent back to the source chain from other chains
      * example :
      *   -- not has prefix
-     *   1. A -> B  class:class | sourceChain:A  | destChain:B |awayFromOrigin = true
+     *   1. A -> B  class:class           | sourceChain:A  | destChain:B |awayFromOrigin = true
      *   -- has prefix
-     *   1. B -> C  class:tibc/nft/A/class   | sourceChain:B  | destChain:C |awayFromOrigin = true   A!=destChain
-     *  2. C -> B   class:tibc/nft/A/B/class | sourceChain:C  | destChain:B |awayFromOrigin = false   B=destChain
-     *   3. B -> A  class:tibc/nft/A/class   | sourceChain:B  | destChain:A |awayFromOrigin = false  A=destChain
+     *   1. B -> C  class:nft/A/B/class   | sourceChain:B  | destChain:C |awayFromOrigin = true   A!=destChain
+     *   2. C -> B  class:nft/A/B/C/class | sourceChain:C  | destChain:B |awayFromOrigin = false   B=destChain
+     *   3. B -> A  class:nft/A/B/class   | sourceChain:B  | destChain:A |awayFromOrigin = false  A=destChain
      * @param class nft category
      * @param destChain destination chain
      */
-    function _determineAwayFromOrigin(
-        string memory class,
-        string memory destChain
-    ) internal pure returns (bool) {
+    function isAwayFromOrigin(string memory class, string memory destChain)
+        internal
+        pure
+        returns (bool)
+    {
         if (!Strings.startsWith(class.toSlice(), PREFIX.toSlice())) {
             return true;
         }
 
-        string[] memory classSplit = _splitStringIntoArray(class, "/");
-        return !Strings.equals(classSplit[classSplit.length - 2], destChain);
+        string[] memory paths = _splitStringIntoArray(class, "/");
+        return !Strings.equals(paths[paths.length - 2], destChain);
     }
 
     /**

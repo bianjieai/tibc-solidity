@@ -11,12 +11,12 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         keep track of id :   tokenId -> id
         keep track of uri :  tokenId -> uri
     */
-    struct NftMapValue {
+    struct OriginNFT {
         string class;
         string id;
         string uri;
     }
-    mapping(uint256 => NftMapValue) public nftMapValue;
+    mapping(uint256 => OriginNFT) public traces;
 
     constructor() public ERC1155("") {}
 
@@ -101,7 +101,7 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         override
         returns (string memory)
     {
-        return nftMapValue[id].uri;
+        return traces[id].uri;
     }
 
     /**
@@ -109,15 +109,15 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
      *  @param tokenId token Id
      *  @param cls class
      *  @param id id
-     *  @param uri uri
+     *  @param _uri uri
      */
     function setMapValue(
         uint256 tokenId,
         string calldata cls,
         string calldata id,
-        string calldata uri
+        string calldata _uri
     ) external virtual override {
-        nftMapValue[tokenId] = NftMapValue({class: cls, id: id, uri: uri});
+        traces[tokenId] = OriginNFT({class: cls, id: id, uri: _uri});
     }
 
     /**
@@ -130,7 +130,7 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         override
         returns (string memory)
     {
-        return nftMapValue[tokenId].class;
+        return traces[tokenId].class;
     }
 
     /**
@@ -143,7 +143,7 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         override
         returns (string memory)
     {
-        return nftMapValue[tokenId].id;
+        return traces[tokenId].id;
     }
 
     /**
@@ -156,6 +156,6 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         override
         returns (string memory)
     {
-        return nftMapValue[tokenId].uri;
+        return traces[tokenId].uri;
     }
 }
