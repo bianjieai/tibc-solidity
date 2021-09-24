@@ -61,10 +61,17 @@ contract Packet is Ownable, IPacket {
     /**
      * @notice Make sure that the packet is valid
      */
-    modifier validateBasic(uint64 sequence, bytes memory data, string memory port) {
+    modifier validateBasic(
+        uint64 sequence,
+        bytes memory data,
+        string memory port
+    ) {
         require(sequence > 0, "packet sequence cannot be 0");
         require(data.length > 0, "packet data bytes cannot be empty");
-        require(address(routing.getModule(port)) == _msgSender(), "module has not been registered to routing contract");
+        require(
+            address(routing.getModule(port)) == _msgSender(),
+            "module has not been registered to routing contract"
+        );
         _;
     }
 
