@@ -473,10 +473,10 @@ contract Packet is Ownable, IPacket {
         routing = IRouting(routingContract);
     }
 
-    /*  @notice                 this function is to create ack
-    *
-    *  @param errMsg           ack error message
-    */
+    /**
+     * @notice this function is to create error acks
+     * @param errMsg error message
+     */
     function _newErrAcknowledgement(string memory errMsg)
     internal
     pure
