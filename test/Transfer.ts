@@ -62,7 +62,7 @@ describe('Transfer', () => {
         await createClient(chainName, tendermint.address, clientState, consensusState)
 
         const routingFac = await ethers.getContractFactory("Routing");
-        routing = (await routingFac.deploy()) as Routing;
+        routing = (await upgrades.deployProxy(routingFac)) as Routing;
 
         const pacFac = await ethers.getContractFactory("Packet");
         pac = (await pacFac.deploy(clientManager.address, routing.address)) as Packet;
@@ -73,7 +73,7 @@ describe('Transfer', () => {
         const tsFac = await ethers.getContractFactory("Transfer");
         transfer = (await upgrades.deployProxy(tsFac, [erc1155bank.address, pac.address, clientManager.address])) as Transfer;
 
-        routing.addRouting("NFT", transfer.address)
+        await routing.addRouting("NFT", transfer.address);
     });
 
     // receive packet from irishub 
