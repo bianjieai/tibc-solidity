@@ -12,12 +12,12 @@ import "../../../libraries/utils/Strings.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "./ERC1155Bank.sol";
-import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol"; 
+import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
 
 contract Transfer is ITransfer, ERC1155Holder {
     using Bytes for *;
     using Strings for *;
-    
+
     string private constant PORT = "NFT";
     string private constant PREFIX = "tibc/nft";
 
@@ -26,18 +26,18 @@ contract Transfer is ITransfer, ERC1155Holder {
     IClientManager public clientManager;
 
     constructor(
-        address bank_,
-        address packet_,
-        address clientManager_
+        address bankContract,
+        address packetContract,
+        address clientMgrContract
     ) public {
-        bank = IERC1155Bank(bank_);
-        packet = IPacket(packet_);
-        clientManager = IClientManager(clientManager_);
+        bank = IERC1155Bank(bankContract);
+        packet = IPacket(packetContract);
+        clientManager = IClientManager(clientMgrContract);
     }
 
-    /*  @notice                 this function is to send nft and construct data packet
-     *
-     *  @param transferData     send the data needed by nft
+    /**
+     * @notice this function is to send nft and construct data packet
+     * @param transferData Send the data needed by nft
      */
     function sendTransfer(TransferDataTypes.TransferData calldata transferData)
         external
@@ -101,10 +101,9 @@ contract Transfer is ITransfer, ERC1155Holder {
         packet.sendPacket(pac);
     }
 
-    // Module callbacks
-    /*  @notice                 this function is to receive packet
-     *
-     *  @param pac              Data package containing nft data
+    /**
+     * @notice this function is to receive packet
+     * @param pac Data package containing nft data
      */
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
@@ -183,7 +182,7 @@ contract Transfer is ITransfer, ERC1155Holder {
             } else {
                 errMsg = "onrecvPackt : mint nft error";
             }
-            
+
             return _newAcknowledgement(success, errMsg);
         } else {
             // go back to source chain
@@ -237,9 +236,10 @@ contract Transfer is ITransfer, ERC1155Holder {
         }
     }
 
-    /* @notice                  This method is start ack method
-     * @param pac               Packets transmitted
-     * @param acknowledgement    ack
+    /**
+     * @notice This method is start ack method
+     * @param pac Packets transmitted
+     * @param acknowledgement ack
      */
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
@@ -252,11 +252,11 @@ contract Transfer is ITransfer, ERC1155Holder {
 
     /// Internal functions ///
 
-    /*  @notice        this function is to destroys `amount` tokens of token type `id` from `account`
-     *
-     *  @param account
-     *  @param id
-     *  @param amount
+    /**
+     * @notice this function is to destroys `amount` tokens of token type `id` from `account`
+     * @param account address of the account to assign the token to
+     * @param id token id
+     * @param amount amount of tokens to create
      */
     function _burn(
         address account,
@@ -270,12 +270,12 @@ contract Transfer is ITransfer, ERC1155Holder {
         }
     }
 
-    /*  @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
-     *
-     *  @param account
-     *  @param id
-     *  @param amount
-     *  @param data
+    /**
+     * @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
+     * @param account address of the account to assign the token to
+     * @param id token id
+     * @param amount amount of tokens to create
+     * @param data metadata of the nft
      */
     function _mint(
         address account,
@@ -290,12 +290,12 @@ contract Transfer is ITransfer, ERC1155Holder {
         }
     }
 
-    /*  @notice        this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
-     *
-     *  @param from
-     *  @param to
-     *  @param amount
-     *  @param data
+    /**
+     * @notice this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
+     * @param from the address of the sender
+     * @param to the address of the receiver
+     * @param amount the amount of tokens to be transferred
+     * @param data the data to be stored in the token
      */
     function _transferFrom(
         address from,
@@ -311,11 +311,12 @@ contract Transfer is ITransfer, ERC1155Holder {
         }
     }
 
-    /* @notice   This method is to obtain the splicing of the source chain and nftclass from the cross-chain nft prefix
+    /**
+     * @notice This method is to obtain the splicing of the source chain and nftclass from the cross-chain nft prefix
      * The realization is aimed at the following two situations
      * 1. tibc/nft/A/nftClass   -> A/nftClass
      * 2. tibc/nft/A/B/nftClass -> A/nftClass
-     * @param class    classification of cross-chain nft assets
+     * @param class classification of cross-chain nft assets
      */
     function _getSCNft(string memory class)
         internal
@@ -329,10 +330,9 @@ contract Transfer is ITransfer, ERC1155Holder {
             );
     }
 
-    /*  @notice                 this function is to create ack
-     *
-     *  @param success          identify whether ack succeeded or failed
-     *  @param errMsg           ack error message
+    /**
+     * @notice this function is to create ack
+     * @param success success or not
      */
     function _newAcknowledgement(bool success, string memory errMsg)
         internal
@@ -362,9 +362,9 @@ contract Transfer is ITransfer, ERC1155Holder {
         return Acknowledgement.decode(ack);
     }
 
-    /*  @notice                 this function is return a successful ack
-     *
-     *  @param acknowledgement
+    /**
+     * @notice this function is return a successful ack
+     * @param acknowledgement ack
      */
     function _isSuccessAcknowledgement(bytes memory acknowledgement)
         internal
@@ -375,14 +375,14 @@ contract Transfer is ITransfer, ERC1155Holder {
         Acknowledgement.Data memory ack = _decodeAcknowledgement(
             acknowledgement
         );
-        
+
         return Bytes.equals(ack.result, hex"01");
     }
 
-    /*  @notice                 this function is refund nft
-     *
-     *  @param data             Data in the transmitted packet
-     *  @param sourceChain      The chain that executes this method
+    /**
+     * @notice this function is refund nft
+     * @param data Data in the transmitted packet
+     * @param sourceChain The chain that executes this method
      */
     function _refundTokens(
         NftTransfer.Data memory data,
@@ -430,16 +430,17 @@ contract Transfer is ITransfer, ERC1155Holder {
         }
     }
 
-    /* @notice   determineAwayFromOrigin determine whether nft is sent from the source chain or sent back to the source chain from other chains
-     * example : 
-        -- not has prefix
-        1. A -> B  class:class | sourceChain:A  | destChain:B |awayFromOrigin = true
-        -- has prefix
-        1. B -> C    class:tibc/nft/A/class   | sourceChain:B  | destChain:C |awayFromOrigin = true   A!=destChain
-        2. C -> B    class:tibc/nft/A/B/class | sourceChain:C  | destChain:B |awayFromOrigin = false  B=destChain
-        3. B -> A    class:tibc/nft/A/class   | sourceChain:B  | destChain:A |awayFromOrigin = false  A=destChain
-     * @param class   
-     * @param destChain  
+    /**
+     * @notice   determineAwayFromOrigin determine whether nft is sent from the source chain or sent back to the source chain from other chains
+     * example :
+     *   -- not has prefix
+     *   1. A -> B  class:class | sourceChain:A  | destChain:B |awayFromOrigin = true
+     *   -- has prefix
+     *   1. B -> C  class:tibc/nft/A/class   | sourceChain:B  | destChain:C |awayFromOrigin = true   A!=destChain
+     *  2. C -> B   class:tibc/nft/A/B/class | sourceChain:C  | destChain:B |awayFromOrigin = false   B=destChain
+     *   3. B -> A  class:tibc/nft/A/class   | sourceChain:B  | destChain:A |awayFromOrigin = false  A=destChain
+     * @param class nft category
+     * @param destChain destination chain
      */
     function _determineAwayFromOrigin(
         string memory class,
@@ -453,10 +454,11 @@ contract Transfer is ITransfer, ERC1155Holder {
         return !Strings.equals(classSplit[classSplit.length - 2], destChain);
     }
 
-    /* @notice   This method is to split string into string array
+    /**
+     * @notice   This method is to split string into string array
      * example : "tibc/nft/A" -> [tibc][nft][A]
-     * @param newClass   string to be split
-     * @param delim      delim
+     * @param newClass string to be split
+     * @param delim delim
      */
     function _splitStringIntoArray(string memory newClass, string memory delim)
         internal
@@ -474,8 +476,9 @@ contract Transfer is ITransfer, ERC1155Holder {
         return parts;
     }
 
-    /* @notice   This method is to convert stringArray into sliceArray
-     * @param    src
+    /**
+     * @notice This method is to convert stringArray into sliceArray
+     * @param src string array
      */
     function _convertStringArrayIntoSliceArray(string[] memory src)
         internal
@@ -489,10 +492,11 @@ contract Transfer is ITransfer, ERC1155Holder {
         return res;
     }
 
-    /* @notice   calculate the hash of scNft and id, take the high 128 bits, and concatenate them into new 32-byte data
+    /**
+     * @notice calculate the hash of scNft and id, take the high 128 bits, and concatenate them into new 32-byte data
      * example : tokenId := high128(hash(wenchang/nftclass)) + high128(hash(id))
-     * @param    scNft   souceChain/nftClass
-     * @param    id      Nft id from other blockchain systems
+     * @param scNft souceChain/nftClass
+     * @param id Nft id from other blockchain systems
      */
     function _calTokenId(string memory scNft, string memory id)
         internal
