@@ -61,9 +61,10 @@ contract Packet is Ownable, IPacket {
     /**
      * @notice Make sure that the packet is valid
      */
-    modifier validateBasic(uint64 sequence, bytes memory data) {
+    modifier validateBasic(uint64 sequence, bytes memory data, string memory port) {
         require(sequence > 0, "packet sequence cannot be 0");
         require(data.length > 0, "packet data bytes cannot be empty");
+        require(address(routing.getModule(port)) == _msgSender(), "module has not been registered to routing contract");
         _;
     }
 
@@ -74,7 +75,7 @@ contract Packet is Ownable, IPacket {
     function sendPacket(PacketTypes.Packet calldata packet)
         external
         override
-        validateBasic(packet.sequence, packet.data)
+        validateBasic(packet.sequence, packet.data, packet.port)
     {
         string memory sentChain;
         sentChain = packet.destChain;
@@ -215,7 +216,7 @@ contract Packet is Ownable, IPacket {
         receipts[packetReceiptKey] = true;
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            IModule module = routing.getMoudle(packet.port);
+            IModule module = routing.getModule(packet.port);
             if (address(module) == address(0)) {
                 writeAcknowledgement(
                     PacketTypes.Packet(
@@ -389,7 +390,7 @@ contract Packet is Ownable, IPacket {
         ];
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            IModule module = routing.getMoudle(packet.port);
+            IModule module = routing.getModule(packet.port);
             module.onAcknowledgementPacket(packet, acknowledgement);
         } else {
             require(

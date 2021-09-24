@@ -21,7 +21,7 @@ interface IRouting {
      * @notice get application contract instance
      * @param moduleName module name
      */
-    function getMoudle(string calldata moduleName)
+    function getModule(string calldata moduleName)
         external
         view
         returns (IModule);
