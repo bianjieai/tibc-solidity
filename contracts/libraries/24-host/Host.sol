@@ -5,10 +5,10 @@ pragma experimental ABIEncoderV2;
 import "../utils/Strings.sol";
 
 library Host {
-    /* @notice                  nextSequenceSendPath defines the next send sequence counter store path
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
+    /**
+     * @notice nextSequenceSendPath defines the next send sequence counter store path
+     * @param sourceChain ource chain name
+     * @param destChain destination chain name
      */
     function nextSequenceSendPath(
         string memory sourceChain,
@@ -21,10 +21,10 @@ library Host {
             );
     }
 
-    /* @notice                  nextSequenceSendKey returns the store key for the send sequence of a particular
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
+    /**
+     * @notice nextSequenceSendKey returns the store key for the send sequence of a particular
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
      */
     function nextSequenceSendKey(
         string memory sourceChain,
@@ -33,11 +33,11 @@ library Host {
         return bytes(nextSequenceSendPath(sourceChain, destChain));
     }
 
-    /* @notice                  packetCommitmentPath defines the next send sequence counter store path
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
-     *  @param sequence           sequence
+    /**
+     * @notice packetCommitmentPath defines the next send sequence counter store path
+     *  @param sourceChain source chain name
+     *  @param destChain destination chain name
+     *  @param sequence sequence
      */
     function packetCommitmentPath(
         string memory sourceChain,
@@ -54,11 +54,11 @@ library Host {
             );
     }
 
-    /* @notice                  packetCommitmentKey returns the store key of under which a packet commitment
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
-     *  @param sequence           sequence
+    /**
+     * @notice packetCommitmentKey returns the store key of under which a packet commitment
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     * @param sequence sequence
      */
     function packetCommitmentKey(
         string memory sourceChain,
@@ -68,10 +68,10 @@ library Host {
         return bytes(packetCommitmentPath(sourceChain, destChain, sequence));
     }
 
-    /* @notice                  packetCommitmentPrefixPath returns the store key of under which a packet commitment
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
+    /**
+     * @notice packetCommitmentPrefixPath returns the store key of under which a packet commitment
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
      */
     function packetCommitmentPrefixPath(
         string memory sourceChain,
@@ -87,11 +87,11 @@ library Host {
             );
     }
 
-    /* @notice                  packetAcknowledgementPath defines the packet acknowledgement store path
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
-     *  @param sequence           sequence
+    /**
+     * @notice packetAcknowledgementPath defines the packet acknowledgement store path
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     * @param sequence sequence
      */
     function packetAcknowledgementPath(
         string memory sourceChain,
@@ -108,11 +108,11 @@ library Host {
             );
     }
 
-    /* @notice                  packetAcknowledgementKey returns the store key of under which a packet
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
-     *  @param sequence           sequence
+    /**
+     * @notice packetAcknowledgementKey returns the store key of under which a packet
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     * @param sequence sequence
      */
     function packetAcknowledgementKey(
         string memory sourceChain,
@@ -123,10 +123,10 @@ library Host {
             bytes(packetAcknowledgementPath(sourceChain, destChain, sequence));
     }
 
-    /* @notice                  packetAcknowledgementPrefixPath defines the prefix for commitments to packet data fields store path.
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
+    /**
+     * @notice packetAcknowledgementPrefixPath defines the prefix for commitments to packet data fields store path.
+     *  @param sourceChain source chain name
+     *  @param destChain destination chain name
      */
     function packetAcknowledgementPrefixPath(
         string memory sourceChain,
@@ -139,11 +139,11 @@ library Host {
             );
     }
 
-    /* @notice                  packetReceiptPath defines the packet acknowledgement store path
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
-     *  @param sequence           sequence
+    /**
+     * @notice packetReceiptPath defines the packet acknowledgement store path
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     * @param sequence sequence
      */
     function packetReceiptPath(
         string memory sourceChain,
@@ -160,11 +160,11 @@ library Host {
             );
     }
 
-    /* @notice                  packetReceiptKey returns the store key of under which a packet
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
-     *  @param sequence           sequence
+    /**
+     * @notice packetReceiptKey returns the store key of under which a packet
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     * @param sequence sequence
      */
     function packetReceiptKey(
         string memory sourceChain,
@@ -174,10 +174,10 @@ library Host {
         return bytes(packetReceiptPath(sourceChain, destChain, sequence));
     }
 
-    /* @notice                  packetReceiptPrefixPath defines the prefix for receipt to packet data fields store path.
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
+    /**
+     * @notice packetReceiptPrefixPath defines the prefix for receipt to packet data fields store path.
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
      */
     function packetReceiptPrefixPath(
         string memory sourceChain,
@@ -193,11 +193,10 @@ library Host {
             );
     }
 
-    /* @notice                  cleanPacketCommitmentKey returns the store key of under which a clean packet commitment
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
-     *  @param sequence           sequence
+    /**
+     * @notice cleanPacketCommitmentKey returns the store key of under which a clean packet commitment
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
      */
     function cleanPacketCommitmentKey(
         string memory sourceChain,
@@ -206,10 +205,10 @@ library Host {
         return bytes(cleanPacketCommitmentPath(sourceChain, destChain));
     }
 
-    /* @notice                  cleanPacketCommitmentPath defines the prefix for receipt to packet data fields store path.
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
+    /**
+     * @notice cleanPacketCommitmentPath defines the prefix for receipt to packet data fields store path.
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
      */
     function cleanPacketCommitmentPath(
         string memory sourceChain,
@@ -218,10 +217,10 @@ library Host {
         return Strings.strConcat("clean/", packetPath(sourceChain, destChain));
     }
 
-    /* @notice       packetPath
-     *
-     *  @param sourceChain        source chain name
-     *  @param destChain          destination chain name
+    /**
+     * @notice packetPath
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
      */
     function packetPath(string memory sourceChain, string memory destChain)
         internal

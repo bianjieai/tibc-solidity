@@ -45,16 +45,16 @@ contract Packet is Ownable, IPacket {
 
     /**
      * @notice Constructor
-     * @param clientManagerAddr clientManager address
-     * @param routingAddr routing address
+     * @param clientMgrContract clientManager address
+     * @param routingContract routing address
      */
-    constructor(address clientManagerAddr, address routingAddr) public {
+    constructor(address clientMgrContract, address routingContract) public {
         require(
-            clientManagerAddr != address(0) || routingAddr != address(0),
+            clientMgrContract != address(0) && routingContract != address(0),
             "clientManager or routing cannot be empty"
         );
-        clientManager = IClientManager(clientManagerAddr);
-        routing = IRouting(routingAddr);
+        clientManager = IClientManager(clientMgrContract);
+        routing = IRouting(routingContract);
     }
 
     /**
@@ -476,17 +476,17 @@ contract Packet is Ownable, IPacket {
 
     /**
      * @notice Set client manager contract
-     * @param clientManagerAddr contract address
+     * @param clientMgrContract contract address
      */
-    function setClientManager(address clientManagerAddr) external onlyOwner {
-        clientManager = IClientManager(clientManagerAddr);
+    function setClientManager(address clientMgrContract) external onlyOwner {
+        clientManager = IClientManager(clientMgrContract);
     }
 
     /**
      * @notice Set routing contract
-     * @param routingAddr contract address
+     * @param routingContract contract address
      */
-    function setRouting(address routingAddr) external onlyOwner {
-        routing = IRouting(routingAddr);
+    function setRouting(address routingContract) external onlyOwner {
+        routing = IRouting(routingContract);
     }
 }

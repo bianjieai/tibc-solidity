@@ -105,13 +105,13 @@ contract Routing is Ownable, IRouting {
     /**
      * @notice add a module:
      * @param moduleName module name
-     * @param moduleAddr module contract address
+     * @param moduleContract module contract address
      */
-    function addRouting(string calldata moduleName, address moduleAddr)
+    function addRouting(string calldata moduleName, address moduleContract)
         external
         onlyOwner
     {
-        modules[moduleName] = IModule(moduleAddr);
+        modules[moduleName] = IModule(moduleContract);
     }
 
     function _setRuleMap(string[] memory _rules) private {

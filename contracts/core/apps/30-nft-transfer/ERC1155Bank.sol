@@ -20,15 +20,15 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
 
     constructor() public ERC1155("") {}
 
-    /*  @notice         this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
-     *
-     *  @param account
-     *  @param id
-     *  @param amount
-     *  @param data
+    /**
+     * @notice this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
      * - `account` cannot be the zero address.
      * - If `account` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
+     * @param account address of the account to assign the token to
+     * @param id token id
+     * @param amount amount of tokens to create
+     * @param data metadata to store with the token
      */
     function mint(
         address account,
@@ -39,11 +39,11 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         _mint(account, id, amount, data);
     }
 
-    /*  @notice        this function is to destroys `amount` tokens of token type `id` from `account`
-     *
-     *  @param account
-     *  @param id
-     *  @param amount
+    /**
+     * @notice this function is to destroys `amount` tokens of token type `id` from `account`
+     * @param account address of the account to assign the token to
+     * @param id token id
+     * @param amount amount of tokens to create
      */
     function burn(
         address account,
@@ -53,17 +53,17 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         _burn(account, id, amount);
     }
 
-    /*  @notice        this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
-     *
-     *  @param from
-     *  @param to
-     *  @param amount
-     *  @param data
+    /**
+     * @notice this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
      * - `to` cannot be the zero address.
      * - If the caller is not `from`, it must be have been approved to spend ``from``'s tokens via {setApprovalForAll}.
      * - `from` must have a balance of tokens of type `id` of at least `amount`.
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
+     * @param from address of the sender
+     * @param to address of the receiver
+     * @param amount amount of tokens to transfer
+     * @param data metadata to store with the token
      */
     function transferFrom(
         address from,
@@ -75,11 +75,11 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
-    /*  @notice        this function is to destroys `amount` tokens of token type `id` from `account`
-     *
-     *  @param account
-     *  @param id
+    /**
+     * @notice this function is to destroys `amount` tokens of token type `id` from `account`
      * - `account` cannot be the zero address.
+     * @param account address of the account
+     * @param id token id
      */
     function balanceOfAddr(address account, uint256 id)
         public
@@ -87,12 +87,12 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         virtual
         returns (uint256)
     {
-        super.balanceOf(account, id);
+        return super.balanceOf(account, id);
     }
 
-    /*  @notice        this function is to get uri from tokenId
-     *
-     *  @param id
+    /**
+     * @notice this function is to get uri from tokenId
+     * @param id token id
      */
     function uri(uint256 id)
         public
@@ -104,12 +104,12 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         return nftMapValue[id].uri;
     }
 
-    /*  @notice                 this function is to set value
-     *
-     *  @param tokenId          token Id
-     *  @param cls              class
-     *  @param id               id
-     *  @param uri              uri
+    /**
+     * @notice this function is to set value
+     *  @param tokenId token Id
+     *  @param cls class
+     *  @param id id
+     *  @param uri uri
      */
     function setMapValue(
         uint256 tokenId,
@@ -120,9 +120,9 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         nftMapValue[tokenId] = NftMapValue({class: cls, id: id, uri: uri});
     }
 
-    /*  @notice                  this function is to get class
-     *
-     *  @param tokenId          token Id
+    /**
+     * @notice this function is to get class
+     * @param tokenId token Id
      */
     function getClass(uint256 tokenId)
         public
@@ -133,9 +133,9 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         return nftMapValue[tokenId].class;
     }
 
-    /*  @notice                  this function is to get id
-     *
-     *  @param tokenId          token Id
+    /**
+     * @notice this function is to get id
+     * @param tokenId token Id
      */
     function getId(uint256 tokenId)
         external
@@ -146,9 +146,9 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         return nftMapValue[tokenId].id;
     }
 
-    /*  @notice                  this function is to get uri
-     *
-     *  @param tokenId          token Id
+    /**
+     * @notice this function is to get uri
+     * @param tokenId token Id
      */
     function getUri(uint256 tokenId)
         external

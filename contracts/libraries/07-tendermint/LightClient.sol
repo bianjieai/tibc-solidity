@@ -59,7 +59,8 @@ library LightClient {
         );
     }
 
-    /** @notice this function verifies non-adjacent untrustedHeader against
+    /**
+     * @notice this function verifies non-adjacent untrustedHeader against
     trustedHeader. It ensures that:
     
     	a) trustedHeader can still be trusted (if not, ErrOldHeaderExpired is returned)
