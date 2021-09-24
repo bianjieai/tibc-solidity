@@ -57,19 +57,28 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
             transferData.destChain
         );
 
+        NftTransfer.Data memory packetData;
         if (awayFromOrigin) {
             // nft is away from origin
             // lock nft (transfer nft to nft-transfer contract address)
-            require(
-                _transferFrom(
-                    msg.sender,
-                    address(this),
-                    transferData.tokenId,
-                    uint256(1),
-                    bytes("")
-                ),
-                "lock nft failed"
-            );
+            // require(
+            //     _transferFrom(
+            //         msg.sender,
+            //         address(this),
+            //         transferData.tokenId,
+            //         uint256(1),
+            //         bytes("")
+            //     ),
+            //     "lock nft failed"
+            // );
+            // packetData = NftTransfer.Data({
+            //     class: transferData.class,
+            //     id: Strings.fromUint256(transferData.tokenId),
+            //     uri: "", //TODO
+            //     sender: Bytes.addressToString(msg.sender),
+            //     receiver: transferData.receiver,
+            //     awayFromOrigin: true
+            // });
         } else {
             // nft is be closed to origin
             // burn nft
@@ -77,18 +86,17 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
                 _burn(msg.sender, transferData.tokenId, uint256(1)),
                 "burn nft failed"
             );
-        }
-        bytes memory data = NftTransfer.encode(
-            NftTransfer.Data({
+
+            packetData = NftTransfer.Data({
                 class: bank.getClass(transferData.tokenId),
                 id: bank.getId(transferData.tokenId),
                 uri: bank.getUri(transferData.tokenId),
                 sender: Bytes.addressToString(msg.sender),
                 receiver: transferData.receiver,
                 awayFromOrigin: awayFromOrigin
-            })
-        );
-
+            });
+        }
+        bytes memory data = NftTransfer.encode(packetData);
         // send packet
         PacketTypes.Packet memory crossPacket = PacketTypes.Packet({
             sequence: packet.getNextSequenceSend(
@@ -143,47 +151,49 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
             }
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");
         }
-
         // go back to source chain
-        require(
-            Strings.startsWith(data.class.toSlice(), PREFIX.toSlice()),
-            "class has no prefix"
-        );
-        string[] memory paths = _splitStringIntoArray(data.class, "/");
-        // go back to original chain
-        if (paths.length == 4) {
-            // TODO
-            // success = _transferFrom(
-            //     address(bank),
-            //     data.receiver.parseAddr(),
-            //     data.id,
-            //     uint256(1),
-            //     bytes("")
-            // );
-            // return;
-        }
-        // /nft/A/B/C/nftClass -> nft/A/B/nftClass
-        paths[paths.length - 2] = paths[paths.length - 1];
-        paths[paths.length - 1] = "";
-        newClass = Strings.join(
-            Strings.toSlice("/"),
-            _convertStringArrayIntoSliceArray(paths)
-        );
-        // generate tokenId
-        uint256 tokenId = genTokenId(newClass, data.id);
-        // unlock
-        if (
-            _transferFrom(
-                address(bank),
-                data.receiver.parseAddr(),
-                tokenId,
-                uint256(1),
-                bytes("")
-            )
-        ) {
-            return _newAcknowledgement(true, "");
-        }
-        return _newAcknowledgement(false, "onrecvPackt : unlock nft error");
+        // require(
+        //     Strings.startsWith(data.class.toSlice(), PREFIX.toSlice()),
+        //     "class has no prefix"
+        // );
+        // string[] memory paths = _splitStringIntoArray(data.class, "/");
+        // // go back to original chain
+        // if (paths.length == 4) {
+        //     if (
+        //         _transferFrom(
+        //             address(bank),
+        //             data.receiver.parseAddr(),
+        //             Strings.toUint256(data.id),
+        //             uint256(1),
+        //             bytes("")
+        //         )
+        //     ) {
+        //         return _newAcknowledgement(true, "");
+        //     }
+        //     return _newAcknowledgement(false, "onrecvPackt : unlock nft error");
+        // }
+        // // /nft/A/B/C/nftClass -> nft/A/B/nftClass
+        // paths[paths.length - 2] = paths[paths.length - 1];
+        // paths[paths.length - 1] = "";
+        // newClass = Strings.join(
+        //     Strings.toSlice("/"),
+        //     _convertStringArrayIntoSliceArray(paths)
+        // );
+        // // generate tokenId
+        // uint256 tokenId = genTokenId(newClass, data.id);
+        // // unlock
+        // if (
+        //     _transferFrom(
+        //         address(bank),
+        //         data.receiver.parseAddr(),
+        //         tokenId,
+        //         uint256(1),
+        //         bytes("")
+        //     )
+        // ) {
+        //     return _newAcknowledgement(true, "");
+        // }
+        // return _newAcknowledgement(false, "onrecvPackt : unlock nft error");
     }
 
     /**
@@ -196,7 +206,7 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
         bytes calldata acknowledgement
     ) external override onlyOwner {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
-            _refundTokens(NftTransfer.decode(pac.data), pac.sourceChain);
+            _refundTokens(NftTransfer.decode(pac.data));
         }
     }
 
@@ -299,52 +309,10 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
     /**
      * @notice this function is refund nft
      * @param data Data in the transmitted packet
-     * @param sourceChain The chain that executes this method
      */
-    function _refundTokens(
-        NftTransfer.Data memory data,
-        string memory sourceChain
-    ) internal virtual {
-        string[] memory classSplit = _splitStringIntoArray(data.class, "/");
-        string memory scNft;
-        if (
-            Strings.startsWith(
-                Strings.toSlice(data.class),
-                Strings.toSlice(PREFIX)
-            )
-        ) {
-            if (classSplit.length == 5) {
-                // tibc/nft//A/B/nftClass
-                scNft = classSplit[2]
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(classSplit[4].toSlice());
-            }
-        } else {
-            // class
-            scNft = sourceChain
-                .toSlice()
-                .concat("/".toSlice())
-                .toSlice()
-                .concat(data.class.toSlice());
-        }
-        // generate tokenId
-        uint256 tokenId = genTokenId(scNft, data.id);
-        if (data.awayFromOrigin) {
-            // unlock
-            _transferFrom(
-                address(this),
-                data.sender.parseAddr(),
-                tokenId,
-                uint256(1),
-                bytes("")
-            );
-        } else {
-            // tibc/nft/A/B/nftClass
-            // mint nft
-            _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
-        }
+    function _refundTokens(NftTransfer.Data memory data) internal virtual {
+        uint256 tokenId = genTokenId(data.class, data.id);
+        _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
     }
 
     /**

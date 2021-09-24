@@ -281,7 +281,11 @@ library Strings {
      * @param needle The slice to search for.
      * @return True if the slice starts with the provided text, false otherwise.
      */
-    function startsWith(slice memory self, slice memory needle) internal pure returns (bool) {
+    function startsWith(slice memory self, slice memory needle)
+        internal
+        pure
+        returns (bool)
+    {
         if (self._len < needle._len) {
             return false;
         }
@@ -295,7 +299,10 @@ library Strings {
             let length := mload(needle)
             let selfptr := mload(add(self, 0x20))
             let needleptr := mload(add(needle, 0x20))
-            equal := eq(keccak256(selfptr, length), keccak256(needleptr, length))
+            equal := eq(
+                keccak256(selfptr, length),
+                keccak256(needleptr, length)
+            )
         }
         return equal;
     }
@@ -307,12 +314,50 @@ library Strings {
      * @param other The second slice to concatenate.
      * @return The concatenation of the two strings.
      */
-    function concat(slice memory self, slice memory other) internal pure returns (string memory) {
+    function concat(slice memory self, slice memory other)
+        internal
+        pure
+        returns (string memory)
+    {
         string memory ret = new string(self._len + other._len);
-        uint retptr;
-        assembly { retptr := add(ret, 32) }
+        uint256 retptr;
+        assembly {
+            retptr := add(ret, 32)
+        }
         memcpy(retptr, self._ptr, self._len);
         memcpy(retptr + self._len, other._ptr, other._len);
         return ret;
+    }
+
+    function fromUint256(uint256 i) public pure returns (string memory str) {
+        if (i == 0) {
+            return "0";
+        }
+        uint256 j = i;
+        uint256 length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint256 k = length;
+        j = i;
+        while (j != 0) {
+            bstr[--k] = bytes1(uint8(48 + (j % 10)));
+            j /= 10;
+        }
+        str = string(bstr);
+    }
+
+    function toUint256(string memory s) public pure returns (uint256 result) {
+        bytes memory b = bytes(s);
+        uint256 i;
+        result = 0;
+        for (i = 0; i < b.length; i++) {
+            uint256 c = uint256(uint8(b[i]));
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + (c - 48);
+            }
+        }
     }
 }
