@@ -26,6 +26,12 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     IERC1155Bank public bank;
     IClientManager public clientManager;
 
+    // check if caller is clientManager
+    modifier onlyPacketContract() {
+        require(msg.sender == address(packet), "caller not packet contract");
+        _;
+    }
+
     function initialize(
         address bankContract,
         address packetContract,
@@ -34,8 +40,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
-
-        //transferOwnership(packetContract);
     }
 
     /**
@@ -44,7 +48,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      */
     function sendTransfer(TransferDataTypes.TransferData calldata transferData)
         external
-        virtual
         override
     {
         string memory sourceChain = clientManager.getChainName();
@@ -104,6 +107,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
+        onlyPacketContract
         returns (bytes memory acknowledgement)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
@@ -148,13 +152,13 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    ) external override {
+    ) external override onlyPacketContract {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data));
         }
     }
 
-    /// Internal functions ///
+    /// private functions ///
 
     /**
      * @notice this function is to destroys `amount` tokens of token type `id` from `account`
@@ -166,7 +170,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         address account,
         uint256 id,
         uint256 amount
-    ) internal virtual returns (bool) {
+    ) private returns (bool) {
         try bank.burn(account, id, amount) {
             return true;
         } catch (bytes memory) {
@@ -186,7 +190,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) internal virtual returns (bool) {
+    ) private returns (bool) {
         try bank.mint(account, id, amount, data) {
             return true;
         } catch (bytes memory) {
@@ -207,7 +211,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) internal virtual returns (bool) {
+    ) private returns (bool) {
         try bank.transferFrom(from, to, id, amount, data) {
             return true;
         } catch (bytes memory) {
@@ -220,9 +224,8 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param success success or not
      */
     function _newAcknowledgement(bool success, string memory errMsg)
-        internal
+        private
         pure
-        virtual
         returns (bytes memory)
     {
         Acknowledgement.Data memory ack;
@@ -239,9 +242,8 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param acknowledgement ack
      */
     function _isSuccessAcknowledgement(bytes memory acknowledgement)
-        internal
+        private
         pure
-        virtual
         returns (bool)
     {
         Acknowledgement.Data memory ack = Acknowledgement.decode(
@@ -254,7 +256,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @notice this function is refund nft
      * @param data Data in the transmitted packet
      */
-    function _refundTokens(NftTransfer.Data memory data) internal virtual {
+    function _refundTokens(NftTransfer.Data memory data) private {
         uint256 tokenId = genTokenId(data.class, data.id);
         _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
     }
@@ -273,7 +275,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param destChain destination chain
      */
     function isAwayFromOrigin(string memory class, string memory destChain)
-        internal
+        private
         pure
         returns (bool)
     {
@@ -291,7 +293,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param delim delim
      */
     function _splitStringIntoArray(string memory newClass, string memory delim)
-        internal
+        private
         pure
         returns (string[] memory)
     {
@@ -311,7 +313,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param src string array
      */
     function _convertStringArrayIntoSliceArray(string[] memory src)
-        internal
+        private
         pure
         returns (Strings.slice[] memory)
     {
@@ -329,7 +331,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param originNftId nft id from the original chain
      */
     function genTokenId(string memory newClassStr, string memory originNftId)
-        internal
+        private
         pure
         returns (uint256)
     {
