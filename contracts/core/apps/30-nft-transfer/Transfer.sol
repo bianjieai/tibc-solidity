@@ -13,7 +13,7 @@ import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "./ERC1155Bank.sol";
 import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
-import "hardhat/console.sol";
+import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
 contract Transfer is ITransfer, ERC1155Holder, Ownable {
     using Bytes for *;
