@@ -106,13 +106,13 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
 
     /**
      * //TODO
-     * @notice this function is to set value
+     * @notice establish a binding relationship between origin nft and mint's nft in erc1155
      *  @param tokenId token Id
      *  @param cls class
      *  @param id id
      *  @param _uri uri
      */
-    function setMapValue(
+    function trace(
         uint256 tokenId,
         string calldata cls,
         string calldata id,
@@ -121,7 +121,12 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         traces[tokenId] = OriginNFT({class: cls, id: id, uri: _uri});
     }
 
-    function delele(uint256 tokenId) external {
+    /**
+     * //TODO
+     * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
+     *  @param tokenId token Id
+     */
+    function untrace(uint256 tokenId) external override {
         delete traces[tokenId];
     }
 

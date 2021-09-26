@@ -60,26 +60,7 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
 
         NftTransfer.Data memory packetData;
         if (awayFromOrigin) {
-            // nft is away from origin
-            // lock nft (transfer nft to nft-transfer contract address)
-            // require(
-            //     _transferFrom(
-            //         msg.sender,
-            //         address(this),
-            //         transferData.tokenId,
-            //         uint256(1),
-            //         bytes("")
-            //     ),
-            //     "lock nft failed"
-            // );
-            // packetData = NftTransfer.Data({
-            //     class: transferData.class,
-            //     id: Strings.fromUint256(transferData.tokenId),
-            //     uri: "", //TODO
-            //     sender: Bytes.addressToString(msg.sender),
-            //     receiver: transferData.receiver,
-            //     awayFromOrigin: true
-            // });
+            // not support
         } else {
             // nft is be closed to origin
             // burn nft
@@ -87,6 +68,9 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
                 _burn(msg.sender, transferData.tokenId, uint256(1)),
                 "burn nft failed"
             );
+
+            //delete the binding relationship between origin hft and mint's nft in erc1155
+            bank.untrace(transferData.tokenId);
 
             packetData = NftTransfer.Data({
                 class: bank.getClass(transferData.tokenId),
@@ -148,54 +132,13 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
             // mint nft
             if (_mint(data.receiver.parseAddr(), tokenId, uint256(1), "")) {
                 // keep trace of class and id and uri
-                bank.setMapValue(tokenId, newClass, data.id, data.uri);
+                bank.trace(tokenId, newClass, data.id, data.uri);
                 return _newAcknowledgement(true, "");
             }
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");
         }
         // go back to source chain
-        // require(
-        //     Strings.startsWith(data.class.toSlice(), PREFIX.toSlice()),
-        //     "class has no prefix"
-        // );
-        // string[] memory paths = _splitStringIntoArray(data.class, "/");
-        // // go back to original chain
-        // if (paths.length == 4) {
-        //     if (
-        //         _transferFrom(
-        //             address(bank),
-        //             data.receiver.parseAddr(),
-        //             Strings.toUint256(data.id),
-        //             uint256(1),
-        //             bytes("")
-        //         )
-        //     ) {
-        //         return _newAcknowledgement(true, "");
-        //     }
-        //     return _newAcknowledgement(false, "onrecvPackt : unlock nft error");
-        // }
-        // // /nft/A/B/C/nftClass -> nft/A/B/nftClass
-        // paths[paths.length - 2] = paths[paths.length - 1];
-        // paths[paths.length - 1] = "";
-        // newClass = Strings.join(
-        //     Strings.toSlice("/"),
-        //     _convertStringArrayIntoSliceArray(paths)
-        // );
-        // // generate tokenId
-        // uint256 tokenId = genTokenId(newClass, data.id);
-        // // unlock
-        // if (
-        //     _transferFrom(
-        //         address(bank),
-        //         data.receiver.parseAddr(),
-        //         tokenId,
-        //         uint256(1),
-        //         bytes("")
-        //     )
-        // ) {
-        //     return _newAcknowledgement(true, "");
-        // }
-        // return _newAcknowledgement(false, "onrecvPackt : unlock nft error");
+        // not support
     }
 
     /**

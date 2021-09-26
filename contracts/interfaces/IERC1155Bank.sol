@@ -24,12 +24,14 @@ interface IERC1155Bank {
         bytes calldata data
     ) external;
 
-    function setMapValue(
+    function trace(
         uint256 tokenId,
         string calldata cls,
         string calldata id,
         string calldata uri
     ) external;
+
+    function untrace(uint256 tokenId) external;
 
     function getClass(uint256 tokenId) external view returns (string memory);
 
