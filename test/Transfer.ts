@@ -1,4 +1,4 @@
-import { Signer } from "ethers";
+import { Signer, BigNumber } from "ethers";
 import chai from "chai";
 
 
@@ -83,48 +83,23 @@ describe('Transfer', () => {
 
     // receive packet from irishub 
     it("onRecvPacket: from irishub to ethereum", async function () {
-        let sender = (await accounts[0].getAddress()).toString();
-        let receiver = (await accounts[1].getAddress()).toString();
-
-        let data = {
-            class: "tibc/nft/wenchang/kitty",
-            id: "tokenid",
-            uri: "www.test.com",
-            sender: sender,
-            receiver: receiver,
-            awayFromOrigin: true
-        }
-
-        let databytes = nft.NftTransfer.encode(data).finish();
-
-        let packet = {
-            sequence: 1,
-            port: "nft",
-            sourceChain: "irishub",
-            destChain: "ethereum",
-            relayChain: "",
-            data: databytes,
-        };
-
-        let res = await transfer.onRecvPacket(packet);
+        recvPacket();
     })
 
 
     // send nft back to irishub from ethereum 
     it("sendTransfer: send nft back to irishub from ethereum", async function () {
+        let result = await recvPacket();
         let sender = (await accounts[0].getAddress()).toString();
-        await erc1155bank.mint(sender, 1, 1, "0x123456");
-        let transferdata = {
-            tokenId: 1,
+        let transferData = {
+            tokenId: result.id,
             receiver: (await accounts[1].getAddress()).toString(),
-            class: "tibc/nft/wenchang/irishub/kitty",
+            class: result.class,
             destChain: "irishub",
             relayChain: ""
         }
-
-        let res = await transfer.sendTransfer(transferdata);
-
-        let balance = await erc1155bank.balanceOf(sender, 1);
+        await transfer.sendTransfer(transferData);
+        let balance = await erc1155bank.balanceOf(sender, result.id);
         expect(balance).to.eq(0);
     })
 
@@ -146,16 +121,16 @@ describe('Transfer', () => {
 
         let databytes = nft.NftTransfer.encode(data).finish();
         let packet = {
-            sequence : 1,
-            port : "nft",
-            sourceChain : "ethereum",
-            destChain : "irishub",
-            relayChain : "",
-            data : databytes,
-         };
+            sequence: 1,
+            port: "nft",
+            sourceChain: "ethereum",
+            destChain: "irishub",
+            relayChain: "",
+            data: databytes,
+        };
 
-        let acknowledgement= {
-            result : Buffer.from("01", "hex"),
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
         }
         let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
@@ -197,8 +172,8 @@ describe('Transfer', () => {
             relayChain: "",
             data: databytes,
         };
-        let acknowledgement= {
-            result : Buffer.from("01", "hex"),
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
         }
         let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
@@ -218,6 +193,45 @@ describe('Transfer', () => {
         await transfer.onAcknowledgementPacket(packet, dd);
 
     })
+
+    const recvPacket = async function () {
+        let sender = (await accounts[0].getAddress()).toString();
+        let receiver = (await accounts[1].getAddress()).toString();
+
+        let data = {
+            class: "nft/wenchang/irishub/kitty",
+            id: "tokenid",
+            uri: "www.test.com",
+            sender: sender,
+            receiver: receiver,
+            awayFromOrigin: true
+        }
+
+        let databytes = nft.NftTransfer.encode(data).finish();
+
+        let packet = {
+            sequence: 1,
+            port: "nft",
+            sourceChain: "irishub",
+            destChain: "ethereum",
+            relayChain: "",
+            data: databytes,
+        };
+
+        await transfer.onRecvPacket(packet);
+
+        let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
+        let nftClass = await erc1155bank.getClass(expTokenId);
+        expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
+
+        let nftId = await erc1155bank.getId(expTokenId);
+        expect(nftId).to.eq(data.id);
+
+        let nftURI = await erc1155bank.getUri(expTokenId);
+        expect(nftURI).to.eq(data.uri);
+
+        return { id: expTokenId, class: nftClass }
+    }
 
     const deployContract = async function () {
         accounts = await ethers.getSigners();

@@ -127,6 +127,7 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
      */
     function getClass(uint256 tokenId)
         public
+        view
         virtual
         override
         returns (string memory)
@@ -140,6 +141,7 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
      */
     function getId(uint256 tokenId)
         external
+        view
         virtual
         override
         returns (string memory)
@@ -153,6 +155,7 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
      */
     function getUri(uint256 tokenId)
         external
+        view
         virtual
         override
         returns (string memory)

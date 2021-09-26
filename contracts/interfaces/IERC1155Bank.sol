@@ -31,9 +31,9 @@ interface IERC1155Bank {
         string calldata uri
     ) external;
 
-    function getClass(uint256 tokenId) external returns (string memory);
+    function getClass(uint256 tokenId) external view returns (string memory);
 
-    function getId(uint256 tokenId) external returns (string memory);
+    function getId(uint256 tokenId) external view returns (string memory);
 
-    function getUri(uint256 tokenId) external returns (string memory);
+    function getUri(uint256 tokenId) external view returns (string memory);
 }
