@@ -40,6 +40,8 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
+
+        bank.setOwner(address(this));
     }
 
     /**

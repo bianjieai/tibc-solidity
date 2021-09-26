@@ -8,7 +8,7 @@ import "../../../interfaces/IERC1155Bank.sol";
 
 contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
     /*
-        keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass
+        keep track of class: tokenId -> nft/wenchang/irishub/nftclass
         keep track of id :   tokenId -> id
         keep track of uri :  tokenId -> uri
     */
@@ -17,9 +17,15 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         string id;
         string uri;
     }
+
+    address public owner;
     mapping(uint256 => OriginNFT) public traces;
 
-    function initialize() public initializer {}
+    // check if caller is transferContract
+    modifier onlyOwner() {
+        require(msg.sender == owner, "caller not transfer contract");
+        _;
+    }
 
     /**
      * @notice this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
@@ -106,7 +112,14 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
     }
 
     /**
-     * //TODO
+     * @notice Give the ownership of the current contract to TransferContract
+     * @param _owner address of nft transfer Contract
+     */
+    function setOwner(address _owner) external override initializer {
+        owner = _owner;
+    }
+
+    /**
      * @notice establish a binding relationship between origin nft and mint's nft in erc1155
      *  @param tokenId token Id
      *  @param cls class
@@ -118,16 +131,15 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         string calldata cls,
         string calldata id,
         string calldata _uri
-    ) external virtual override {
+    ) external override onlyOwner {
         traces[tokenId] = OriginNFT({class: cls, id: id, uri: _uri});
     }
 
     /**
-     * //TODO
      * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
      *  @param tokenId token Id
      */
-    function untrace(uint256 tokenId) external override {
+    function untrace(uint256 tokenId) external override onlyOwner {
         delete traces[tokenId];
     }
 

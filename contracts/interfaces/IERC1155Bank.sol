@@ -31,6 +31,8 @@ interface IERC1155Bank {
         string calldata uri
     ) external;
 
+    function setOwner(address _owner) external;
+
     function untrace(uint256 tokenId) external;
 
     function getClass(uint256 tokenId) external view returns (string memory);

@@ -67,8 +67,8 @@ describe('Transfer', () => {
         const mockPacketFactory = await ethers.getContractFactory("MockPacket");
         mockPacket = (await mockPacketFactory.deploy()) as MockPacket;
 
-        const erc1155Fac = await ethers.getContractFactory("ERC1155Bank");
-        erc1155bank = (await erc1155Fac.deploy()) as ERC1155Bank;
+        const erc1155Factory = await ethers.getContractFactory("ERC1155Bank");
+        erc1155bank = (await upgrades.deployProxy(erc1155Factory)) as ERC1155Bank;
 
         const transFactory = await ethers.getContractFactory("Transfer");
         transfer = (await upgrades.deployProxy(transFactory, [erc1155bank.address, mockPacket.address, clientManager.address])) as Transfer;
