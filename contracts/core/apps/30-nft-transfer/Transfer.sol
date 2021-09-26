@@ -11,13 +11,13 @@ import "../../../libraries/utils/Bytes.sol";
 import "../../../libraries/utils/Strings.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
-import "./ERC1155Bank.sol";
-import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155Holder.sol";
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
+import "../../../interfaces/IERC1155Bank.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract Transfer is ITransfer, ERC1155Holder, Ownable {
-    using Bytes for *;
+contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
+    using Bytes for *;
 
     string private constant PORT = "NFT";
     string private constant PREFIX = "nft";
@@ -26,11 +26,11 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
     IERC1155Bank public bank;
     IClientManager public clientManager;
 
-    constructor(
+    function initialize(
         address bankContract,
         address packetContract,
         address clientMgrContract
-    ) public {
+    ) public initializer {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
@@ -104,7 +104,6 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
-        onlyOwner
         returns (bytes memory acknowledgement)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
@@ -149,7 +148,7 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    ) external override onlyOwner {
+    ) external override {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data));
         }

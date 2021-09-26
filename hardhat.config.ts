@@ -1,5 +1,6 @@
-import '@nomiclabs/hardhat-waffle'
-import '@typechain/hardhat'
+import "@nomiclabs/hardhat-waffle"
+import "@openzeppelin/hardhat-upgrades"
+import "@typechain/hardhat"
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer"
 import "hardhat-abi-exporter"
@@ -9,7 +10,7 @@ import "./tasks/deployClientManager"
 import "./tasks/deployPacket"
 import "./tasks/deployRouting"
 import "./tasks/deployERC1155Bank"
-import "./tasks/deployTransfer"
+import "./tasks/deployNFTTransfer"
 
 
 import { HardhatUserConfig } from 'hardhat/types'

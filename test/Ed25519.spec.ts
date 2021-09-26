@@ -2,7 +2,6 @@ import { ethers } from "hardhat";
 import chai from "chai";
 
 import { TestEd25519 } from '../typechain';
-import { verify } from "crypto";
 
 const { expect } = chai;
 
@@ -18,6 +17,6 @@ describe('Ed25519', () => {
         it(description, async () => {
             const [r, s] = [sig.substring(0, 64), sig.substring(64)];
             expect(valid).to.eq(await ed25519.verify(`0x${pub}`, `0x${r}`, `0x${s}`, `0x${msg}`))
-       });
+        });
     }
 })
