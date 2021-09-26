@@ -121,6 +121,10 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         traces[tokenId] = OriginNFT({class: cls, id: id, uri: _uri});
     }
 
+    function delele(uint256 tokenId) external {
+        delete traces[tokenId];
+    }
+
     /**
      * @notice this function is to get class
      * @param tokenId token Id

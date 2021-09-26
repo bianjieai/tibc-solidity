@@ -82,26 +82,76 @@ describe('Transfer', () => {
 
 
     // receive packet from irishub 
-    it("onRecvPacket: from irishub to ethereum", async function () {
-        recvPacket();
-    })
+    it("onRecvPacket && sendTransfer", async function () {
+        let sender = (await accounts[1].getAddress()).toString();
+        let receiver = (await accounts[0].getAddress()).toString();
+
+        // send nft from irishub to ethereum
+        let data = {
+            class: "nft/wenchang/irishub/kitty",
+            id: "tokenid",
+            uri: "www.test.com",
+            sender: sender,
+            receiver: receiver,
+            awayFromOrigin: true
+        }
+        let packet = {
+            sequence: 1,
+            port: "nft",
+            sourceChain: "irishub",
+            destChain: "ethereum",
+            relayChain: "",
+            data: nft.NftTransfer.encode(data).finish(),
+        };
+
+        await transfer.onRecvPacket(packet);
+
+        let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
+        let nftClass = await erc1155bank.getClass(expTokenId);
+        expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
+
+        let nftId = await erc1155bank.getId(expTokenId);
+        expect(nftId).to.eq(data.id);
+
+        let nftURI = await erc1155bank.getUri(expTokenId);
+        expect(nftURI).to.eq(data.uri);
 
 
-    // send nft back to irishub from ethereum 
-    it("sendTransfer: send nft back to irishub from ethereum", async function () {
-        let result = await recvPacket();
-        let sender = (await accounts[0].getAddress()).toString();
+        // send nft back to irishub from ethereum
+        let receiverOnOtherChain = (await accounts[2].getAddress()).toString();
         let transferData = {
-            tokenId: result.id,
-            receiver: (await accounts[1].getAddress()).toString(),
-            class: result.class,
+            tokenId: expTokenId,
+            receiver: receiverOnOtherChain,
+            class: nftClass,
             destChain: "irishub",
             relayChain: ""
         }
         await transfer.sendTransfer(transferData);
-        let balance = await erc1155bank.balanceOf(sender, result.id);
+        let balance = await erc1155bank.balanceOf(sender, expTokenId);
         expect(balance).to.eq(0);
     })
+
+
+    // send nft back to irishub from ethereum 
+    // it("sendTransfer: send nft back to irishub from ethereum", async function () {
+    //     let sender = (await accounts[0].getAddress()).toString();
+    //     let receiver = (await accounts[2].getAddress()).toString();
+    //     let result = await recvPacket();
+    //     let transferData = {
+    //         tokenId: result.id,
+    //         receiver: receiver,
+    //         class: result.class,
+    //         destChain: "irishub",
+    //         relayChain: ""
+    //     }
+    //     await transfer.sendTransfer(transferData);
+
+    //     // let nftId = await erc1155bank.getId(result.id);
+    //     // expect(nftId).to.eq(result.id);
+    //     console.log(result.id)
+    //     let balance = await erc1155bank.balanceOf(sender, result.id);
+    //     expect(balance).to.eq(0);
+    // })
 
 
 
@@ -195,8 +245,8 @@ describe('Transfer', () => {
     })
 
     const recvPacket = async function () {
-        let sender = (await accounts[0].getAddress()).toString();
-        let receiver = (await accounts[1].getAddress()).toString();
+        let sender = (await accounts[1].getAddress()).toString();
+        let receiver = (await accounts[0].getAddress()).toString();
 
         let data = {
             class: "nft/wenchang/irishub/kitty",

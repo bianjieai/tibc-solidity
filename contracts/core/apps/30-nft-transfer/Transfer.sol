@@ -338,9 +338,8 @@ contract Transfer is ITransfer, ERC1155Holder, Ownable {
         if (!Strings.startsWith(class.toSlice(), PREFIX.toSlice())) {
             return true;
         }
-
         string[] memory paths = _splitStringIntoArray(class, "/");
-        return !Strings.equals(paths[paths.length - 2], destChain);
+        return !Strings.equals(paths[paths.length - 3], destChain);
     }
 
     /**
