@@ -236,7 +236,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         );
         require(acknowledgement.length != 0, "acknowledgement cannot be empty");
         string memory targetChain = packet.sourceChain;
-        if (bytes(packet.relayChain).length > 0) {
+        if (bytes(packet.relayChain).length > 0 && Strings.equals(packet.destChain, clientManager.getChainName())){
             targetChain = packet.relayChain;
         }
         IClient client = clientManager.getClient(targetChain);
