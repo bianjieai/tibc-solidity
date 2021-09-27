@@ -515,12 +515,12 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
         ];
 
-        uint64 currentMaxAckSeq = sequences[
-            Host.MaxAckSeqKey(packet.sourceChain, packet.destChain)
-        ];
         require(
             packet.sequence > currentCleanSeq &&
-                packet.sequence <= currentMaxAckSeq,
+                packet.sequence <=
+                sequences[
+                    Host.MaxAckSeqKey(packet.sourceChain, packet.destChain)
+                ],
             "sequence illegal!"
         );
 
