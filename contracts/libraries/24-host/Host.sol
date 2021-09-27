@@ -230,4 +230,28 @@ library Host {
         return
             Strings.strConcat(Strings.strConcat(sourceChain, "/"), destChain);
     }
+
+    /**
+     * @notice MaxAckSeqKey returns the store key of current max ack height is stored
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     */
+    function MaxAckSeqKey(
+        string memory sourceChain,
+        string memory destChain
+    ) internal pure returns (bytes memory) {
+        return bytes(MaxAckSeqPath(sourceChain, destChain));
+    }
+
+    /**
+     * @notice MaxAckSeqPath returns the store path of current max ack height is stored
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     */
+    function MaxAckSeqPath(
+        string memory sourceChain,
+        string memory destChain
+    ) internal pure returns (string memory) {
+        return Strings.strConcat("maxAckSeq/", packetPath(sourceChain, destChain));
+    }
 }
