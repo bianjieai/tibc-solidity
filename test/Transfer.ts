@@ -62,7 +62,7 @@ describe('Transfer', () => {
         await createClient(chainName, tendermint.address, clientState, consensusState)
 
         const routingFac = await ethers.getContractFactory("Routing");
-        routing = (await routingFac.deploy()) as Routing;
+        routing = (await upgrades.deployProxy(routingFac)) as Routing;
 
         const mockPacketFactory = await ethers.getContractFactory("MockPacket");
         mockPacket = (await mockPacketFactory.deploy()) as MockPacket;
@@ -129,7 +129,6 @@ describe('Transfer', () => {
         let balance = await erc1155bank.balanceOf(sender, expTokenId);
         expect(balance).to.eq(0);
     })
-
 
     // The test need fix the tokenID in the refundToken
     it("onAcknowledgementPacket when awayFromOrigin is false", async function () {

@@ -28,7 +28,7 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
      *  @notice return the module contract instance with the specified name
      *  @param moduleName  the module name
      */
-    function getMoudle(string calldata moduleName)
+    function getModule(string calldata moduleName)
         external
         view
         override

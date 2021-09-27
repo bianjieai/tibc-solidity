@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../02-client/ClientManager.sol";
 import "../../proto/Types.sol";
+import "../../proto/Ack.sol";
 import "../../libraries/02-client/Client.sol";
 import "../../libraries/04-packet/Packet.sol";
 import "../../libraries/24-host/Host.sol";
@@ -66,9 +67,17 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
     /**
      * @notice Make sure that the packet is valid
      */
-    modifier validateBasic(uint64 sequence, bytes memory data) {
+    modifier validateBasic(
+        uint64 sequence,
+        bytes memory data,
+        string memory port
+    ) {
         require(sequence > 0, "packet sequence cannot be 0");
         require(data.length > 0, "packet data bytes cannot be empty");
+        require(
+            address(routing.getModule(port)) == _msgSender(),
+            "module has not been registered to routing contract"
+        );
         _;
     }
 
@@ -79,38 +88,35 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
     function sendPacket(PacketTypes.Packet calldata packet)
         external
         override
-        validateBasic(packet.sequence, packet.data)
+        validateBasic(packet.sequence, packet.data, packet.port)
     {
-        string memory targetChain;
-        targetChain = packet.destChain;
+        string memory sentChain;
+        sentChain = packet.destChain;
         if (bytes(packet.relayChain).length > 0) {
-            targetChain = packet.relayChain;
+            sentChain = packet.relayChain;
         }
-        IClient client = clientManager.getClient(targetChain);
-        require(address(client) != address(0), "consensus state not found");
+        IClient client = clientManager.getClient(sentChain);
+        require(address(client) != address(0), "light client not found");
 
-        uint64 nextSequenceSend = sequences[
-            Host.nextSequenceSendKey(packet.sourceChain, packet.destChain)
-        ];
-        if (nextSequenceSend == 0) {
-            nextSequenceSend = 1;
+        bytes memory nextSequenceSendKey = Host.nextSequenceSendKey(
+            packet.sourceChain,
+            packet.destChain
+        );
+        if (sequences[nextSequenceSendKey] == 0) {
+            sequences[nextSequenceSendKey] = 1;
         }
         require(
-            packet.sequence == nextSequenceSend,
+            packet.sequence == sequences[nextSequenceSendKey],
             "packet sequence ≠ next send sequence"
         );
-        bytes32 commitment = sha256(packet.data);
-        nextSequenceSend++;
-        sequences[
-            Host.nextSequenceSendKey(packet.sourceChain, packet.destChain)
-        ] = nextSequenceSend;
+        sequences[nextSequenceSendKey]++;
         commitments[
             Host.packetCommitmentKey(
                 packet.sourceChain,
                 packet.destChain,
                 packet.sequence
             )
-        ] = commitment;
+        ] = sha256(packet.data);
 
         emit PacketSent(packet);
     }
@@ -126,84 +132,170 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         bytes calldata proof,
         Height.Data calldata height
     ) external override {
-        require(
-            packet.sequence >
-                sequences[
-                    Host.cleanPacketCommitmentKey(
-                        packet.sourceChain,
-                        packet.destChain
-                    )
-                ],
-            "sequence illegal!"
-        );
-
-        require(
-            !receipts[
-                Host.packetReceiptKey(
+        if (
+            packet.sequence <=
+            sequences[
+                Host.cleanPacketCommitmentKey(
+                    packet.sourceChain,
+                    packet.destChain
+                )
+            ]
+        ) {
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
                     packet.sourceChain,
                     packet.destChain,
-                    packet.sequence
-                )
-            ],
-            "packet has been received"
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("sequence illegal!")
+            );
+            revert("sequence illegal!");
+        }
+
+        bytes memory packetReceiptKey = Host.packetReceiptKey(
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
         );
-        string memory targetChain;
+        if (receipts[packetReceiptKey]) {
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("packet has been received!")
+            );
+            revert("packet has been received!");
+        }
+        string memory sentChain;
 
         if (
             Strings.equals(packet.destChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
-            targetChain = packet.relayChain;
+            sentChain = packet.relayChain;
         } else {
-            targetChain = packet.sourceChain;
+            sentChain = packet.sourceChain;
         }
 
-        IClient client = clientManager.getClient(targetChain);
-        require(address(client) != address(0), "consensus state not found");
-        commitBytes = Bytes.fromBytes32(sha256(packet.data));
-        client.verifyPacketCommitment(
-            height,
-            proof,
-            packet.sourceChain,
-            packet.destChain,
-            packet.sequence,
-            commitBytes
-        );
+        IClient client = clientManager.getClient(sentChain);
+        if (address(client) == address(0)) {
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("light client not found!")
+            );
+            revert("light client not found!");
+        }
 
-        receipts[
-            Host.packetReceiptKey(
+        commitBytes = Bytes.fromBytes32(sha256(packet.data));
+        try
+            client.verifyPacketCommitment(
+                height,
+                proof,
                 packet.sourceChain,
                 packet.destChain,
-                packet.sequence
+                packet.sequence,
+                commitBytes
             )
-        ] = true;
+        {} catch {
+            writeAcknowledgement(
+                PacketTypes.Packet(
+                    packet.sequence,
+                    packet.port,
+                    packet.sourceChain,
+                    packet.destChain,
+                    packet.relayChain,
+                    packet.data
+                ),
+                _newErrAcknowledgement("packet verify failed!")
+            );
+            revert("packet verify failed!");
+        }
+
+        receipts[packetReceiptKey] = true;
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            IModule module = routing.getMoudle(packet.port);
-            require(address(module) != address(0), "this module not found!");
+            IModule module = routing.getModule(packet.port);
+            if (address(module) == address(0)) {
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    _newErrAcknowledgement("this module not found!")
+                );
+                revert("this module not found!");
+            }
             bytes memory ack = module.onRecvPacket(packet);
-            PacketTypes.Packet memory packetCopy = PacketTypes.Packet(
-                packet.sequence,
-                packet.port,
-                packet.sourceChain,
-                packet.destChain,
-                packet.relayChain,
-                packet.data
-            );
             if (ack.length > 0) {
-                writeAcknowledgement(packetCopy, ack);
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    ack
+                );
             }
         } else {
-            require(
-                routing.authenticate(
+            if (
+                !routing.authenticate(
                     packet.sourceChain,
                     packet.destChain,
                     packet.port
-                ),
-                "no rule in routing table to relay this packet"
-            );
+                )
+            ) {
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    _newErrAcknowledgement(
+                        "no rule in routing table to relay this packet"
+                    )
+                );
+                revert("no rule in routing table to relay this packet");
+            }
             client = clientManager.getClient(packet.destChain);
-            require(address(client) != address(0), "consensus state not found");
+            if (address(client) == address(0)) {
+                writeAcknowledgement(
+                    PacketTypes.Packet(
+                        packet.sequence,
+                        packet.port,
+                        packet.sourceChain,
+                        packet.destChain,
+                        packet.relayChain,
+                        packet.data
+                    ),
+                    _newErrAcknowledgement("light client not found")
+                );
+                revert("light client not found");
+            }
             commitments[
                 Host.packetCommitmentKey(
                     packet.sourceChain,
@@ -235,12 +327,12 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             "acknowledgement for packet already exists"
         );
         require(acknowledgement.length != 0, "acknowledgement cannot be empty");
-        string memory targetChain = packet.sourceChain;
+        string memory sentChain = packet.sourceChain;
         if (bytes(packet.relayChain).length > 0) {
-            targetChain = packet.relayChain;
+            sentChain = packet.relayChain;
         }
-        IClient client = clientManager.getClient(targetChain);
-        require(address(client) != address(0), "consensus state not found");
+        IClient client = clientManager.getClient(sentChain);
+        require(address(client) != address(0), "light client not found");
 
         commitments[
             Host.packetAcknowledgementKey(
@@ -276,24 +368,24 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             "commitment bytes are not equal!"
         );
 
-        string memory targetChain;
+        string memory sentChain;
 
         if (
             Strings.equals(packet.sourceChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
-            targetChain = packet.relayChain;
+            sentChain = packet.relayChain;
         } else {
-            targetChain = packet.destChain;
+            sentChain = packet.destChain;
         }
 
         require(
-            address(clientManager.getClient(targetChain)) != address(0),
-            "consensus state not found"
+            address(clientManager.getClient(sentChain)) != address(0),
+            "light client not found"
         );
 
         commitBytes = Bytes.fromBytes32(sha256(acknowledgement));
-        clientManager.getClient(targetChain).verifyPacketAcknowledgement(
+        clientManager.getClient(sentChain).verifyPacketAcknowledgement(
             height,
             proofAcked,
             packet.sourceChain,
@@ -311,7 +403,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         ];
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            IModule module = routing.getMoudle(packet.port);
+            IModule module = routing.getModule(packet.port);
             module.onAcknowledgementPacket(packet, acknowledgement);
         } else {
             require(
@@ -326,7 +418,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             require(
                 address(clientManager.getClient(packet.sourceChain)) !=
                     address(0),
-                "consensus state not found"
+                "light client not found"
             );
             commitments[
                 Host.packetAcknowledgementKey(
@@ -414,20 +506,20 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             );
         }
 
-        string memory targetChain;
+        string memory sentChain;
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             if (bytes(packet.relayChain).length > 0) {
-                targetChain = packet.relayChain;
+                sentChain = packet.relayChain;
             } else {
-                targetChain = packet.sourceChain;
+                sentChain = packet.sourceChain;
             }
         } else {
-            targetChain = packet.sourceChain;
+            sentChain = packet.sourceChain;
         }
 
-        IClient client = clientManager.getClient(targetChain);
-        require(address(client) != address(0), "consensus state not found");
+        IClient client = clientManager.getClient(sentChain);
+        require(address(client) != address(0), "light client not found");
         client.verifyPacketCleanCommitment(
             height,
             proof,
@@ -449,15 +541,13 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             ];
         }
 
+        sequences[
+            Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
+        ] = packet.sequence;
+
         if (!Strings.equals(packet.destChain, clientManager.getChainName())) {
             client = clientManager.getClient(packet.destChain);
-            require(address(client) != address(0), "consensus state not found");
-            sequences[
-                Host.cleanPacketCommitmentKey(
-                    packet.sourceChain,
-                    packet.destChain
-                )
-            ] = packet.sequence;
+            require(address(client) != address(0), "light client not found");
             emit CleanPacketSent(packet);
         }
     }
@@ -494,5 +584,20 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
      */
     function setRouting(address routingContract) external onlyOwner {
         routing = IRouting(routingContract);
+    }
+
+    /**
+     * @notice this function is to create error acks
+     * @param errMsg error message
+     */
+    function _newErrAcknowledgement(string memory errMsg)
+        internal
+        pure
+        virtual
+        returns (bytes memory)
+    {
+        Acknowledgement.Data memory ack;
+        ack.error = errMsg;
+        return Acknowledgement.encode(ack);
     }
 }
