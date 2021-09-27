@@ -37,16 +37,26 @@ interface IERC1155Bank {
 
     function setOwner(address _owner) external;
 
-    function trace(
+    /**
+     * @notice establish a binding relationship between origin nft and mint's nft in erc1155
+     *  @param tokenId token Id
+     *  @param nftClass class of origin NFT
+     *  @param id id of origin NFT
+     *  @param _uri uri of origin NFT
+     */
+    function bind(
         uint256 tokenId,
-        string calldata cls,
+        string calldata nftClass,
         string calldata id,
-        string calldata uri
+        string calldata _uri
     ) external;
 
-    function untrace(uint256 tokenId) external returns (OriginNFT memory);
+    function unbind(uint256 tokenId) external returns (OriginNFT memory);
 
-    function getTrace(uint256 tokenId) external view returns (OriginNFT memory);
+    function getBinding(uint256 tokenId)
+        external
+        view
+        returns (OriginNFT memory);
 
     function getClass(uint256 tokenId) external view returns (string memory);
 

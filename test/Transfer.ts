@@ -129,7 +129,7 @@ describe('Transfer', () => {
         let balance = await erc1155bank.balanceOf(sender, expTokenId);
         expect(balance).to.eq(0);
 
-        let originNFT = await erc1155bank.getTrace(expTokenId)
+        let originNFT = await erc1155bank.getBinding(expTokenId)
         expect(originNFT.class).to.eq("");
         expect(originNFT.id).to.eq("");
         expect(originNFT.uri).to.eq("");

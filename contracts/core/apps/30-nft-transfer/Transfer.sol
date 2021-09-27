@@ -76,7 +76,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
             //delete the binding relationship between origin hft and mint's nft in erc1155
             // and return the origin nft
-            IERC1155Bank.OriginNFT memory nft = bank.untrace(
+            IERC1155Bank.OriginNFT memory nft = bank.unbind(
                 transferData.tokenId
             );
             packetData = NftTransfer.Data({
@@ -139,7 +139,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             // mint nft
             if (_mint(data.receiver.parseAddr(), tokenId, uint256(1), "")) {
                 // keep trace of class and id and uri
-                bank.trace(tokenId, newClass, data.id, data.uri);
+                bank.bind(tokenId, newClass, data.id, data.uri);
                 return _newAcknowledgement(true, "");
             }
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");

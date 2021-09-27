@@ -111,24 +111,24 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
     /**
      * @notice establish a binding relationship between origin nft and mint's nft in erc1155
      *  @param tokenId token Id
-     *  @param cls class
-     *  @param id id
-     *  @param _uri uri
+     *  @param nftClass class of origin NFT
+     *  @param id id of origin NFT
+     *  @param _uri uri of origin NFT
      */
-    function trace(
+    function bind(
         uint256 tokenId,
-        string calldata cls,
+        string calldata nftClass,
         string calldata id,
         string calldata _uri
     ) external override onlyOwner {
-        traces[tokenId] = OriginNFT({class: cls, id: id, uri: _uri});
+        traces[tokenId] = OriginNFT(nftClass, id, _uri);
     }
 
     /**
      * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
      *  @param tokenId token Id
      */
-    function untrace(uint256 tokenId)
+    function unbind(uint256 tokenId)
         external
         override
         onlyOwner
@@ -138,7 +138,7 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         delete traces[tokenId];
     }
 
-    function getTrace(uint256 tokenId)
+    function getBinding(uint256 tokenId)
         external
         view
         override
