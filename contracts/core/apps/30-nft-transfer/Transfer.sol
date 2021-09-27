@@ -14,6 +14,7 @@ import "../../../interfaces/ITransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "hardhat/console.sol";
 
 contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
@@ -88,7 +89,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                 awayFromOrigin: awayFromOrigin
             });
         }
-        bytes memory data = NftTransfer.encode(packetData);
         // send packet
         PacketTypes.Packet memory crossPacket = PacketTypes.Packet({
             sequence: packet.getNextSequenceSend(
@@ -99,7 +99,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             sourceChain: sourceChain,
             destChain: transferData.destChain,
             relayChain: transferData.relayChain,
-            data: data
+            data: NftTransfer.encode(packetData)
         });
         packet.sendPacket(crossPacket);
     }
@@ -117,25 +117,22 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
         string memory newClass;
         if (data.awayFromOrigin) {
-            // nft/A/B/nftClass -> [nft][A][B][nftClass]
-            string[] memory paths = _splitStringIntoArray(data.class, "/");
-            // get the original class name (take the last item in the path array)
-            string memory originClass = paths[paths.length - 1];
-            // [nft][A][B][nftClass] -> [nft][A][B][C]
-            paths[paths.length - 1] = pac.destChain;
-            // [nft][A][B][C] -> nft/A/B/C/nftClass
-            newClass = Strings
-                .join(
-                    Strings.toSlice("/"),
-                    _convertStringArrayIntoSliceArray(paths)
-                )
+            // The following operation is to realize the conversion from nft/A/B/nftClass to nft/A/B/C/nftClass
+            //   example : nft/wenchang/irishub/kitty -> nft/wenchang/irishub/etherum/kitty
+            Strings.slice memory needle = "/".toSlice();
+            Strings.slice memory nftClass = data.class.toSlice();
+            // The slice.rsplit(needle) method will find the position of the first needle from the right, and then divide the slice into two parts. The slice itself is truncated into the first part (not including needle), and the return value is the second part
+            Strings.slice memory originClass = nftClass.rsplit(needle);
+            newClass = nftClass
+                .concat(needle)
                 .toSlice()
-                .concat("/".toSlice())
+                .concat(pac.destChain.toSlice())
                 .toSlice()
-                .concat(originClass.toSlice());
+                .concat(needle)
+                .toSlice()
+                .concat(originClass);
             // generate tokenId
             uint256 tokenId = genTokenId(newClass, data.id);
-
             // mint nft
             if (_mint(data.receiver.parseAddr(), tokenId, uint256(1), "")) {
                 // keep trace of class and id and uri

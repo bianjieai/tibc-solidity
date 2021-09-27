@@ -181,6 +181,50 @@ library Strings {
     }
 
     /*
+     * @dev Splits the slice, setting `self` to everything before the last
+     *      occurrence of `needle`, and returning everything after it. If
+     *      `needle` does not occur in `self`, `self` is set to the empty slice,
+     *      and the entirety of `self` is returned.
+     * @param self The slice to split.
+     * @param needle The text to search for in `self`.
+     * @return The part of `self` after the last occurrence of `delim`.
+     */
+    function rsplit(slice memory self, slice memory needle)
+        internal
+        pure
+        returns (slice memory token)
+    {
+        rsplit(self, needle, token);
+    }
+
+    /*
+     * @dev Splits the slice, setting `self` to everything before the last
+     *      occurrence of `needle`, and `token` to everything after it. If
+     *      `needle` does not occur in `self`, `self` is set to the empty slice,
+     *      and `token` is set to the entirety of `self`.
+     * @param self The slice to split.
+     * @param needle The text to search for in `self`.
+     * @param token An output parameter to which the first token is written.
+     * @return `token`.
+     */
+    function rsplit(
+        slice memory self,
+        slice memory needle,
+        slice memory token
+    ) internal pure returns (slice memory) {
+        uint256 ptr = rfindPtr(self._len, self._ptr, needle._len, needle._ptr);
+        token._ptr = ptr;
+        token._len = self._len - (ptr - self._ptr);
+        if (ptr == self._ptr) {
+            // Not found
+            self._len = 0;
+        } else {
+            self._len -= token._len + needle._len;
+        }
+        return token;
+    }
+
+    /*
      * @dev Copies a slice to a new string.
      * @param self The slice to copy.
      * @return A newly allocated string containing the slice's text.
@@ -220,6 +264,24 @@ library Strings {
                 ) +
                 needle._len;
         }
+    }
+
+    /*
+     * @dev Modifies `self` to contain the part of the string from the start of
+     *      `self` to the end of the first occurrence of `needle`. If `needle`
+     *      is not found, `self` is set to the empty slice.
+     * @param self The slice to search and modify.
+     * @param needle The text to search for.
+     * @return `self`.
+     */
+    function rfind(slice memory self, slice memory needle)
+        internal
+        pure
+        returns (slice memory)
+    {
+        uint256 ptr = rfindPtr(self._len, self._ptr, needle._len, needle._ptr);
+        self._len = ptr - self._ptr;
+        return self;
     }
 
     /*
@@ -327,5 +389,58 @@ library Strings {
         memcpy(retptr, self._ptr, self._len);
         memcpy(retptr + self._len, other._ptr, other._len);
         return ret;
+    }
+
+    // Returns the memory address of the first byte after the last occurrence of
+    // `needle` in `self`, or the address of `self` if not found.
+    function rfindPtr(
+        uint256 selflen,
+        uint256 selfptr,
+        uint256 needlelen,
+        uint256 needleptr
+    ) private pure returns (uint256) {
+        uint256 ptr;
+
+        if (needlelen <= selflen) {
+            if (needlelen <= 32) {
+                bytes32 mask = bytes32(~(2**(8 * (32 - needlelen)) - 1));
+
+                bytes32 needledata;
+                assembly {
+                    needledata := and(mload(needleptr), mask)
+                }
+
+                ptr = selfptr + selflen - needlelen;
+                bytes32 ptrdata;
+                assembly {
+                    ptrdata := and(mload(ptr), mask)
+                }
+
+                while (ptrdata != needledata) {
+                    if (ptr <= selfptr) return selfptr;
+                    ptr--;
+                    assembly {
+                        ptrdata := and(mload(ptr), mask)
+                    }
+                }
+                return ptr + needlelen;
+            } else {
+                // For long needles, use hashing
+                bytes32 hash;
+                assembly {
+                    hash := keccak256(needleptr, needlelen)
+                }
+                ptr = selfptr + (selflen - needlelen);
+                while (ptr >= selfptr) {
+                    bytes32 testHash;
+                    assembly {
+                        testHash := keccak256(ptr, needlelen)
+                    }
+                    if (hash == testHash) return ptr + needlelen;
+                    ptr -= 1;
+                }
+            }
+        }
+        return selfptr;
     }
 }
