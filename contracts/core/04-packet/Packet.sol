@@ -345,8 +345,11 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             )
         ] = sha256(acknowledgement);
 
-        setMaxAckSequence(packet.sourceChain, packet.destChain, packet.sequence);
-
+        setMaxAckSequence(
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
+        );
 
         emit AckWritten(packet, acknowledgement);
     }
@@ -409,7 +412,11 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             )
         ];
 
-        setMaxAckSequence(packet.sourceChain, packet.destChain, packet.sequence);
+        setMaxAckSequence(
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
+        );
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             IModule module = routing.getModule(packet.port);
@@ -608,16 +615,18 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
      * @param destChain destination chain name
      * @param sequence max ack sequence
      */
-    function setMaxAckSequence(string memory sourceChain, string memory destChain, uint64 sequence) internal {
+    function setMaxAckSequence(
+        string memory sourceChain,
+        string memory destChain,
+        uint64 sequence
+    ) internal {
         uint64 currentMaxAckSeq = sequences[
             Host.MaxAckSeqKey(sourceChain, destChain)
         ];
-        if(sequence > currentMaxAckSeq){
+        if (sequence > currentMaxAckSeq) {
             currentMaxAckSeq = sequence;
         }
-        sequences[
-            Host.MaxAckSeqKey(sourceChain, destChain)
-        ] = currentMaxAckSeq;
+        sequences[Host.MaxAckSeqKey(sourceChain, destChain)] = currentMaxAckSeq;
     }
 
     /**
