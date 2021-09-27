@@ -283,46 +283,14 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         if (!Strings.startsWith(class.toSlice(), PREFIX.toSlice())) {
             return true;
         }
-        string[] memory paths = _splitStringIntoArray(class, "/");
-        return !Strings.equals(paths[paths.length - 3], destChain);
-    }
 
-    /**
-     * @notice   This method is to split string into string array
-     * example : "tibc/nft/A" -> [tibc][nft][A]
-     * @param newClass string to be split
-     * @param delim delim
-     */
-    function _splitStringIntoArray(string memory newClass, string memory delim)
-        private
-        pure
-        returns (string[] memory)
-    {
-        Strings.slice memory newClassSlice = newClass.toSlice();
-        Strings.slice memory delimSlice = delim.toSlice();
-        string[] memory parts = new string[](
-            newClassSlice.count(delimSlice) + 1
-        );
-        for (uint256 i = 0; i < parts.length; i++) {
-            parts[i] = newClassSlice.split(delimSlice).toString();
+        Strings.slice memory delimSlice = "/".toSlice();
+        Strings.slice memory classSlice = class.toSlice();
+        string memory target;
+        for (uint256 i = 0; i < 3; i++) {
+            target = classSlice.rsplit(delimSlice).toString();
         }
-        return parts;
-    }
-
-    /**
-     * @notice This method is to convert stringArray into sliceArray
-     * @param src string array
-     */
-    function _convertStringArrayIntoSliceArray(string[] memory src)
-        private
-        pure
-        returns (Strings.slice[] memory)
-    {
-        Strings.slice[] memory res = new Strings.slice[](src.length);
-        for (uint256 i = 0; i < src.length; i++) {
-            res[i] = src[i].toSlice();
-        }
-        return res;
+        return !Strings.equals(target, destChain);
     }
 
     /**
@@ -337,9 +305,10 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         returns (uint256)
     {
         // calculate sha256
-        bytes memory c1 = Bytes.cutBytes32(sha256(bytes(newClassStr)));
-        bytes memory c2 = Bytes.cutBytes32(sha256(bytes(originNftId)));
-        bytes memory tokenId = Bytes.concat(c1, c2);
+        bytes memory tokenId = Bytes.concat(
+            Bytes.cutBytes32(sha256(bytes(newClassStr))),
+            Bytes.cutBytes32(sha256(bytes(originNftId)))
+        );
         return Bytes.bytes32ToUint(tokenId.toBytes32());
     }
 }
