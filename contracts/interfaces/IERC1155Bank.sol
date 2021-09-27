@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 interface IERC1155Bank {
     /*
-        keep track of class: tokenId -> nft/wenchang/irishub/nftclass
+        keep track of class: tokenId -> nft/{source-chain}/{dest-chain}/nftclass
         keep track of id :   tokenId -> id
         keep track of uri :  tokenId -> uri
     */
