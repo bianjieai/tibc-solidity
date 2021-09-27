@@ -7,17 +7,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 
 contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
-    /*
-        keep track of class: tokenId -> nft/wenchang/irishub/nftclass
-        keep track of id :   tokenId -> id
-        keep track of uri :  tokenId -> uri
-    */
-    struct OriginNFT {
-        string class;
-        string id;
-        string uri;
-    }
-
     address public owner;
     mapping(uint256 => OriginNFT) public traces;
 
@@ -139,8 +128,23 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
      * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
      *  @param tokenId token Id
      */
-    function untrace(uint256 tokenId) external override onlyOwner {
+    function untrace(uint256 tokenId)
+        external
+        override
+        onlyOwner
+        returns (OriginNFT memory nft)
+    {
+        nft = traces[tokenId];
         delete traces[tokenId];
+    }
+
+    function getTrace(uint256 tokenId)
+        external
+        view
+        override
+        returns (OriginNFT memory)
+    {
+        return traces[tokenId];
     }
 
     /**

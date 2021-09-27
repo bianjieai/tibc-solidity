@@ -75,12 +75,14 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             );
 
             //delete the binding relationship between origin hft and mint's nft in erc1155
-            bank.untrace(transferData.tokenId);
-
+            // and return the origin nft
+            IERC1155Bank.OriginNFT memory nft = bank.untrace(
+                transferData.tokenId
+            );
             packetData = NftTransfer.Data({
-                class: bank.getClass(transferData.tokenId),
-                id: bank.getId(transferData.tokenId),
-                uri: bank.getUri(transferData.tokenId),
+                class: nft.class,
+                id: nft.id,
+                uri: nft.uri,
                 sender: Bytes.addressToString(msg.sender),
                 receiver: transferData.receiver,
                 awayFromOrigin: awayFromOrigin
