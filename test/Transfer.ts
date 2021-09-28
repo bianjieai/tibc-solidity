@@ -1,6 +1,6 @@
-import { Signer } from "ethers";
+import { Signer, BigNumber } from "ethers";
 import chai from "chai";
-import { Transfer, ERC1155Bank, Packet, ClientManager, Routing, Tendermint } from '../typechain';
+import { Transfer, ERC1155Bank, MockPacket, ClientManager, Routing, Tendermint } from '../typechain';
 import { randomBytes } from "crypto";
 
 const { expect } = chai;
@@ -14,7 +14,7 @@ describe('Transfer', () => {
     let accounts: Signer[]
     let transfer: Transfer
     let erc1155bank: ERC1155Bank
-    let pac: Packet
+    let mockPacket: MockPacket
     let clientManager: ClientManager
     let routing: Routing
     let tendermint: Tendermint
@@ -64,62 +64,75 @@ describe('Transfer', () => {
         const routingFac = await ethers.getContractFactory("Routing");
         routing = (await upgrades.deployProxy(routingFac)) as Routing;
 
-        const pacFac = await ethers.getContractFactory("Packet");
-        pac = (await pacFac.deploy(clientManager.address, routing.address)) as Packet;
+        const mockPacketFactory = await ethers.getContractFactory("MockPacket");
+        mockPacket = (await mockPacketFactory.deploy()) as MockPacket;
 
-        const erc1155Fac = await ethers.getContractFactory("ERC1155Bank");
-        erc1155bank = (await erc1155Fac.deploy()) as ERC1155Bank;
+        const erc1155Factory = await ethers.getContractFactory("ERC1155Bank");
+        erc1155bank = (await upgrades.deployProxy(erc1155Factory)) as ERC1155Bank;
 
-        const tsFac = await ethers.getContractFactory("Transfer");
-        transfer = (await upgrades.deployProxy(tsFac, [erc1155bank.address, pac.address, clientManager.address])) as Transfer;
+        const transFactory = await ethers.getContractFactory("Transfer");
+        transfer = (await upgrades.deployProxy(transFactory, [erc1155bank.address, mockPacket.address, clientManager.address])) as Transfer;
 
-        await routing.addRouting("NFT", transfer.address);
+        mockPacket.setModule(transfer.address);
     });
 
     // receive packet from irishub 
-    it("onRecvPacket: from irishub to ethereum", async function () {
-        let sender = (await accounts[0].getAddress()).toString();
-        let receiver = (await accounts[1].getAddress()).toString();
+    it("onRecvPacket && sendTransfer", async function () {
+        let sender = (await accounts[1].getAddress()).toString();
+        let receiver = (await accounts[0].getAddress()).toString();
 
+        // send nft from irishub to ethereum
         let data = {
-            class: "tibc/nft/wenchang/kitty",
+            class: "nft/wenchang/irishub/kitty",
             id: "tokenid",
             uri: "www.test.com",
             sender: sender,
             receiver: receiver,
             awayFromOrigin: true
         }
-
-        let databytes = nft.NftTransfer.encode(data).finish();
-
         let packet = {
             sequence: 1,
             port: "nft",
             sourceChain: "irishub",
             destChain: "ethereum",
             relayChain: "",
-            data: databytes,
+            data: nft.NftTransfer.encode(data).finish(),
         };
+        let height = {
+            revision_number: 1,
+            revision_height: 100
+        }
 
-        let res = await transfer.onRecvPacket(packet);
-    })
+        await mockPacket.recvPacket(packet, Buffer.from(""), height);
 
-    // send nft back to irishub from ethereum 
-    it("sendTransfer: send nft back to irishub from ethereum", async function () {
-        let sender = (await accounts[0].getAddress()).toString();
-        await erc1155bank.mint(sender, 1, 1, "0x123456");
-        let transferdata = {
-            tokenId: 1,
-            receiver: (await accounts[1].getAddress()).toString(),
-            class: "tibc/nft/wenchang/irishub/kitty",
+        let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
+        let nftClass = await erc1155bank.getClass(expTokenId);
+        expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
+
+        let nftId = await erc1155bank.getId(expTokenId);
+        expect(nftId).to.eq(data.id);
+
+        let nftURI = await erc1155bank.getUri(expTokenId);
+        expect(nftURI).to.eq(data.uri);
+
+
+        // send nft back to irishub from ethereum
+        let receiverOnOtherChain = (await accounts[2].getAddress()).toString();
+        let transferData = {
+            tokenId: expTokenId,
+            receiver: receiverOnOtherChain,
+            class: nftClass,
             destChain: "irishub",
             relayChain: ""
         }
-
-        let res = await transfer.sendTransfer(transferdata);
-
-        let balance = await erc1155bank.balanceOf(sender, 1);
+        await transfer.sendTransfer(transferData);
+        let balance = await erc1155bank.balanceOf(sender, expTokenId);
         expect(balance).to.eq(0);
+
+        let originNFT = await erc1155bank.getBinding(expTokenId)
+        expect(originNFT.class).to.eq("");
+        expect(originNFT.id).to.eq("");
+        expect(originNFT.uri).to.eq("");
     })
 
     // The test need fix the tokenID in the refundToken
@@ -161,7 +174,12 @@ describe('Transfer', () => {
         let balance1 = await erc1155bank.balanceOf(sender, 2);
         expect(balance1).to.eq(0);
 
-        await transfer.onAcknowledgementPacket(packet, dd);
+        let height = {
+            revision_number: 1,
+            revision_height: 100
+        }
+
+        await mockPacket.acknowledgePacket(packet, dd, Buffer.from(""), height);
         let balance3 = await erc1155bank.balanceOf(sender, 2);
     })
 
@@ -192,7 +210,6 @@ describe('Transfer', () => {
         }
         let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
-
         // mint 
         await erc1155bank.mint(sender, 88, 1, "0x123456");
 
@@ -205,7 +222,11 @@ describe('Transfer', () => {
         let balance2 = await erc1155bank.balanceOf(sender, 88);
         expect(balance2).to.eq(0);
 
-        await transfer.onAcknowledgementPacket(packet, dd);
+        let height = {
+            revision_number: 1,
+            revision_height: 100
+        }
+        await mockPacket.acknowledgePacket(packet, dd, Buffer.from(""), height);
 
     })
 
