@@ -91,12 +91,12 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         override
         validateBasic(packet.sequence, packet.data, packet.port)
     {
-        string memory sentChain;
-        sentChain = packet.destChain;
+        string memory targetChain;
+        targetChain = packet.destChain;
         if (bytes(packet.relayChain).length > 0) {
-            sentChain = packet.relayChain;
+            targetChain = packet.relayChain;
         }
-        IClient client = clientManager.getClient(sentChain);
+        IClient client = clientManager.getClient(targetChain);
         require(address(client) != address(0), "light client not found");
 
         bytes memory nextSequenceSendKey = Host.nextSequenceSendKey(
@@ -175,18 +175,18 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             );
             return;
         }
-        string memory sentChain;
+        string memory fromChain;
 
         if (
             Strings.equals(packet.destChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
-            sentChain = packet.relayChain;
+            fromChain = packet.relayChain;
         } else {
-            sentChain = packet.sourceChain;
+            fromChain = packet.sourceChain;
         }
 
-        IClient client = clientManager.getClient(sentChain);
+        IClient client = clientManager.getClient(fromChain);
         if (address(client) == address(0)) {
             writeAcknowledgement(
                 PacketTypes.Packet(
@@ -328,14 +328,14 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             "acknowledgement for packet already exists"
         );
         require(acknowledgement.length != 0, "acknowledgement cannot be empty");
-        string memory sentChain = packet.sourceChain;
+        string memory targetChain = packet.sourceChain;
         if (
             bytes(packet.relayChain).length > 0 &&
             Strings.equals(packet.destChain, clientManager.getChainName())
         ) {
-            sentChain = packet.relayChain;
+            targetChain = packet.relayChain;
         }
-        IClient client = clientManager.getClient(sentChain);
+        IClient client = clientManager.getClient(targetChain);
         require(address(client) != address(0), "light client not found");
 
         commitments[
@@ -379,24 +379,24 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             "commitment bytes are not equal!"
         );
 
-        string memory sentChain;
+        string memory fromChain;
 
         if (
             Strings.equals(packet.sourceChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
-            sentChain = packet.relayChain;
+            fromChain = packet.relayChain;
         } else {
-            sentChain = packet.destChain;
+            fromChain = packet.destChain;
         }
 
         require(
-            address(clientManager.getClient(sentChain)) != address(0),
+            address(clientManager.getClient(fromChain)) != address(0),
             "light client not found"
         );
 
         commitBytes = Bytes.fromBytes32(sha256(acknowledgement));
-        clientManager.getClient(sentChain).verifyPacketAcknowledgement(
+        clientManager.getClient(fromChain).verifyPacketAcknowledgement(
             height,
             proofAcked,
             packet.sourceChain,
@@ -538,15 +538,15 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             );
         }
 
-        string memory sentChain;
+        string memory fromChain;
 
         if (Strings.equals(packet.destChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
-            sentChain = packet.relayChain;
+            fromChain = packet.relayChain;
         } else {
-            sentChain = packet.sourceChain;
+            fromChain = packet.sourceChain;
         }
 
-        IClient client = clientManager.getClient(sentChain);
+        IClient client = clientManager.getClient(fromChain);
         require(address(client) != address(0), "light client not found");
         client.verifyPacketCleanCommitment(
             height,
