@@ -156,8 +156,8 @@ library Bytes {
 
     function bytes32ToUint(bytes32 b) internal pure returns (uint256) {
         uint256 number;
-        for (uint256 i = 0; i < b.length; i++) {
-            number = number + uint8(b[i]) * (2**(8 * (b.length - (i + 1))));
+        for (uint256 i = 0; i < 32; i++) {
+            number = number + uint8(b[i]) * (2**(8 * (32 - (i + 1))));
         }
         return number;
     }
@@ -213,11 +213,21 @@ library Bytes {
     }
 
     // 32 bytes take high 128 bits
-    function cutBytes32(bytes32 source) internal pure returns (bytes memory) {
-        bytes memory half = new bytes(16);
-        for (uint256 j = 0; j < 16; j++) {
-            half[j] = source[j];
+    function cutBytes32(bytes32 source)
+        internal
+        pure
+        returns (bytes memory bts)
+    {
+        bts = new bytes(16);
+        assembly {
+            mstore(
+                add(
+                    bts,
+                    /*BYTES_HEADER_SIZE*/
+                    32
+                ),
+                source
+            )
         }
-        return half;
     }
 }

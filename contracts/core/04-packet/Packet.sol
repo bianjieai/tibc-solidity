@@ -27,7 +27,22 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
     mapping(bytes => bool) public receipts;
     bytes public commitBytes;
 
-    function initialize() public initializer {
+    /**
+     * @notice initialize
+     * @param clientMgrContract clientManager address
+     * @param routingContract routing address
+     */
+    function initialize(address clientMgrContract, address routingContract)
+        public
+        initializer
+    {
+        require(
+            clientMgrContract != address(0) && routingContract != address(0),
+            "clientManager or routing cannot be empty"
+        );
+        clientManager = IClientManager(clientMgrContract);
+        routing = IRouting(routingContract);
+
         __Ownable_init();
     }
 
@@ -49,20 +64,6 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
      * @param packet clean packet data
      */
     event CleanPacketSent(PacketTypes.CleanPacket packet);
-
-    /**
-     * @notice Constructor
-     * @param clientMgrContract clientManager address
-     * @param routingContract routing address
-     */
-    constructor(address clientMgrContract, address routingContract) public {
-        require(
-            clientMgrContract != address(0) && routingContract != address(0),
-            "clientManager or routing cannot be empty"
-        );
-        clientManager = IClientManager(clientMgrContract);
-        routing = IRouting(routingContract);
-    }
 
     /**
      * @notice Make sure that the packet is valid
@@ -418,7 +419,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             packet.sequence
         );
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
+        if (Strings.equals(packet.sourceChain, clientManager.getChainName())) {
             IModule module = routing.getModule(packet.port);
             module.onAcknowledgementPacket(packet, acknowledgement);
         } else {
@@ -539,12 +540,8 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
 
         string memory sentChain;
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            if (bytes(packet.relayChain).length > 0) {
-                sentChain = packet.relayChain;
-            } else {
-                sentChain = packet.sourceChain;
-            }
+        if (Strings.equals(packet.destChain, clientManager.getChainName()) && bytes(packet.relayChain).length > 0) {
+            sentChain = packet.relayChain;
         } else {
             sentChain = packet.sourceChain;
         }
@@ -559,7 +556,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             packet.sequence
         );
 
-        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
+        for (uint64 i = currentCleanSeq + 1; i <= packet.sequence; i++) {
             delete commitments[
                 Host.packetAcknowledgementKey(
                     packet.sourceChain,

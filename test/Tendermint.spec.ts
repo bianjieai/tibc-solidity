@@ -152,10 +152,6 @@ describe('Client', () => {
         const consensusStateCodec = await ConsensusStateCodec.deploy();
         await consensusStateCodec.deployed();
 
-        const HeaderCodec = await ethers.getContractFactory('HeaderCodec')
-        const headerCodec = await HeaderCodec.deploy();
-        await headerCodec.deployed();
-
         const ProofCodec = await ethers.getContractFactory('ProofCodec');
         const proofCodec = await ProofCodec.deploy();
         await proofCodec.deployed();

@@ -5,15 +5,9 @@ pragma experimental ABIEncoderV2;
 import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract ClientManager is
-    Initializable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    IClientManager
-{
+contract ClientManager is Initializable, OwnableUpgradeable, IClientManager {
     // the name of this chain cannot be changed once initialized
     string private nativeChainName;
     // light client currently registered in this chain
@@ -67,7 +61,6 @@ contract ClientManager is
     function updateClient(string calldata chainName, bytes calldata header)
         external
         onlyRelayer(chainName)
-        nonReentrant
     {
         IClient client = clients[chainName];
         require(client.status() == IClient.Status.Active, "client not active");
@@ -84,7 +77,7 @@ contract ClientManager is
         string calldata chainName,
         bytes calldata clientState,
         bytes calldata consensusState
-    ) external onlyOwner nonReentrant {
+    ) external onlyOwner {
         IClient client = clients[chainName];
         client.upgrade(clientState, consensusState);
     }
