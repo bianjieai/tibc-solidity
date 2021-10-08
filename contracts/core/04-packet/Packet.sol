@@ -150,15 +150,13 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             packet.sequence
         );
         require(!receipts[packetReceiptKey], "packet has been received");
-        string memory fromChain;
+        string memory fromChain = packet.sourceChain;
 
         if (
             Strings.equals(packet.destChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
             fromChain = packet.relayChain;
-        } else {
-            fromChain = packet.sourceChain;
         }
 
         IClient client = clientManager.getClient(fromChain);
@@ -299,15 +297,13 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             "commitment bytes are not equal!"
         );
 
-        string memory fromChain;
+        string memory fromChain = packet.destChain;
 
         if (
             Strings.equals(packet.sourceChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
             fromChain = packet.relayChain;
-        } else {
-            fromChain = packet.destChain;
         }
 
         require(
