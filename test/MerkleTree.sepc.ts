@@ -3,7 +3,6 @@ import { BigNumber, Signer } from "ethers";
 import chai from "chai";
 import { TestMerkleTree, TestLightClient } from '../typechain';
 
-
 const { expect } = chai;
 
 describe('TestMerkleTree', () => {

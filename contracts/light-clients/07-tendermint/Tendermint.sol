@@ -8,9 +8,10 @@ import "../../libraries/07-tendermint/LightClient.sol";
 import "../../proto/Tendermint.sol";
 import "./Verifier.sol";
 import "../../proto/Commitment.sol";
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract Tendermint is IClient, Ownable {
+contract Tendermint is Initializable, IClient, OwnableUpgradeable {
     struct SimpleHeader {
         uint64 revision_number;
         uint64 revision_height;
@@ -28,7 +29,8 @@ contract Tendermint is IClient, Ownable {
     // system time each time the client status is updated
     mapping(uint128 => uint256) private processedTime;
 
-    constructor(address clientManagerAddr) public {
+    function initialize(address clientManagerAddr) public initializer {
+        __Ownable_init();
         transferOwnership(clientManagerAddr);
     }
 
@@ -82,7 +84,7 @@ contract Tendermint is IClient, Ownable {
      * @param clientStateBz light client status
      * @param consensusStateBz light client consensus status
      */
-    function initialize(
+    function initializeState(
         bytes calldata clientStateBz,
         bytes calldata consensusStateBz
     ) external override onlyOwner {

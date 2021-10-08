@@ -2,13 +2,13 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
-
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../../libraries/utils/Strings.sol";
 import "../../interfaces/IRouting.sol";
 import "../../interfaces/IModule.sol";
 
-contract Routing is Ownable, IRouting {
+contract Routing is Initializable, OwnableUpgradeable, IRouting {
     using Strings for *;
 
     struct Rule {
@@ -20,11 +20,15 @@ contract Routing is Ownable, IRouting {
     mapping(string => IModule) public modules;
     mapping(string => Rule) public router;
 
+    function initialize() public initializer {
+        __Ownable_init();
+    }
+
     /**
      *  @notice return the module contract instance with the specified name
      *  @param moduleName  the module name
      */
-    function getMoudle(string calldata moduleName)
+    function getModule(string calldata moduleName)
         external
         view
         override

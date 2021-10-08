@@ -2,23 +2,19 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 
-contract ERC1155Bank is ERC1155, IERC1155Bank {
-    /*
-        keep track of class: tokenId -> tibc/nft/wenchang/irishub/nftclass
-        keep track of id :   tokenId -> id
-        keep track of uri :  tokenId -> uri
-    */
-    struct NftMapValue {
-        string class;
-        string id;
-        string uri;
-    }
-    mapping(uint256 => NftMapValue) public nftMapValue;
+contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
+    address public owner;
+    mapping(uint256 => OriginNFT) public traces;
 
-    constructor() public ERC1155("") {}
+    // check if caller is transferContract
+    modifier onlyOwner() {
+        require(msg.sender == owner, "caller not transfer contract");
+        _;
+    }
 
     /**
      * @notice this function is to create `amount` tokens of token type `id`, and assigns them to `account`.
@@ -101,23 +97,54 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
         override
         returns (string memory)
     {
-        return nftMapValue[id].uri;
+        return traces[id].uri;
     }
 
     /**
-     * @notice this function is to set value
-     *  @param tokenId token Id
-     *  @param cls class
-     *  @param id id
-     *  @param uri uri
+     * @notice Give the ownership of the current contract to TransferContract
+     * @param _owner address of nft transfer Contract
      */
-    function setMapValue(
+    function setOwner(address _owner) external override initializer {
+        owner = _owner;
+    }
+
+    /**
+     * @notice establish a binding relationship between origin nft and mint's nft in erc1155
+     *  @param tokenId token Id
+     *  @param nftClass class of origin NFT
+     *  @param id id of origin NFT
+     *  @param _uri uri of origin NFT
+     */
+    function bind(
         uint256 tokenId,
-        string calldata cls,
+        string calldata nftClass,
         string calldata id,
-        string calldata uri
-    ) external virtual override {
-        nftMapValue[tokenId] = NftMapValue({class: cls, id: id, uri: uri});
+        string calldata _uri
+    ) external override onlyOwner {
+        traces[tokenId] = OriginNFT(nftClass, id, _uri);
+    }
+
+    /**
+     * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
+     *  @param tokenId token Id
+     */
+    function unbind(uint256 tokenId)
+        external
+        override
+        onlyOwner
+        returns (OriginNFT memory nft)
+    {
+        nft = traces[tokenId];
+        delete traces[tokenId];
+    }
+
+    function getBinding(uint256 tokenId)
+        external
+        view
+        override
+        returns (OriginNFT memory)
+    {
+        return traces[tokenId];
     }
 
     /**
@@ -126,11 +153,12 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
      */
     function getClass(uint256 tokenId)
         public
+        view
         virtual
         override
         returns (string memory)
     {
-        return nftMapValue[tokenId].class;
+        return traces[tokenId].class;
     }
 
     /**
@@ -139,11 +167,12 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
      */
     function getId(uint256 tokenId)
         external
+        view
         virtual
         override
         returns (string memory)
     {
-        return nftMapValue[tokenId].id;
+        return traces[tokenId].id;
     }
 
     /**
@@ -152,10 +181,11 @@ contract ERC1155Bank is ERC1155, IERC1155Bank {
      */
     function getUri(uint256 tokenId)
         external
+        view
         virtual
         override
         returns (string memory)
     {
-        return nftMapValue[tokenId].uri;
+        return traces[tokenId].uri;
     }
 }

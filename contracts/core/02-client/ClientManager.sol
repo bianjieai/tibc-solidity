@@ -4,10 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
+contract ClientManager is Initializable, OwnableUpgradeable, IClientManager {
     // the name of this chain cannot be changed once initialized
     string private nativeChainName;
     // light client currently registered in this chain
@@ -15,8 +15,9 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     // relayer registered by each light client
     mapping(string => mapping(address => bool)) public relayers;
 
-    constructor(string memory name) public {
+    function initialize(string memory name) public initializer {
         nativeChainName = name;
+        __Ownable_init();
     }
 
     // check if caller is relayer
@@ -48,7 +49,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         );
 
         IClient client = IClient(clientAddress);
-        client.initialize(clientState, consensusState);
+        client.initializeState(clientState, consensusState);
         clients[chainName] = client;
     }
 
@@ -60,7 +61,6 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
     function updateClient(string calldata chainName, bytes calldata header)
         external
         onlyRelayer(chainName)
-        nonReentrant
     {
         IClient client = clients[chainName];
         require(client.status() == IClient.Status.Active, "client not active");
@@ -77,7 +77,7 @@ contract ClientManager is Ownable, ReentrancyGuard, IClientManager {
         string calldata chainName,
         bytes calldata clientState,
         bytes calldata consensusState
-    ) external onlyOwner nonReentrant {
+    ) external onlyOwner {
         IClient client = clients[chainName];
         client.upgrade(clientState, consensusState);
     }

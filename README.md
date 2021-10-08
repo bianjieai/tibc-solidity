@@ -39,3 +39,13 @@ yarn hardhat deployRouting --network rinkeby
 ```shell
 yarn hardhat deployPacket --network rinkeby
 ```
+
+* Deploy ERC1155
+```shell
+yarn hardhat deployERC1155Bank --network rinkeby
+```
+
+* Deploy NFT Transfer
+```shell
+yarn hardhat deployNFTTransfer --network rinkeby
+```
