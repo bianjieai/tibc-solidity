@@ -27,7 +27,22 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
     mapping(bytes => bool) public receipts;
     bytes public commitBytes;
 
-    function initialize() public initializer {
+    /**
+     * @notice initialize
+     * @param clientMgrContract clientManager address
+     * @param routingContract routing address
+     */
+    function initialize(address clientMgrContract, address routingContract)
+        public
+        initializer
+    {
+        require(
+            clientMgrContract != address(0) && routingContract != address(0),
+            "clientManager or routing cannot be empty"
+        );
+        clientManager = IClientManager(clientMgrContract);
+        routing = IRouting(routingContract);
+
         __Ownable_init();
     }
 
@@ -49,20 +64,6 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
      * @param packet clean packet data
      */
     event CleanPacketSent(PacketTypes.CleanPacket packet);
-
-    /**
-     * @notice Constructor
-     * @param clientMgrContract clientManager address
-     * @param routingContract routing address
-     */
-    constructor(address clientMgrContract, address routingContract) public {
-        require(
-            clientMgrContract != address(0) && routingContract != address(0),
-            "clientManager or routing cannot be empty"
-        );
-        clientManager = IClientManager(clientMgrContract);
-        routing = IRouting(routingContract);
-    }
 
     /**
      * @notice Make sure that the packet is valid
@@ -90,12 +91,12 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         override
         validateBasic(packet.sequence, packet.data, packet.port)
     {
-        string memory sentChain;
-        sentChain = packet.destChain;
+        string memory targetChain;
+        targetChain = packet.destChain;
         if (bytes(packet.relayChain).length > 0) {
-            sentChain = packet.relayChain;
+            targetChain = packet.relayChain;
         }
-        IClient client = clientManager.getClient(sentChain);
+        IClient client = clientManager.getClient(targetChain);
         require(address(client) != address(0), "light client not found");
 
         bytes memory nextSequenceSendKey = Host.nextSequenceSendKey(
@@ -132,118 +133,49 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         bytes calldata proof,
         Height.Data calldata height
     ) external override {
-        if (
-            packet.sequence <=
-            sequences[
-                Host.cleanPacketCommitmentKey(
-                    packet.sourceChain,
-                    packet.destChain
-                )
-            ]
-        ) {
-            writeAcknowledgement(
-                PacketTypes.Packet(
-                    packet.sequence,
-                    packet.port,
-                    packet.sourceChain,
-                    packet.destChain,
-                    packet.relayChain,
-                    packet.data
-                ),
-                _newErrAcknowledgement("sequence illegal!")
-            );
-            revert("sequence illegal!");
-        }
+        require(
+            packet.sequence >
+                sequences[
+                    Host.cleanPacketCommitmentKey(
+                        packet.sourceChain,
+                        packet.destChain
+                    )
+                ],
+            "sequence illegal!"
+        );
 
         bytes memory packetReceiptKey = Host.packetReceiptKey(
             packet.sourceChain,
             packet.destChain,
             packet.sequence
         );
-        if (receipts[packetReceiptKey]) {
-            writeAcknowledgement(
-                PacketTypes.Packet(
-                    packet.sequence,
-                    packet.port,
-                    packet.sourceChain,
-                    packet.destChain,
-                    packet.relayChain,
-                    packet.data
-                ),
-                _newErrAcknowledgement("packet has been received!")
-            );
-            revert("packet has been received!");
-        }
-        string memory sentChain;
+        require(!receipts[packetReceiptKey], "packet has been received");
+        string memory fromChain = packet.sourceChain;
 
         if (
             Strings.equals(packet.destChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
-            sentChain = packet.relayChain;
-        } else {
-            sentChain = packet.sourceChain;
+            fromChain = packet.relayChain;
         }
 
-        IClient client = clientManager.getClient(sentChain);
-        if (address(client) == address(0)) {
-            writeAcknowledgement(
-                PacketTypes.Packet(
-                    packet.sequence,
-                    packet.port,
-                    packet.sourceChain,
-                    packet.destChain,
-                    packet.relayChain,
-                    packet.data
-                ),
-                _newErrAcknowledgement("light client not found!")
-            );
-            revert("light client not found!");
-        }
-
+        IClient client = clientManager.getClient(fromChain);
+        require(address(client) != address(0), "light client not found!");
         commitBytes = Bytes.fromBytes32(sha256(packet.data));
-        try
-            client.verifyPacketCommitment(
-                height,
-                proof,
-                packet.sourceChain,
-                packet.destChain,
-                packet.sequence,
-                commitBytes
-            )
-        {} catch {
-            writeAcknowledgement(
-                PacketTypes.Packet(
-                    packet.sequence,
-                    packet.port,
-                    packet.sourceChain,
-                    packet.destChain,
-                    packet.relayChain,
-                    packet.data
-                ),
-                _newErrAcknowledgement("packet verify failed!")
-            );
-            revert("packet verify failed!");
-        }
+        client.verifyPacketCommitment(
+            height,
+            proof,
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence,
+            commitBytes
+        );
 
         receipts[packetReceiptKey] = true;
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             IModule module = routing.getModule(packet.port);
-            if (address(module) == address(0)) {
-                writeAcknowledgement(
-                    PacketTypes.Packet(
-                        packet.sequence,
-                        packet.port,
-                        packet.sourceChain,
-                        packet.destChain,
-                        packet.relayChain,
-                        packet.data
-                    ),
-                    _newErrAcknowledgement("this module not found!")
-                );
-                revert("this module not found!");
-            }
+            require(address(module) != address(0), "module not found!");
             bytes memory ack = module.onRecvPacket(packet);
             if (ack.length > 0) {
                 writeAcknowledgement(
@@ -279,23 +211,10 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
                         "no rule in routing table to relay this packet"
                     )
                 );
-                revert("no rule in routing table to relay this packet");
+                return;
             }
             client = clientManager.getClient(packet.destChain);
-            if (address(client) == address(0)) {
-                writeAcknowledgement(
-                    PacketTypes.Packet(
-                        packet.sequence,
-                        packet.port,
-                        packet.sourceChain,
-                        packet.destChain,
-                        packet.relayChain,
-                        packet.data
-                    ),
-                    _newErrAcknowledgement("light client not found")
-                );
-                revert("light client not found");
-            }
+            require(address(client) != address(0), "light client not found!");
             commitments[
                 Host.packetCommitmentKey(
                     packet.sourceChain,
@@ -327,11 +246,14 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             "acknowledgement for packet already exists"
         );
         require(acknowledgement.length != 0, "acknowledgement cannot be empty");
-        string memory sentChain = packet.sourceChain;
-        if (bytes(packet.relayChain).length > 0) {
-            sentChain = packet.relayChain;
+        string memory targetChain = packet.sourceChain;
+        if (
+            bytes(packet.relayChain).length > 0 &&
+            Strings.equals(packet.destChain, clientManager.getChainName())
+        ) {
+            targetChain = packet.relayChain;
         }
-        IClient client = clientManager.getClient(sentChain);
+        IClient client = clientManager.getClient(targetChain);
         require(address(client) != address(0), "light client not found");
 
         commitments[
@@ -341,6 +263,13 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
                 packet.sequence
             )
         ] = sha256(acknowledgement);
+
+        setMaxAckSequence(
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
+        );
+
         emit AckWritten(packet, acknowledgement);
     }
 
@@ -368,24 +297,22 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             "commitment bytes are not equal!"
         );
 
-        string memory sentChain;
+        string memory fromChain = packet.destChain;
 
         if (
             Strings.equals(packet.sourceChain, clientManager.getChainName()) &&
             bytes(packet.relayChain).length > 0
         ) {
-            sentChain = packet.relayChain;
-        } else {
-            sentChain = packet.destChain;
+            fromChain = packet.relayChain;
         }
 
         require(
-            address(clientManager.getClient(sentChain)) != address(0),
+            address(clientManager.getClient(fromChain)) != address(0),
             "light client not found"
         );
 
         commitBytes = Bytes.fromBytes32(sha256(acknowledgement));
-        clientManager.getClient(sentChain).verifyPacketAcknowledgement(
+        clientManager.getClient(fromChain).verifyPacketAcknowledgement(
             height,
             proofAcked,
             packet.sourceChain,
@@ -402,7 +329,13 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             )
         ];
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
+        setMaxAckSequence(
+            packet.sourceChain,
+            packet.destChain,
+            packet.sequence
+        );
+
+        if (Strings.equals(packet.sourceChain, clientManager.getChainName())) {
             IModule module = routing.getModule(packet.port);
             module.onAcknowledgementPacket(packet, acknowledgement);
         } else {
@@ -444,7 +377,14 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         uint64 currentCleanSeq = sequences[
             Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
         ];
-        require(packet.sequence > currentCleanSeq, "sequence illegal!");
+        uint64 currentMaxAckSeq = sequences[
+            Host.MaxAckSeqKey(packet.sourceChain, packet.destChain)
+        ];
+        require(
+            packet.sequence > currentCleanSeq &&
+                packet.sequence <= currentMaxAckSeq,
+            "sequence illegal!"
+        );
 
         for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
             require(
@@ -491,7 +431,15 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         uint64 currentCleanSeq = sequences[
             Host.cleanPacketCommitmentKey(packet.sourceChain, packet.destChain)
         ];
-        require(packet.sequence > currentCleanSeq, "sequence illegal!");
+
+        require(
+            packet.sequence > currentCleanSeq &&
+                packet.sequence <=
+                sequences[
+                    Host.MaxAckSeqKey(packet.sourceChain, packet.destChain)
+                ],
+            "sequence illegal!"
+        );
 
         for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
             require(
@@ -506,19 +454,18 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             );
         }
 
-        string memory sentChain;
+        string memory fromChain;
 
-        if (Strings.equals(packet.destChain, clientManager.getChainName())) {
-            if (bytes(packet.relayChain).length > 0) {
-                sentChain = packet.relayChain;
-            } else {
-                sentChain = packet.sourceChain;
-            }
+        if (
+            Strings.equals(packet.destChain, clientManager.getChainName()) &&
+            bytes(packet.relayChain).length > 0
+        ) {
+            fromChain = packet.relayChain;
         } else {
-            sentChain = packet.sourceChain;
+            fromChain = packet.sourceChain;
         }
 
-        IClient client = clientManager.getClient(sentChain);
+        IClient client = clientManager.getClient(fromChain);
         require(address(client) != address(0), "light client not found");
         client.verifyPacketCleanCommitment(
             height,
@@ -528,7 +475,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             packet.sequence
         );
 
-        for (uint64 i = currentCleanSeq; i <= packet.sequence; i++) {
+        for (uint64 i = currentCleanSeq + 1; i <= packet.sequence; i++) {
             delete commitments[
                 Host.packetAcknowledgementKey(
                     packet.sourceChain,
@@ -576,6 +523,26 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
      */
     function setClientManager(address clientMgrContract) external onlyOwner {
         clientManager = IClientManager(clientMgrContract);
+    }
+
+    /**
+     * @notice Set max ack sequence
+     * @param sourceChain source chain name
+     * @param destChain destination chain name
+     * @param sequence max ack sequence
+     */
+    function setMaxAckSequence(
+        string memory sourceChain,
+        string memory destChain,
+        uint64 sequence
+    ) internal {
+        uint64 currentMaxAckSeq = sequences[
+            Host.MaxAckSeqKey(sourceChain, destChain)
+        ];
+        if (sequence > currentMaxAckSeq) {
+            currentMaxAckSeq = sequence;
+        }
+        sequences[Host.MaxAckSeqKey(sourceChain, destChain)] = currentMaxAckSeq;
     }
 
     /**
