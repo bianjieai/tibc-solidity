@@ -47,13 +47,26 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
     }
 
     /**
-     * @notice Event triggered when the packet is sent
+     * @notice Event triggered when the packet has been sent
      * @param packet packet data
      */
     event PacketSent(PacketTypes.Packet packet);
 
     /**
+     * @notice Event triggered when the packet has been received
+     * @param packet packet data
+     */
+    event PacketReceived(PacketTypes.Packet packet);
+
+    /**
      * @notice Event triggered when the write ack
+     * @param packet packet data
+     * @param ack ack bytes
+     */
+    event AckPacket(PacketTypes.Packet packet, bytes ack);
+
+    /**
+     * @notice Event triggered when receive ack
      * @param packet packet data
      * @param ack ack bytes
      */
@@ -172,6 +185,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         );
 
         receipts[packetReceiptKey] = true;
+        emit PacketReceived(packet);
 
         if (Strings.equals(packet.destChain, clientManager.getChainName())) {
             IModule module = routing.getModule(packet.port);
@@ -334,6 +348,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             packet.destChain,
             packet.sequence
         );
+        emit AckPacket(packet, acknowledgement);
 
         if (Strings.equals(packet.sourceChain, clientManager.getChainName())) {
             IModule module = routing.getModule(packet.port);
@@ -394,7 +409,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
                         packet.destChain,
                         i
                     )
-                ].length == 0,
+                ] == bytes32(0),
                 "still have packet not been ack!"
             );
         }
@@ -449,7 +464,7 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
                         packet.destChain,
                         i
                     )
-                ].length == 0,
+                ] == bytes32(0),
                 "still have packet not been ack!"
             );
         }
