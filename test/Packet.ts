@@ -1,9 +1,8 @@
-import { ethers } from "hardhat";
+import {ethers, upgrades} from "hardhat";
 import {BigNumberish, Signer} from "ethers";
 import chai from "chai";
 
-import { Packet, Routing, ClientManager, Strings, Tendermint } from '../typechain';
-import {BytesLike} from "@ethersproject/bytes";
+import { Packet, Routing, ClientManager, MockTendermint, MockTransfer } from '../typechain';
 import {sha256} from "ethers/lib/utils";
 let client = require("./proto/compiled.js");
 
@@ -12,10 +11,10 @@ const { expect } = chai;
 describe('Packet', () => {
     let routing: Routing
     let clientManager: ClientManager
-    let tendermint: Tendermint
+    let tendermint: MockTendermint
+    let transfer: MockTransfer
     let accounts: Signer[]
     let packet: Packet
-    let strings: Strings
     const chainName = "source"
     const destChainName = "dest"
     const relayChainName = "relay"
@@ -52,60 +51,61 @@ describe('Packet', () => {
 
         accounts = await ethers.getSigners();
 
-        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec')
+        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec');
         const clientStateCodec = await ClientStateCodec.deploy();
         await clientStateCodec.deployed();
 
-        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec')
+        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec');
         const consensusStateCodec = await ConsensusStateCodec.deploy();
         await consensusStateCodec.deployed();
 
-        const HeaderCodec = await ethers.getContractFactory('HeaderCodec')
-        const headerCodec = await HeaderCodec.deploy();
-        await headerCodec.deployed();
-
-        const ProofCodec = await ethers.getContractFactory('ProofCodec')
+        const ProofCodec = await ethers.getContractFactory('ProofCodec');
         const proofCodec = await ProofCodec.deploy();
         await proofCodec.deployed();
 
-        const Verifier = await ethers.getContractFactory('Verifier', {
-            signer: accounts[0],
-            libraries: {
-                ProofCodec: proofCodec.address,
-            },
-        })
-        const verifierLib = await Verifier.deploy();
-        await verifierLib.deployed();
         const msrFactory = await ethers.getContractFactory('ClientManager', accounts[0])
-        clientManager = (await msrFactory.deploy(chainName)) as ClientManager;
-        const tmFactory = await ethers.getContractFactory('Tendermint', {
+        clientManager = (await upgrades.deployProxy(msrFactory, [chainName])) as ClientManager;
+        const tmFactory = await ethers.getContractFactory('MockTendermint', {
             signer: accounts[0],
             libraries: {
                 ClientStateCodec: clientStateCodec.address,
-                ConsensusStateCodec: consensusStateCodec.address,
-                HeaderCodec: headerCodec.address,
-                Verifier: verifierLib.address
+                ConsensusStateCodec: consensusStateCodec.address
             },
         })
-        tendermint = (await tmFactory.deploy(clientManager.address)) as Tendermint
-        const strFactory = await ethers.getContractFactory('Strings', accounts[0])
-        strings = (await strFactory.deploy()) as Strings;
+        tendermint = (await upgrades.deployProxy(tmFactory, [clientManager.address],
+            { "unsafeAllowLinkedLibraries": true }
+        )) as MockTendermint;
         const rtFactory = await ethers.getContractFactory('Routing', accounts[0])
-        routing = (await rtFactory.deploy()) as Routing
+        routing = (await upgrades.deployProxy(rtFactory)) as Routing;
+
         const pkFactory = await ethers.getContractFactory('Packet', {
             signer: accounts[0],
-            libraries: {
-                Strings: strings.address,
-            },
         })
         let clientStateBuf = client.ClientState.encode(clientState).finish();
         let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
-        clientManager.createClient(relayChainName, tendermint.address, clientStateBuf, consensusStateBuf)
-        packet = (await pkFactory.deploy(clientManager.address, routing.address)) as Packet
+        await clientManager.createClient(relayChainName, tendermint.address, clientStateBuf, consensusStateBuf);
+        packet = (await upgrades.deployProxy(pkFactory, [clientManager.address, routing.address])) as Packet;
+
+        const nftFactory = await ethers.getContractFactory('MockTransfer', accounts[0])
+        transfer = (await upgrades.deployProxy(nftFactory, [packet.address, clientManager.address])) as MockTransfer;
+        await routing.addRouting("nft",transfer.address);
     })
 
-    it("send packet", async function () {
+    it("send packet and receive ack", async function () {
         let dataByte = Buffer.from("wd", "utf-8")
+        let transferData = {
+            tokenId: 1,
+            receiver: "",
+            class: "",
+            destChain: destChainName,
+            relayChain: relayChainName,
+        }
+        let path = "commitments/" + chainName + "/" + destChainName + "/sequences/" + 1
+        await transfer.sendTransfer(transferData);
+        let commit = await packet.commitments(Buffer.from(path, "utf-8"));
+        let seq = await packet.getNextSequenceSend(chainName, destChainName);
+        expect(seq).to.equal(2);
+        expect(commit).to.equal(sha256(dataByte));
         let pkt = {
             sequence: 1,
             port: "nft",
@@ -114,29 +114,74 @@ describe('Packet', () => {
             relayChain: relayChainName,
             data: dataByte,
         }
-        let path = "commitments/" + chainName + "/" + destChainName + "/sequences/" + 1
-        await packet.sendPacket(pkt);
-        let commit = await packet.commitments(Buffer.from(path, "utf-8"));
-        let seq = await packet.getNextSequenceSend(chainName, destChainName);
-        expect(2).to.equal(seq);
-        expect(sha256(dataByte)).to.equal(commit);
+        let ackByte = await transfer.NewAcknowledgement(true, "")
+        let proof = Buffer.from("proof", "utf-8")
+        let height = {
+            revision_number: 1,
+            revision_height: 1,
+        }
+        await packet.acknowledgePacket(pkt, ackByte, proof, height)
+        commit = await packet.commitments(Buffer.from(path, "utf-8"));
+        expect(commit).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
     });
 
-    it("receive packet", async function () {
-        let dataByte = Buffer.from("wd", "utf-8")
+    it("receive packet and write ack", async function () {
+        let dataByte = Buffer.from("data", "utf-8")
+        let ackByte = await transfer.NewAcknowledgement(true, "")
+        let proof = Buffer.from("proof", "utf-8")
+        let height = {
+            revision_number: 1,
+            revision_height: 1,
+        }
         let pkt = {
             sequence: 1,
             port: "nft",
-            sourceChain: chainName,
-            destChain: destChainName,
+            sourceChain: destChainName,
+            destChain: chainName,
             relayChain: relayChainName,
             data: dataByte,
         }
-        let path = "commitments/" + chainName + "/" + destChainName + "/sequences/" + 1
-        await packet.recvPacket(pkt);
-        let commit = await packet.commitments(Buffer.from(path, "utf-8"));
-        let seq = await packet.getNextSequenceSend(chainName, destChainName);
-        expect(2).to.equal(seq);
-        expect(sha256(dataByte)).to.equal(commit);
+        await packet.recvPacket(pkt, proof, height);
+        let ackPath = "acks/" + destChainName + "/" + chainName + "/sequences/" + 1
+        let receiptPath = "receipts/" + destChainName + "/" + chainName + "/sequences/" + 1
+        let macAckSeqPath = "maxAckSeq/" + destChainName + "/" + chainName
+        let ackCommit = await packet.commitments(Buffer.from(ackPath, "utf-8"));
+        expect(ackCommit).to.equal(sha256(ackByte));
+        expect(await packet.receipts(Buffer.from(receiptPath, "utf-8"))).to.equal(true);
+        expect(await packet.sequences(Buffer.from(macAckSeqPath, "utf-8"))).to.equal(1);
+    });
+
+    it("send clean packet", async function () {
+        let cleanPkt = {
+            sequence: 1,
+            sourceChain: chainName,
+            destChain: destChainName,
+            relayChain: relayChainName,
+        }
+        await packet.cleanPacket(cleanPkt)
+        let cleanSeqPath = "clean/" + chainName + "/" + destChainName
+        expect(await packet.sequences(Buffer.from(cleanSeqPath, "utf-8"))).to.equal(1);
+    });
+
+    it("receive clean packet", async function () {
+        let ackPath = "acks/" + destChainName + "/" + chainName + "/sequences/" + 1
+        let ackCommit = await packet.commitments(Buffer.from(ackPath, "utf-8"));
+        expect(ackCommit).not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
+        let cleanPkt = {
+            sequence: 1,
+            sourceChain: destChainName,
+            destChain: chainName,
+            relayChain: relayChainName,
+        }
+        let proof = Buffer.from("proof", "utf-8")
+        let height = {
+            revision_number: 1,
+            revision_height: 1,
+        }
+        await packet.recvCleanPacket(cleanPkt, proof, height)
+        let cleanSeqPath = "clean/" + chainName + "/" + destChainName
+        expect(1).to.equal(await packet.sequences(Buffer.from(cleanSeqPath, "utf-8")));
+        ackCommit = await packet.commitments(Buffer.from(ackPath, "utf-8"))
+        expect(ackCommit).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
     });
 })
