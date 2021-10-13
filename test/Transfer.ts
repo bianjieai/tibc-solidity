@@ -140,95 +140,54 @@ describe('Transfer', () => {
         let sender = (await accounts[0].getAddress()).toString();
         let receiver = (await accounts[1].getAddress()).toString();
 
+        // send nft from irishub to ethereum
         let data = {
-            class: "tibc/nft/wenchang/irishub/kitty",
-            id: "tokenid",
-            uri: "www.test.com",
-            sender: sender,
-            receiver: receiver,
-            awayFromOrigin: false
-        }
-
-        let databytes = nft.NftTransfer.encode(data).finish();
-        let packet = {
-            sequence: 1,
-            port: "nft",
-            sourceChain: "ethereum",
-            destChain: "irishub",
-            relayChain: "",
-            data: databytes,
-        };
-
-        let acknowledgement = {
-            result: Buffer.from("01", "hex"),
-        }
-        let dd = ack.Acknowledgement.encode(acknowledgement).finish();
-
-
-        // mint 
-        await erc1155bank.mint(sender, 2, 1, "0x123456");
-        let balance = await erc1155bank.balanceOf(sender, 2);
-        expect(balance).to.eq(1);
-        // burn 
-        await erc1155bank.burn(sender, 2, 1);
-        let balance1 = await erc1155bank.balanceOf(sender, 2);
-        expect(balance1).to.eq(0);
-
-        let height = {
-            revision_number: 1,
-            revision_height: 100
-        }
-
-        await mockPacket.acknowledgePacket(packet, dd, Buffer.from(""), height);
-        let balance3 = await erc1155bank.balanceOf(sender, 2);
-    })
-
-    it("onAcknowledgementPacket when awayFromOrigin is true", async function () {
-        let sender = (await accounts[0].getAddress()).toString();
-        let receiver = (await accounts[1].getAddress()).toString();
-
-        let data = {
-            class: "kitty",
+            class: "nft/wenchang/irishub/kitty",
             id: "tokenid",
             uri: "www.test.com",
             sender: sender,
             receiver: receiver,
             awayFromOrigin: true
         }
-
-        let databytes = nft.NftTransfer.encode(data).finish();
         let packet = {
             sequence: 1,
             port: "nft",
-            sourceChain: "ethereum",
-            destChain: "irishub",
+            sourceChain: "irishub",
+            destChain: "ethereum",
             relayChain: "",
-            data: databytes,
+            data: nft.NftTransfer.encode(data).finish(),
         };
-        let acknowledgement = {
-            result: Buffer.from("01", "hex"),
-        }
-        let dd = ack.Acknowledgement.encode(acknowledgement).finish();
-
-        // mint 
-        await erc1155bank.mint(sender, 88, 1, "0x123456");
-
-        // lock 
-        await erc1155bank.transferFrom(sender, transfer.address, 88, 1, "0x123456");
-
-        let balance1 = await erc1155bank.balanceOf(transfer.address, 88);
-        expect(balance1).to.eq(1);
-
-        let balance2 = await erc1155bank.balanceOf(sender, 88);
-        expect(balance2).to.eq(0);
-
         let height = {
             revision_number: 1,
             revision_height: 100
         }
-        await mockPacket.acknowledgePacket(packet, dd, Buffer.from(""), height);
 
+        await mockPacket.recvPacket(packet, Buffer.from(""), height);
+
+        let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
+        let nftClass = await erc1155bank.getClass(expTokenId);
+        expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
+
+        let nftId = await erc1155bank.getId(expTokenId);
+        expect(nftId).to.eq(data.id);
+
+        let nftURI = await erc1155bank.getUri(expTokenId);
+        expect(nftURI).to.eq(data.uri);
+
+
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
+        }
+
+        let dd = ack.Acknowledgement.encode(acknowledgement).finish();
+
+        await mockPacket.acknowledgePacket(packet, dd, Buffer.from(""), height);
+        
+        let balance1 = await erc1155bank.balanceOf(sender, expTokenId);
+        expect(balance1).to.eq(0);
     })
+
+   
 
     const deployContract = async function () {
         accounts = await ethers.getSigners();
