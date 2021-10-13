@@ -32,12 +32,19 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       //blockGasLimit: 80000000,
     },
-    rinkeby : {
-      url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
+    // rinkeby : {
+    //   url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
+    //   gasPrice: 1500000000,
+    //   chainId: 4,
+    //   gas: 4100000,
+    //   accounts: [],
+    // }
+    rinkeby: {
+      url: 'https://ropsten.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
       gasPrice: 1500000000,
-      chainId: 4,
+      chainId: 3,
       gas: 4100000,
-      accounts: [],
+      accounts: ["c59f553aa4d23dad1db5b42aa8d72ce98223e29e4e6f873d95b1ced451edad39"],
     }
   },
   gasReporter: {
