@@ -31,7 +31,7 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public virtual override onlyOwner{
+    ) public  override onlyOwner{
         _mint(account, id, amount, data);
     }
 
@@ -45,7 +45,7 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         address account,
         uint256 id,
         uint256 amount
-    ) public virtual override onlyOwner{
+    ) public  override onlyOwner{
         _burn(account, id, amount);
     }
 
