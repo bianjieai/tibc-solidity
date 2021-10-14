@@ -16,12 +16,12 @@ task("deployNFTTransfer", "Deploy NFT Transfer")
     });
 
 task("transferNFT", "Sender NFT")
-    .addParam("transfer", "transfer nft contract address ")
+    .addParam("transfer", "transferNft contract address ")
     .addParam("erc1155", "erc1155 contract address ")
-    .addParam("nftid", "NFT ID ")
-    .addParam("destchain", "dest chain ")
-    .addParam("receiver", "Recipient address")
-    .addParam("relaychain", "relaye chain ", "", types.string, true)
+    .addParam("nftid", "nft token id")
+    .addParam("destchain", "dest chain name")
+    .addParam("receiver", "receiver address")
+    .addParam("relaychain", "relay chain name", "", types.string, true)
     .setAction(async (taskArgs, hre) => {
         const transferFactory = await hre.ethers.getContractFactory('Transfer')
 
