@@ -16,21 +16,29 @@ task("deployNFTTransfer", "Deploy NFT Transfer")
     });
 
 task("transferNFT", "Sender NFT")
-    .addParam("contract", "contract address ")
-    .addParam("nftid", "NFT ID ")
-    .addParam("class", "NFT denom class id ")
-    .addParam("destchain", "dest chain ")
-    .addParam("relaychain", "relaye chain ")
-    .addParam("receiver", "Recipient address")
+    .addParam("transfer", "transferNft contract address ")
+    .addParam("erc1155", "erc1155 contract address ")
+    .addParam("nftid", "nft token id")
+    .addParam("destchain", "dest chain name")
+    .addParam("receiver", "receiver address")
+    .addParam("relaychain", "relay chain name", "", types.string, true)
     .setAction(async (taskArgs, hre) => {
         const transferFactory = await hre.ethers.getContractFactory('Transfer')
 
-        const transfer = await transferFactory.attach(taskArgs.contract);
+        const transfer = await transferFactory.attach(taskArgs.transfer);
+
         const tokenID = BigNumber.from(taskArgs.nftid)
+
+        const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank')
+
+        const erc1155Bank = await erc1155BankFactory.attach(taskArgs.erc1155);
+
+        const classID = await erc1155Bank.getClass(tokenID)
+
         let transferdata = {
             tokenId: tokenID,
             receiver: taskArgs.receiver,
-            class: taskArgs.class,
+            class: classID,
             destChain: taskArgs.destchain,
             relayChain: taskArgs.relaychain
         }
