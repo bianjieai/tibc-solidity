@@ -34,10 +34,12 @@ task("createClientFromFile", "Deploy Client Manager")
     .addParam("clientstate", "HEX encoding client client")
     .addParam("consensusstate", "HEX encoding consensus state")
     .setAction(async (taskArgs, hre) => {
-    
-        const clientStatebytes = await readFileSync(taskArgs.clientstate);
 
-        const consensusStateBytes = await  readFileSync(taskArgs.consensusstate);
+        const clientStatebytesHex = await readFileSync(taskArgs.clientstate);
+        const clientStatebytes =  Buffer.from(clientStatebytesHex.toString(), "hex");
+
+        const consensusStateBytesHex = await readFileSync(taskArgs.consensusstate);
+        const consensusStateBytes =  Buffer.from(consensusStateBytesHex.toString(), "hex");
 
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
 
