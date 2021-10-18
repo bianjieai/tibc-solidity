@@ -140,25 +140,25 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             } else {
                 // class -> nft/irishub/ethereum/class
                 {
-                    newClass = PREFIX
-                    .toSlice()
-                    .concat(needle)
-                    .toSlice()
-                    .concat(pac.sourceChain.toSlice());
+                    newClass = PREFIX.toSlice().concat(needle).toSlice().concat(
+                            pac.sourceChain.toSlice()
+                        );
                 }
 
                 {
-                    newClass = newClass.toSlice()
-                    .concat(needle)
-                    .toSlice()
-                    .concat(pac.destChain.toSlice());
+                    newClass = newClass
+                        .toSlice()
+                        .concat(needle)
+                        .toSlice()
+                        .concat(pac.destChain.toSlice());
                 }
 
                 {
-                    newClass = newClass.toSlice()
-                    .concat(needle)
-                    .toSlice()
-                    .concat(data.class.toSlice());
+                    newClass = newClass
+                        .toSlice()
+                        .concat(needle)
+                        .toSlice()
+                        .concat(data.class.toSlice());
                 }
             }
 
@@ -343,23 +343,24 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         return Bytes.bytes32ToUint(tokenId.toBytes32());
     }
 
-    function genPath(Strings.slice memory sc, Strings.slice memory dc, NftTransfer.Data memory data)
-        private
-        pure
-        returns (string memory)
-    {
-        return PREFIX
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(sc)
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(dc)
-                    .toSlice()
-                    .concat("/".toSlice())
-                    .toSlice()
-                    .concat(data.class.toSlice());
+    function genPath(
+        Strings.slice memory sc,
+        Strings.slice memory dc,
+        NftTransfer.Data memory data
+    ) private pure returns (string memory) {
+        return
+            PREFIX
+                .toSlice()
+                .concat("/".toSlice())
+                .toSlice()
+                .concat(sc)
+                .toSlice()
+                .concat("/".toSlice())
+                .toSlice()
+                .concat(dc)
+                .toSlice()
+                .concat("/".toSlice())
+                .toSlice()
+                .concat(data.class.toSlice());
     }
 }
