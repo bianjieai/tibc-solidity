@@ -117,20 +117,51 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
         string memory newClass;
         if (data.awayFromOrigin) {
-            // The following operation is to realize the conversion from nft/A/B/nftClass to nft/A/B/C/nftClass
-            //   example : nft/wenchang/irishub/kitty -> nft/wenchang/irishub/etherum/kitty
             Strings.slice memory needle = "/".toSlice();
             Strings.slice memory nftClass = data.class.toSlice();
-            // The slice.rsplit(needle) method will find the position of the first needle from the right, and then divide the slice into two parts. The slice itself is truncated into the first part (not including needle), and the return value is the second part
-            Strings.slice memory originClass = nftClass.rsplit(needle);
-            newClass = nftClass
-                .concat(needle)
-                .toSlice()
-                .concat(pac.destChain.toSlice())
-                .toSlice()
-                .concat(needle)
-                .toSlice()
-                .concat(originClass);
+            if (
+                Strings.startsWith(
+                    Strings.toSlice(data.class),
+                    Strings.toSlice(PREFIX)
+                )
+            ) {
+                // The following operation is to realize the conversion from nft/A/B/nftClass to nft/A/B/C/nftClass
+                //   example : nft/wenchang/irishub/kitty -> nft/wenchang/irishub/etherum/kitty
+                // The slice.rsplit(needle) method will find the position of the first needle from the right, and then divide the slice into two parts. The slice itself is truncated into the first part (not including needle), and the return value is the second part
+                Strings.slice memory originClass = nftClass.rsplit(needle);
+                newClass = nftClass
+                    .concat(needle)
+                    .toSlice()
+                    .concat(pac.destChain.toSlice())
+                    .toSlice()
+                    .concat(needle)
+                    .toSlice()
+                    .concat(originClass);
+            } else {
+                // class -> nft/irishub/ethereum/class
+                {
+                    newClass = PREFIX
+                    .toSlice()
+                    .concat(needle)
+                    .toSlice()
+                    .concat(pac.sourceChain.toSlice());
+                }
+
+                {
+                    newClass = newClass.toSlice()
+                    .concat(needle)
+                    .toSlice()
+                    .concat(pac.destChain.toSlice());
+                }
+
+                {
+                    newClass = newClass.toSlice()
+                    .concat(needle)
+                    .toSlice()
+                    .concat(data.class.toSlice());
+                }
+            }
+
             // generate tokenId
             uint256 tokenId = genTokenId(newClass, data.id);
             // mint nft
@@ -310,5 +341,25 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             Bytes.cutBytes32(sha256(bytes(originNftId)))
         );
         return Bytes.bytes32ToUint(tokenId.toBytes32());
+    }
+
+    function genPath(Strings.slice memory sc, Strings.slice memory dc, NftTransfer.Data memory data)
+        private
+        pure
+        returns (string memory)
+    {
+        return PREFIX
+                    .toSlice()
+                    .concat("/".toSlice())
+                    .toSlice()
+                    .concat(sc)
+                    .toSlice()
+                    .concat("/".toSlice())
+                    .toSlice()
+                    .concat(dc)
+                    .toSlice()
+                    .concat("/".toSlice())
+                    .toSlice()
+                    .concat(data.class.toSlice());
     }
 }
