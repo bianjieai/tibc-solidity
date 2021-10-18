@@ -39,10 +39,10 @@ describe('Routing', () => {
     it("Set rules ", async function () {
         let mRules: string[] = ["bsn-hub,iris-hub,nft", "iris-hub,bsn-hub,*"]
         routing.setRoutingRules(mRules)
-        let ruleIndex01 = await routing.rules(0)
-        expect(ruleIndex01).to.equal("bsn-hub,iris-hub,nft");
-        let ruleIndex02 = await routing.rules(1)
-        expect(ruleIndex02).to.equal("iris-hub,bsn-hub,*");
+        let ruleIndex01 = await routing.router("bsn-hub,iris-hub,nft")
+        expect(ruleIndex01.isValue).to.equal(true);
+        let ruleIndex02 = await routing.router("iris-hub,bsn-hub,*")
+        expect(ruleIndex02.isValue).to.equal(true);
         let source = "iris-hub";
         let dest = "wenchangchain";
         let port = "nft";

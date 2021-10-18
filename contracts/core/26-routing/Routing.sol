@@ -16,7 +16,6 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
         bool isValue;
     }
 
-    string[] public rules;
     mapping(string => IModule) public modules;
     mapping(string => Rule) public router;
 
@@ -102,8 +101,7 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
         for (uint256 i = 0; i < _rules.length; i++) {
             mRules[i] = _rules[i];
         }
-        rules = mRules;
-        _setRuleMap(rules);
+        _setRuleMap(mRules);
     }
 
     /**
