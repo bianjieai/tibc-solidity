@@ -342,25 +342,4 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         );
         return Bytes.bytes32ToUint(tokenId.toBytes32());
     }
-
-    function genPath(
-        Strings.slice memory sc,
-        Strings.slice memory dc,
-        NftTransfer.Data memory data
-    ) private pure returns (string memory) {
-        return
-            PREFIX
-                .toSlice()
-                .concat("/".toSlice())
-                .toSlice()
-                .concat(sc)
-                .toSlice()
-                .concat("/".toSlice())
-                .toSlice()
-                .concat(dc)
-                .toSlice()
-                .concat("/".toSlice())
-                .toSlice()
-                .concat(data.class.toSlice());
-    }
 }
