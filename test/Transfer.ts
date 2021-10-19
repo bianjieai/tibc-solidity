@@ -88,7 +88,8 @@ describe('Transfer', () => {
             uri: "www.test.com",
             sender: sender,
             receiver: receiver,
-            awayFromOrigin: true
+            awayFromOrigin: true, 
+            destContract:erc1155bank.address.toString()
         }
         let packet = {
             sequence: 1,
@@ -102,17 +103,16 @@ describe('Transfer', () => {
             revision_number: 1,
             revision_height: 100
         }
-
         await mockPacket.recvPacket(packet, Buffer.from(""), height);
 
         let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
-        let nftClass = await erc1155bank.getClass(expTokenId);
+        let nftClass = await transfer.getClass(expTokenId);
         expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
 
-        let nftId = await erc1155bank.getId(expTokenId);
+        let nftId = await transfer.getId(expTokenId);
         expect(nftId).to.eq(data.id);
 
-        let nftURI = await erc1155bank.getUri(expTokenId);
+        let nftURI = await transfer.getUri(expTokenId);
         expect(nftURI).to.eq(data.uri);
 
 
@@ -123,13 +123,14 @@ describe('Transfer', () => {
             receiver: receiverOnOtherChain,
             class: nftClass,
             destChain: "irishub",
-            relayChain: ""
+            relayChain: "",
+            destContract:erc1155bank.address
         }
         await transfer.sendTransfer(transferData);
         let balance = await erc1155bank.balanceOf(sender, expTokenId);
         expect(balance).to.eq(0);
 
-        let originNFT = await erc1155bank.getBinding(expTokenId)
+        let originNFT = await transfer.getBinding(expTokenId)
         expect(originNFT.class).to.eq("");
         expect(originNFT.id).to.eq("");
         expect(originNFT.uri).to.eq("");
@@ -147,7 +148,8 @@ describe('Transfer', () => {
             uri: "www.test.com",
             sender: sender,
             receiver: receiver,
-            awayFromOrigin: true
+            awayFromOrigin: true,
+            destContract:erc1155bank.address
         }
         let packet = {
             sequence: 1,
@@ -165,13 +167,13 @@ describe('Transfer', () => {
         await mockPacket.recvPacket(packet, Buffer.from(""), height);
 
         let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
-        let nftClass = await erc1155bank.getClass(expTokenId);
+        let nftClass = await transfer.getClass(expTokenId);
         expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
 
-        let nftId = await erc1155bank.getId(expTokenId);
+        let nftId = await transfer.getId(expTokenId);
         expect(nftId).to.eq(data.id);
 
-        let nftURI = await erc1155bank.getUri(expTokenId);
+        let nftURI = await transfer.getUri(expTokenId);
         expect(nftURI).to.eq(data.uri);
 
 
