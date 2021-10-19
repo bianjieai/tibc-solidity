@@ -14,6 +14,7 @@ library NftTransfer {
     string sender;
     string receiver;
     bool awayFromOrigin;
+    string destContract;
   }
 
   // Decoder section
@@ -53,7 +54,7 @@ library NftTransfer {
     returns (Data memory, uint)
   {
     Data memory r;
-    uint[7] memory counters;
+    uint[8] memory counters;
     uint256 fieldId;
     ProtoBufRuntime.WireType wireType;
     uint256 bytesRead;
@@ -79,6 +80,9 @@ library NftTransfer {
       }
       else if (fieldId == 6) {
         pointer += _read_awayFromOrigin(pointer, bs, r, counters);
+      }
+      else if (fieldId == 7) {
+        pointer += _read_destContract(pointer, bs, r, counters);
       }
       
       else {
@@ -122,7 +126,7 @@ library NftTransfer {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[7] memory counters
+    uint[8] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -149,7 +153,7 @@ library NftTransfer {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[7] memory counters
+    uint[8] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -176,7 +180,7 @@ library NftTransfer {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[7] memory counters
+    uint[8] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -203,7 +207,7 @@ library NftTransfer {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[7] memory counters
+    uint[8] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -230,7 +234,7 @@ library NftTransfer {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[7] memory counters
+    uint[8] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -257,7 +261,7 @@ library NftTransfer {
     uint256 p,
     bytes memory bs,
     Data memory r,
-    uint[7] memory counters
+    uint[8] memory counters
   ) internal pure returns (uint) {
     /**
      * if `r` is NULL, then only counting the number of fields.
@@ -268,6 +272,33 @@ library NftTransfer {
     } else {
       r.awayFromOrigin = x;
       if (counters[6] > 0) counters[6] -= 1;
+    }
+    return sz;
+  }
+
+  /**
+   * @dev The decoder for reading a field
+   * @param p The offset of bytes array to start decode
+   * @param bs The bytes array to be decoded
+   * @param r The in-memory struct
+   * @param counters The counters for repeated fields
+   * @return The number of bytes decoded
+   */
+  function _read_destContract(
+    uint256 p,
+    bytes memory bs,
+    Data memory r,
+    uint[8] memory counters
+  ) internal pure returns (uint) {
+    /**
+     * if `r` is NULL, then only counting the number of fields.
+     */
+    (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
+    if (isNil(r)) {
+      counters[7] += 1;
+    } else {
+      r.destContract = x;
+      if (counters[7] > 0) counters[7] -= 1;
     }
     return sz;
   }
@@ -359,6 +390,15 @@ library NftTransfer {
     );
     pointer += ProtoBufRuntime._encode_bool(r.awayFromOrigin, pointer, bs);
     }
+    if (bytes(r.destContract).length != 0) {
+    pointer += ProtoBufRuntime._encode_key(
+      7,
+      ProtoBufRuntime.WireType.LengthDelim,
+      pointer,
+      bs
+    );
+    pointer += ProtoBufRuntime._encode_string(r.destContract, pointer, bs);
+    }
     return pointer - offset;
   }
   // nested encoder
@@ -408,6 +448,7 @@ library NftTransfer {
     e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.sender).length);
     e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.receiver).length);
     e += 1 + 1;
+    e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.destContract).length);
     return e;
   }
   // empty checker
@@ -440,6 +481,10 @@ library NftTransfer {
     return false;
   }
 
+  if (bytes(r.destContract).length != 0) {
+    return false;
+  }
+
     return true;
   }
 
@@ -457,6 +502,7 @@ library NftTransfer {
     output.sender = input.sender;
     output.receiver = input.receiver;
     output.awayFromOrigin = input.awayFromOrigin;
+    output.destContract = input.destContract;
 
   }
 

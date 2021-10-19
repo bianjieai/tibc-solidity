@@ -9,5 +9,6 @@ library TransferDataTypes {
         string  class;
         string  destChain;
         string  relayChain;
+        string  destContract;
     }
 }
