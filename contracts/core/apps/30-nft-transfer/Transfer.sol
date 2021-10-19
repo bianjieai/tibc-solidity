@@ -14,7 +14,6 @@ import "../../../interfaces/ITransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "hardhat/console.sol";
 
 contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
@@ -178,7 +177,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                     data.receiver.parseAddr(),
                     tokenId,
                     uint256(1),
-                    ""
+                    bytes(data.uri)  // send uri to erc1155
                 )
             ) {
                 // keep trace of class and id and uri
@@ -291,7 +290,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             data.sender.parseAddr(),
             tokenId,
             uint256(1),
-            bytes("")
+            bytes(data.uri)
         );
     }
 

@@ -119,6 +119,9 @@ describe('Transfer', () => {
         let nftURI = await transfer.getUri(expTokenId);
         expect(nftURI).to.eq(data.uri);
 
+        let receiveUri = await erc1155bank.uri(expTokenId);
+        expect(receiveUri).to.eq(data.uri);
+
 
         // send nft back to irishub from ethereum
         let receiverOnOtherChain = (await accounts[2].getAddress()).toString();
@@ -138,6 +141,9 @@ describe('Transfer', () => {
         expect(originNFT.class).to.eq("");
         expect(originNFT.id).to.eq("");
         expect(originNFT.uri).to.eq("");
+
+        let backUri = await erc1155bank.uri(expTokenId);
+        expect(backUri).to.eq("");
     })
 
     // The test need fix the tokenID in the refundToken

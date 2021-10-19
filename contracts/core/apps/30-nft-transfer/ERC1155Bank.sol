@@ -16,6 +16,8 @@ contract ERC1155Bank is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
+    mapping(uint256 => bytes) public uriMap;
+
     function initialize() public initializer {
         __ERC1155_init("");
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -40,7 +42,8 @@ contract ERC1155Bank is
         bytes memory data
     ) public override {
         require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
-        _mint(account, id, amount, data);        
+        _mint(account, id, amount, data);
+        uriMap[id] = data;
     }
 
     /**
@@ -56,6 +59,7 @@ contract ERC1155Bank is
     ) public override {
         require(hasRole(BURNER_ROLE, msg.sender), "Caller is not a burner");
         _burn(account, id, amount);
+        delete uriMap[id];
     }
 
     /**
@@ -77,14 +81,8 @@ contract ERC1155Bank is
      * @notice this function is to get uri from tokenId
      * @param id token id
      */
-    function uri(uint256 id)
-        public
-        view
-        override
-        returns (string memory)
-    {
+    function uri(uint256 id) public view override returns (string memory) {
         // need to get uri function from transfer contract
-         //return tokenId.uri
-        return "";
+        return string(uriMap[id]);
     }
 }
