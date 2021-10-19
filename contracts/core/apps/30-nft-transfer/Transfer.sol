@@ -86,7 +86,8 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                 uri: nft.uri,
                 sender: Bytes.addressToString(msg.sender),
                 receiver: transferData.receiver,
-                awayFromOrigin: awayFromOrigin
+                awayFromOrigin: awayFromOrigin,
+                destContract: transferData.destContract
             });
         }
         // send packet
@@ -115,6 +116,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         returns (bytes memory acknowledgement)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
+        require(data.destContract.parseAddr() != address(0), "invalid address");
         string memory newClass;
         if (data.awayFromOrigin) {
             Strings.slice memory needle = "/".toSlice();
@@ -165,7 +167,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             // generate tokenId
             uint256 tokenId = genTokenId(newClass, data.id);
             // mint nft
-            if (_mint(data.receiver.parseAddr(), tokenId, uint256(1), "")) {
+            if (_mint(data.destContract.parseAddr(), data.receiver.parseAddr(), tokenId, uint256(1), "")) {
                 // keep trace of class and id and uri
                 bank.bind(tokenId, newClass, data.id, data.uri);
                 return _newAcknowledgement(true, "");
@@ -218,6 +220,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param data metadata of the nft
      */
     function _mint(
+        address destContract,
         address account,
         uint256 id,
         uint256 amount,
@@ -290,7 +293,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      */
     function _refundTokens(NftTransfer.Data memory data) private {
         uint256 tokenId = genTokenId(data.class, data.id);
-        _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
+        _mint(data.destContract.parseAddr(), data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
     }
 
     /**
