@@ -50,28 +50,6 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
     }
 
     /**
-     * @notice this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
-     * - `to` cannot be the zero address.
-     * - If the caller is not `from`, it must be have been approved to spend ``from``'s tokens via {setApprovalForAll}.
-     * - `from` must have a balance of tokens of type `id` of at least `amount`.
-     * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
-     * acceptance magic value.
-     * @param from address of the sender
-     * @param to address of the receiver
-     * @param amount amount of tokens to transfer
-     * @param data metadata to store with the token
-     */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public virtual override {
-        super.safeTransferFrom(from, to, id, amount, data);
-    }
-
-    /**
      * @notice this function is to destroys `amount` tokens of token type `id` from `account`
      * - `account` cannot be the zero address.
      * @param account address of the account

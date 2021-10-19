@@ -27,14 +27,6 @@ interface IERC1155Bank {
         uint256 amount
     ) external;
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes calldata data
-    ) external;
-
     function setOwner(address _owner) external;
 
     /**

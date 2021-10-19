@@ -71,7 +71,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             // nft is be closed to origin
             // burn nft
             require(
-                _burn(msg.sender, transferData.tokenId, uint256(1)),
+                _burn(transferData.destContract.parseAddr(), msg.sender, transferData.tokenId, uint256(1)),
                 "burn nft failed"
             );
 
@@ -167,7 +167,15 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             // generate tokenId
             uint256 tokenId = genTokenId(newClass, data.id);
             // mint nft
-            if (_mint(data.destContract.parseAddr(), data.receiver.parseAddr(), tokenId, uint256(1), "")) {
+            if (
+                _mint(
+                    data.destContract.parseAddr(),
+                    data.receiver.parseAddr(),
+                    tokenId,
+                    uint256(1),
+                    ""
+                )
+            ) {
                 // keep trace of class and id and uri
                 bank.bind(tokenId, newClass, data.id, data.uri);
                 return _newAcknowledgement(true, "");
@@ -201,11 +209,12 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param amount amount of tokens to create
      */
     function _burn(
+        address destContract,
         address account,
         uint256 id,
         uint256 amount
     ) private returns (bool) {
-        try bank.burn(account, id, amount) {
+        try IERC1155Bank(destContract).burn(account, id, amount) {
             return true;
         } catch (bytes memory) {
             return false;
@@ -226,33 +235,13 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         uint256 amount,
         bytes memory data
     ) private returns (bool) {
-        try bank.mint(account, id, amount, data) {
+        try IERC1155Bank(destContract).mint(account, id, amount, data) {
             return true;
         } catch (bytes memory) {
             return false;
         }
     }
 
-    /**
-     * @notice this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
-     * @param from the address of the sender
-     * @param to the address of the receiver
-     * @param amount the amount of tokens to be transferred
-     * @param data the data to be stored in the token
-     */
-    function _transferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) private returns (bool) {
-        try bank.transferFrom(from, to, id, amount, data) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
-    }
 
     /**
      * @notice this function is to create ack
@@ -293,7 +282,13 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      */
     function _refundTokens(NftTransfer.Data memory data) private {
         uint256 tokenId = genTokenId(data.class, data.id);
-        _mint(data.destContract.parseAddr(), data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
+        _mint(
+            data.destContract.parseAddr(),
+            data.sender.parseAddr(),
+            tokenId,
+            uint256(1),
+            bytes("")
+        );
     }
 
     /**
