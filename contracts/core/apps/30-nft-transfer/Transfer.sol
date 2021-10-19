@@ -27,6 +27,8 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     IERC1155Bank public bank;
     IClientManager public clientManager;
 
+    mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
+
     // check if caller is clientManager
     modifier onlyPacketContract() {
         require(msg.sender == address(packet), "caller not packet contract");
@@ -71,13 +73,18 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             // nft is be closed to origin
             // burn nft
             require(
-                _burn(transferData.destContract.parseAddr(), msg.sender, transferData.tokenId, uint256(1)),
+                _burn(
+                    transferData.destContract.parseAddr(),
+                    msg.sender,
+                    transferData.tokenId,
+                    uint256(1)
+                ),
                 "burn nft failed"
             );
 
             //delete the binding relationship between origin hft and mint's nft in erc1155
             // and return the origin nft
-            IERC1155Bank.OriginNFT memory nft = bank.unbind(
+            TransferDataTypes.OriginNFT memory nft = unbind(
                 transferData.tokenId
             );
             packetData = NftTransfer.Data({
@@ -177,7 +184,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                 )
             ) {
                 // keep trace of class and id and uri
-                bank.bind(tokenId, newClass, data.id, data.uri);
+                bind(tokenId, newClass, data.id, data.uri);
                 return _newAcknowledgement(true, "");
             }
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");
@@ -242,7 +249,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         }
     }
 
-
     /**
      * @notice this function is to create ack
      * @param success success or not
@@ -292,7 +298,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     }
 
     /**
-     * TODO
      * @notice   determineAwayFromOrigin determine whether nft is sent from the source chain or sent back to the source chain from other chains
      * example :
      *   -- not has prefix
@@ -339,5 +344,65 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             Bytes.cutBytes32(sha256(bytes(originNftId)))
         );
         return Bytes.bytes32ToUint(tokenId.toBytes32());
+    }
+
+    /**
+     * @notice establish a binding relationship between origin nft and mint's nft in erc1155
+     *  @param tokenId token Id
+     *  @param nftClass class of origin NFT
+     *  @param id id of origin NFT
+     *  @param _uri uri of origin NFT
+     */
+    function bind(
+        uint256 tokenId,
+        string memory nftClass,
+        string memory id,
+        string memory _uri
+    ) private {
+        traces[tokenId] = TransferDataTypes.OriginNFT(nftClass, id, _uri);
+    }
+
+    /**
+     * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
+     *  @param tokenId token Id
+     */
+    function unbind(uint256 tokenId)
+        private
+        returns (TransferDataTypes.OriginNFT memory nft)
+    {
+        nft = traces[tokenId];
+        delete traces[tokenId];
+    }
+
+    function getBinding(uint256 tokenId)
+        external
+        view
+        returns (TransferDataTypes.OriginNFT memory)
+    {
+        return traces[tokenId];
+    }
+
+    /**
+     * @notice this function is to get class
+     * @param tokenId token Id
+     */
+    function getClass(uint256 tokenId) public view returns (string memory) {
+        return traces[tokenId].class;
+    }
+
+    /**
+     * @notice this function is to get id
+     * @param tokenId token Id
+     */
+    function getId(uint256 tokenId) external view returns (string memory) {
+        return traces[tokenId].id;
+    }
+
+    /**
+     * @notice this function is to get uri
+     * @param tokenId token Id
+     */
+    function getUri(uint256 tokenId) external view returns (string memory) {
+        return traces[tokenId].uri;
     }
 }

@@ -8,7 +8,6 @@ import "../../../interfaces/IERC1155Bank.sol";
 
 contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
     address public owner;
-    mapping(uint256 => OriginNFT) public traces;
 
     // check if caller is transferContract
     modifier onlyOwner() {
@@ -75,7 +74,9 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         override
         returns (string memory)
     {
-        return traces[id].uri;
+        // need to get uri function from transfer contract
+        // return traces[id].uri
+        return "";
     }
 
     /**
@@ -85,85 +86,5 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
     function setOwner(address _owner) external override initializer {
         owner = _owner;
     }
-
-    /**
-     * @notice establish a binding relationship between origin nft and mint's nft in erc1155
-     *  @param tokenId token Id
-     *  @param nftClass class of origin NFT
-     *  @param id id of origin NFT
-     *  @param _uri uri of origin NFT
-     */
-    function bind(
-        uint256 tokenId,
-        string calldata nftClass,
-        string calldata id,
-        string calldata _uri
-    ) external override onlyOwner {
-        traces[tokenId] = OriginNFT(nftClass, id, _uri);
-    }
-
-    /**
-     * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
-     *  @param tokenId token Id
-     */
-    function unbind(uint256 tokenId)
-        external
-        override
-        onlyOwner
-        returns (OriginNFT memory nft)
-    {
-        nft = traces[tokenId];
-        delete traces[tokenId];
-    }
-
-    function getBinding(uint256 tokenId)
-        external
-        view
-        override
-        returns (OriginNFT memory)
-    {
-        return traces[tokenId];
-    }
-
-    /**
-     * @notice this function is to get class
-     * @param tokenId token Id
-     */
-    function getClass(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
-        return traces[tokenId].class;
-    }
-
-    /**
-     * @notice this function is to get id
-     * @param tokenId token Id
-     */
-    function getId(uint256 tokenId)
-        external
-        view
-        virtual
-        override
-        returns (string memory)
-    {
-        return traces[tokenId].id;
-    }
-
-    /**
-     * @notice this function is to get uri
-     * @param tokenId token Id
-     */
-    function getUri(uint256 tokenId)
-        external
-        view
-        virtual
-        override
-        returns (string memory)
-    {
-        return traces[tokenId].uri;
-    }
+    
 }
