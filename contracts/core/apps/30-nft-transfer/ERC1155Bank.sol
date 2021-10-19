@@ -4,15 +4,23 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 
-contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
-    address public owner;
+contract ERC1155Bank is
+    Initializable,
+    ERC1155Upgradeable,
+    IERC1155Bank,
+    AccessControlUpgradeable
+{
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
-    // check if caller is transferContract
-    modifier onlyOwner() {
-        require(msg.sender == owner, "caller not transfer contract");
-        _;
+    function initialize() public initializer {
+        __ERC1155_init("");
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(MINTER_ROLE, msg.sender);
+        _setupRole(BURNER_ROLE, msg.sender);
     }
 
     /**
@@ -30,8 +38,9 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public  override onlyOwner{
-        _mint(account, id, amount, data);
+    ) public override {
+        require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
+        _mint(account, id, amount, data);        
     }
 
     /**
@@ -44,7 +53,8 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
         address account,
         uint256 id,
         uint256 amount
-    ) public  override onlyOwner{
+    ) public override {
+        require(hasRole(BURNER_ROLE, msg.sender), "Caller is not a burner");
         _burn(account, id, amount);
     }
 
@@ -70,21 +80,11 @@ contract ERC1155Bank is Initializable, ERC1155Upgradeable, IERC1155Bank {
     function uri(uint256 id)
         public
         view
-        virtual
         override
         returns (string memory)
     {
         // need to get uri function from transfer contract
-        // return traces[id].uri
+         //return tokenId.uri
         return "";
     }
-
-    /**
-     * @notice Give the ownership of the current contract to TransferContract
-     * @param _owner address of nft transfer Contract
-     */
-    function setOwner(address _owner) external override initializer {
-        owner = _owner;
-    }
-    
 }

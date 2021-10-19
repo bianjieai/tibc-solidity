@@ -16,6 +16,4 @@ interface IERC1155Bank {
         uint256 amount
     ) external;
 
-    function setOwner(address _owner) external;
-
 }

@@ -5,6 +5,7 @@ import { randomBytes } from "crypto";
 
 const { expect } = chai;
 const { ethers, upgrades } = require("hardhat");
+const keccak256 = require('keccak256');
 
 let nft = require("./proto/nftTransfer.js");
 let client = require("./proto/compiled.js");
@@ -80,6 +81,9 @@ describe('Transfer', () => {
     it("onRecvPacket && sendTransfer", async function () {
         let sender = (await accounts[1].getAddress()).toString();
         let receiver = (await accounts[0].getAddress()).toString();
+
+        erc1155bank.grantRole(keccak256("MINTER_ROLE"), transfer.address);
+        erc1155bank.grantRole(keccak256("BURNER_ROLE"), transfer.address);
 
         // send nft from irishub to ethereum
         let data = {
