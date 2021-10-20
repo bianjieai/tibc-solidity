@@ -63,21 +63,6 @@ contract ERC1155Bank is
     }
 
     /**
-     * @notice this function is to destroys `amount` tokens of token type `id` from `account`
-     * - `account` cannot be the zero address.
-     * @param account address of the account
-     * @param id token id
-     */
-    function balanceOfAddr(address account, uint256 id)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        return super.balanceOf(account, id);
-    }
-
-    /**
      * @notice this function is to get uri from tokenId
      * @param id token id
      */
