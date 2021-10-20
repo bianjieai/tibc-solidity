@@ -20,8 +20,7 @@ task("setRoutingRules", "Set Routing Rules")
         const routingFactory = await hre.ethers.getContractFactory('Routing')
 
         const routing = await routingFactory.attach(String(ROUTING_ADDRES));
-
-        let rules: string[] = taskArgs.rules
+        let rules: string[] = taskArgs.rules.split("|")
         const result = await routing.setRoutingRules(rules)
         console.log(result);
     });
