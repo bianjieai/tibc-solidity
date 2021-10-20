@@ -21,6 +21,7 @@ $root.NftTransfer = (function() {
      * @property {string|null} [sender] NftTransfer sender
      * @property {string|null} [receiver] NftTransfer receiver
      * @property {boolean|null} [awayFromOrigin] NftTransfer awayFromOrigin
+     * @property {string|null} [destContract] NftTransfer destContract
      */
 
     /**
@@ -87,6 +88,14 @@ $root.NftTransfer = (function() {
     NftTransfer.prototype.awayFromOrigin = false;
 
     /**
+     * NftTransfer destContract.
+     * @member {string} destContract
+     * @memberof NftTransfer
+     * @instance
+     */
+    NftTransfer.prototype.destContract = "";
+
+    /**
      * Creates a new NftTransfer instance using the specified properties.
      * @function create
      * @memberof NftTransfer
@@ -122,6 +131,8 @@ $root.NftTransfer = (function() {
             writer.uint32(/* id 5, wireType 2 =*/42).string(message.receiver);
         if (message.awayFromOrigin != null && Object.hasOwnProperty.call(message, "awayFromOrigin"))
             writer.uint32(/* id 6, wireType 0 =*/48).bool(message.awayFromOrigin);
+        if (message.destContract != null && Object.hasOwnProperty.call(message, "destContract"))
+            writer.uint32(/* id 7, wireType 2 =*/58).string(message.destContract);
         return writer;
     };
 
@@ -173,6 +184,9 @@ $root.NftTransfer = (function() {
                 break;
             case 6:
                 message.awayFromOrigin = reader.bool();
+                break;
+            case 7:
+                message.destContract = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -227,6 +241,9 @@ $root.NftTransfer = (function() {
         if (message.awayFromOrigin != null && message.hasOwnProperty("awayFromOrigin"))
             if (typeof message.awayFromOrigin !== "boolean")
                 return "awayFromOrigin: boolean expected";
+        if (message.destContract != null && message.hasOwnProperty("destContract"))
+            if (!$util.isString(message.destContract))
+                return "destContract: string expected";
         return null;
     };
 
@@ -254,6 +271,8 @@ $root.NftTransfer = (function() {
             message.receiver = String(object.receiver);
         if (object.awayFromOrigin != null)
             message.awayFromOrigin = Boolean(object.awayFromOrigin);
+        if (object.destContract != null)
+            message.destContract = String(object.destContract);
         return message;
     };
 
@@ -277,6 +296,7 @@ $root.NftTransfer = (function() {
             object.sender = "";
             object.receiver = "";
             object.awayFromOrigin = false;
+            object.destContract = "";
         }
         if (message["class"] != null && message.hasOwnProperty("class"))
             object["class"] = message["class"];
@@ -290,6 +310,8 @@ $root.NftTransfer = (function() {
             object.receiver = message.receiver;
         if (message.awayFromOrigin != null && message.hasOwnProperty("awayFromOrigin"))
             object.awayFromOrigin = message.awayFromOrigin;
+        if (message.destContract != null && message.hasOwnProperty("destContract"))
+            object.destContract = message.destContract;
         return object;
     };
 

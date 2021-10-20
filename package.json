@@ -12,6 +12,7 @@
     "typecheck": "yarn compile && yarn test && yarn tsc --noEmit"
   },
   "dependencies": {
+    "keccak256": "^1.0.3",
     "openzeppelin-solidity": "3.4.0"
   },
   "devDependencies": {

@@ -1,6 +1,7 @@
 import "@nomiclabs/hardhat-web3";
 import { ethers, upgrades } from "hardhat";
 import { task, types } from "hardhat/config"
+import { readFileSync } from 'fs';
 
 const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
 
@@ -27,7 +28,69 @@ task("upgradeClientManager", "Upgrade Client Manager")
         console.log("Client Manager upgraded to:", clientManager.address);
         console.log("export CLIENT_MANAGER_ADDRES=%s", clientManager.address);
     });
+task("createClientFromFile", "Deploy Client Manager")
+    .addParam("chain", "Chain Name")
+    .addParam("client", "Client Address")
+    .addParam("clientstate", "HEX encoding client client")
+    .addParam("consensusstate", "HEX encoding consensus state")
+    .setAction(async (taskArgs, hre) => {
 
+        const clientStatebytesHex = await readFileSync(taskArgs.clientstate);
+        const clientStatebytes =  Buffer.from(clientStatebytesHex.toString(), "hex");
+
+        const consensusStateBytesHex = await readFileSync(taskArgs.consensusstate);
+        const consensusStateBytes =  Buffer.from(consensusStateBytesHex.toString(), "hex");
+
+        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+
+        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
+
+        const clientStateObj = JSON.parse(clientStatebytes.toString())
+
+        const clientStateEncode = {
+            chainId: clientStateObj.chainId,
+            trustLevel: {
+                numerator: clientStateObj.trustLevel.numerator,
+                denominator: clientStateObj.trustLevel.denominator
+            },
+
+            trustingPeriod: clientStateObj.trustingPeriod,
+            unbondingPeriod: clientStateObj.unbondingPeriod,
+            maxClockDrift: clientStateObj.maxClockDrift,
+            latestHeight: {
+                revisionNumber: clientStateObj.latestHeight.revisionNumber,
+                revisionHeight: clientStateObj.latestHeight.revisionHeight
+            },
+            merklePrefix: {
+                keyPrefix: Buffer.from("tibc"),
+            },
+            timeDelay: 10,
+        }
+
+
+        const clientState = client.ClientState.encode(clientStateEncode).finish();
+
+        const consensusStateObj = JSON.parse(consensusStateBytes.toString())
+
+        const consensusStateEncode = {
+            timestamp: {
+                secs: consensusStateObj.timestamp.secs,
+                nanos: consensusStateObj.timestamp.nanos,
+            },
+            root: Buffer.from(consensusStateObj.root, "hex"),
+            nextValidatorsHash: Buffer.from(consensusStateObj.nextValidatorsHash, "hex")
+        }
+
+        const consensusState = client.ConsensusState.encode(consensusStateEncode).finish();
+
+        const result = await clientManager.createClient(
+            taskArgs.chain,
+            taskArgs.client,
+            clientState,
+            consensusState);
+        console.log(result);
+
+    });
 
 task("createClient", "Deploy Client Manager")
     .addParam("chain", "Chain Name")

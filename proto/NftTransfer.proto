@@ -7,5 +7,6 @@ message NftTransfer {
     string sender        = 4;
     string receiver      = 5;
     bool awayFromOrigin  = 6;
+    string destContract  = 7;
 }
        
