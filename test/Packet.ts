@@ -99,6 +99,7 @@ describe('Packet', () => {
             class: "",
             destChain: destChainName,
             relayChain: relayChainName,
+            destContract: "",
         }
         let path = "commitments/" + chainName + "/" + destChainName + "/sequences/" + 1
         await transfer.sendTransfer(transferData);

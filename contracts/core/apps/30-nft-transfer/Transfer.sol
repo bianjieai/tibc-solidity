@@ -14,7 +14,6 @@ import "../../../interfaces/ITransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "hardhat/console.sol";
 
 contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
@@ -26,6 +25,8 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     IPacket public packet;
     IERC1155Bank public bank;
     IClientManager public clientManager;
+
+    mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
 
     // check if caller is clientManager
     modifier onlyPacketContract() {
@@ -41,8 +42,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
-
-        bank.setOwner(address(this));
     }
 
     /**
@@ -71,13 +70,18 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             // nft is be closed to origin
             // burn nft
             require(
-                _burn(msg.sender, transferData.tokenId, uint256(1)),
+                _burn(
+                    transferData.destContract.parseAddr(),
+                    msg.sender,
+                    transferData.tokenId,
+                    uint256(1)
+                ),
                 "burn nft failed"
             );
 
             //delete the binding relationship between origin hft and mint's nft in erc1155
             // and return the origin nft
-            IERC1155Bank.OriginNFT memory nft = bank.unbind(
+            TransferDataTypes.OriginNFT memory nft = unbind(
                 transferData.tokenId
             );
             packetData = NftTransfer.Data({
@@ -86,7 +90,8 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                 uri: nft.uri,
                 sender: Bytes.addressToString(msg.sender),
                 receiver: transferData.receiver,
-                awayFromOrigin: awayFromOrigin
+                awayFromOrigin: awayFromOrigin,
+                destContract: transferData.destContract
             });
         }
         // send packet
@@ -115,6 +120,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         returns (bytes memory acknowledgement)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
+        require(data.destContract.parseAddr() != address(0), "invalid address");
         string memory newClass;
         if (data.awayFromOrigin) {
             Strings.slice memory needle = "/".toSlice();
@@ -165,9 +171,17 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             // generate tokenId
             uint256 tokenId = genTokenId(newClass, data.id);
             // mint nft
-            if (_mint(data.receiver.parseAddr(), tokenId, uint256(1), "")) {
+            if (
+                _mint(
+                    data.destContract.parseAddr(),
+                    data.receiver.parseAddr(),
+                    tokenId,
+                    uint256(1),
+                    bytes(data.uri)  // send uri to erc1155
+                )
+            ) {
                 // keep trace of class and id and uri
-                bank.bind(tokenId, newClass, data.id, data.uri);
+                bind(tokenId, newClass, data.id, data.uri);
                 return _newAcknowledgement(true, "");
             }
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");
@@ -199,11 +213,12 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param amount amount of tokens to create
      */
     function _burn(
+        address destContract,
         address account,
         uint256 id,
         uint256 amount
     ) private returns (bool) {
-        try bank.burn(account, id, amount) {
+        try IERC1155Bank(destContract).burn(account, id, amount) {
             return true;
         } catch (bytes memory) {
             return false;
@@ -218,33 +233,13 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      * @param data metadata of the nft
      */
     function _mint(
+        address destContract,
         address account,
         uint256 id,
         uint256 amount,
         bytes memory data
     ) private returns (bool) {
-        try bank.mint(account, id, amount, data) {
-            return true;
-        } catch (bytes memory) {
-            return false;
-        }
-    }
-
-    /**
-     * @notice this function is to transfers `amount` tokens of token type `id` from `from` to `to`.
-     * @param from the address of the sender
-     * @param to the address of the receiver
-     * @param amount the amount of tokens to be transferred
-     * @param data the data to be stored in the token
-     */
-    function _transferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) private returns (bool) {
-        try bank.transferFrom(from, to, id, amount, data) {
+        try IERC1155Bank(destContract).mint(account, id, amount, data) {
             return true;
         } catch (bytes memory) {
             return false;
@@ -290,11 +285,16 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      */
     function _refundTokens(NftTransfer.Data memory data) private {
         uint256 tokenId = genTokenId(data.class, data.id);
-        _mint(data.sender.parseAddr(), tokenId, uint256(1), bytes(""));
+        _mint(
+            data.destContract.parseAddr(),
+            data.sender.parseAddr(),
+            tokenId,
+            uint256(1),
+            bytes(data.uri)
+        );
     }
 
     /**
-     * TODO
      * @notice   determineAwayFromOrigin determine whether nft is sent from the source chain or sent back to the source chain from other chains
      * example :
      *   -- not has prefix
@@ -341,5 +341,41 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             Bytes.cutBytes32(sha256(bytes(originNftId)))
         );
         return Bytes.bytes32ToUint(tokenId.toBytes32());
+    }
+
+    /**
+     * @notice establish a binding relationship between origin nft and mint's nft in erc1155
+     *  @param tokenId token Id
+     *  @param nftClass class of origin NFT
+     *  @param id id of origin NFT
+     *  @param _uri uri of origin NFT
+     */
+    function bind(
+        uint256 tokenId,
+        string memory nftClass,
+        string memory id,
+        string memory _uri
+    ) private {
+        traces[tokenId] = TransferDataTypes.OriginNFT(nftClass, id, _uri);
+    }
+
+    /**
+     * @notice Delete the binding relationship between origin hft and mint's nft in erc1155
+     *  @param tokenId token Id
+     */
+    function unbind(uint256 tokenId)
+        private
+        returns (TransferDataTypes.OriginNFT memory nft)
+    {
+        nft = traces[tokenId];
+        delete traces[tokenId];
+    }
+
+    function getBinding(uint256 tokenId)
+        external
+        view
+        returns (TransferDataTypes.OriginNFT memory)
+    {
+        return traces[tokenId];
     }
 }
