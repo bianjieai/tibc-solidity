@@ -110,15 +110,12 @@ describe('Transfer', () => {
         await mockPacket.recvPacket(packet, Buffer.from(""), height);
 
         let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
-        let nftClass = await transfer.getClass(expTokenId);
-        expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
-
-        let nftId = await transfer.getId(expTokenId);
-        expect(nftId).to.eq(data.id);
-
-        let nftURI = await transfer.getUri(expTokenId);
-        expect(nftURI).to.eq(data.uri);
-
+        
+        let scNFT = await transfer.getBinding(expTokenId)
+        expect(scNFT.id).to.eq(data.id);
+        expect(scNFT.uri).to.eq(data.uri);
+        expect(scNFT.class).to.eq("nft/wenchang/irishub/ethereum/kitty");
+        
         let receiveUri = await erc1155bank.uri(expTokenId);
         expect(receiveUri).to.eq(data.uri);
 
@@ -128,7 +125,7 @@ describe('Transfer', () => {
         let transferData = {
             tokenId: expTokenId,
             receiver: receiverOnOtherChain,
-            class: nftClass,
+            class: "nft/wenchang/irishub/ethereum/kitty",
             destChain: "irishub",
             relayChain: "",
             destContract:erc1155bank.address
@@ -177,15 +174,11 @@ describe('Transfer', () => {
         await mockPacket.recvPacket(packet, Buffer.from(""), height);
 
         let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
-        let nftClass = await transfer.getClass(expTokenId);
-        expect(nftClass).to.eq("nft/wenchang/irishub/ethereum/kitty");
-
-        let nftId = await transfer.getId(expTokenId);
-        expect(nftId).to.eq(data.id);
-
-        let nftURI = await transfer.getUri(expTokenId);
-        expect(nftURI).to.eq(data.uri);
-
+        
+        let scNFT = await transfer.getBinding(expTokenId)
+        expect(scNFT.id).to.eq(data.id);
+        expect(scNFT.uri).to.eq(data.uri);
+        expect(scNFT.class).to.eq("nft/wenchang/irishub/ethereum/kitty");
 
         let acknowledgement = {
             result: Buffer.from("01", "hex"),

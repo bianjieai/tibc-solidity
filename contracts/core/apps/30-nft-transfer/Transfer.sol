@@ -378,28 +378,4 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     {
         return traces[tokenId];
     }
-
-    /**
-     * @notice this function is to get class
-     * @param tokenId token Id
-     */
-    function getClass(uint256 tokenId) public view returns (string memory) {
-        return traces[tokenId].class;
-    }
-
-    /**
-     * @notice this function is to get id
-     * @param tokenId token Id
-     */
-    function getId(uint256 tokenId) external view returns (string memory) {
-        return traces[tokenId].id;
-    }
-
-    /**
-     * @notice this function is to get uri
-     * @param tokenId token Id
-     */
-    function getUri(uint256 tokenId) external view returns (string memory) {
-        return traces[tokenId].uri;
-    }
 }
