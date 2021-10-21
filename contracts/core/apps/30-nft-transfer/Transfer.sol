@@ -12,6 +12,7 @@ import "../../../libraries/utils/Strings.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
+import "../../../interfaces/IAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
@@ -21,27 +22,28 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
     string private constant PORT = "NFT";
     string private constant PREFIX = "nft";
+    bytes32 public constant ON_RECVPACKET_ROLE =
+        keccak256("ON_RECVPACKET_ROLE");
+    bytes32 public constant ON_ACKNOWLEDGEMENT_PACKET_ROLE =
+        keccak256("ON_ACKNOWLEDGEMENT_PACKET_ROLE");
 
     IPacket public packet;
     IERC1155Bank public bank;
     IClientManager public clientManager;
+    IAccessManager public accessManager;
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
-
-    // check if caller is clientManager
-    modifier onlyPacketContract() {
-        require(msg.sender == address(packet), "caller not packet contract");
-        _;
-    }
 
     function initialize(
         address bankContract,
         address packetContract,
-        address clientMgrContract
+        address clientMgrContract,
+        address accessManagerContract
     ) public initializer {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
+        accessManager = IAccessManager(accessManagerContract);
     }
 
     /**
@@ -116,9 +118,12 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
-        onlyPacketContract
         returns (bytes memory acknowledgement)
     {
+        require(
+        accessManager.hasRole(ON_RECVPACKET_ROLE, address(packet)),
+            "the caller does not have permission to process the received packet"
+        );
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
         require(data.destContract.parseAddr() != address(0), "invalid address");
         string memory newClass;
@@ -177,7 +182,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                     data.receiver.parseAddr(),
                     tokenId,
                     uint256(1),
-                    bytes(data.uri)  // send uri to erc1155
+                    bytes(data.uri) // send uri to erc1155
                 )
             ) {
                 // keep trace of class and id and uri
@@ -198,7 +203,11 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    ) external override onlyPacketContract {
+    ) external override {
+        require(
+            accessManager.hasRole(ON_ACKNOWLEDGEMENT_PACKET_ROLE, address(packet)),
+            "the caller does not have permission to process the ack package"
+        );
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data));
         }
