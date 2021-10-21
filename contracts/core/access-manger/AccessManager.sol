@@ -40,20 +40,20 @@ contract AccessManager is AccessControlUpgradeable {
         keccak256("CHECK_HEADER_AND_UPDATE_STATE_ROLE");
 
     // multi-signature contract address
-    address multiSignAddr; 
+    address public multiSignWallet;
 
     // check if caller is multi-signature contract address
-    modifier onlyMultiSignAddr() {
+    modifier onlyMultiSignWallet() {
         require(
-            msg.sender == multiSignAddr,
+            msg.sender == multiSignWallet,
             "caller not multi-signature contract address"
         );
         _;
     }
 
-    function initialize(address _multiSignAddr) public initializer {
-        multiSignAddr = _multiSignAddr;
-        _setupRole(DEFAULT_ADMIN_ROLE, multiSignAddr);
+    function initialize(address _multiSignWallet) public initializer {
+        multiSignWallet = _multiSignWallet;
+        _setupRole(DEFAULT_ADMIN_ROLE, multiSignWallet);
 
         // clientManager
         _setupRole(CREATE_CLIENT_ROLE, msg.sender);
@@ -85,7 +85,10 @@ contract AccessManager is AccessControlUpgradeable {
      *  @param role       role
      *  @param account    the address corresponding to the role
      */
-    function addRole(bytes32 role, address account) external onlyMultiSignAddr {
+    function addRole(bytes32 role, address account)
+        external
+        onlyMultiSignWallet
+    {
         _setupRole(role, account);
     }
 
@@ -97,7 +100,7 @@ contract AccessManager is AccessControlUpgradeable {
     function grantRole(bytes32 role, address account)
         public
         override
-        onlyMultiSignAddr
+        onlyMultiSignWallet
     {
         super.grantRole(role, account);
     }
@@ -110,7 +113,7 @@ contract AccessManager is AccessControlUpgradeable {
     function revokeRole(bytes32 role, address account)
         public
         override
-        onlyMultiSignAddr
+        onlyMultiSignWallet
     {
         super.revokeRole(role, account);
     }
