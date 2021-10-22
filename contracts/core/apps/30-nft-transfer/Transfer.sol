@@ -34,6 +34,25 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
 
+    modifier onlyOnRecevPacketRole() {
+        require(
+            accessManager.hasRole(ON_RECVPACKET_ROLE, address(packet)),
+            "the caller does not have permission to process the received packet"
+        );
+        _;
+    }
+
+    modifier onlyOnAcknonlegementPacketRole() {
+        require(
+            accessManager.hasRole(
+                ON_ACKNOWLEDGEMENT_PACKET_ROLE,
+                address(packet)
+            ),
+            "the caller does not have permission to process the ack package"
+        );
+        _;
+    }
+
     function initialize(
         address bankContract,
         address packetContract,
@@ -118,12 +137,9 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
+        onlyOnRecevPacketRole
         returns (bytes memory acknowledgement)
     {
-        require(
-        accessManager.hasRole(ON_RECVPACKET_ROLE, address(packet)),
-            "the caller does not have permission to process the received packet"
-        );
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
         require(data.destContract.parseAddr() != address(0), "invalid address");
         string memory newClass;
@@ -203,11 +219,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    ) external override {
-        require(
-            accessManager.hasRole(ON_ACKNOWLEDGEMENT_PACKET_ROLE, address(packet)),
-            "the caller does not have permission to process the ack package"
-        );
+    ) external override onlyOnAcknonlegementPacketRole {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data));
         }
