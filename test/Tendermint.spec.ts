@@ -1,7 +1,7 @@
 import { ethers, upgrades } from "hardhat";
 import { Signer, BigNumber, utils } from "ethers";
 import chai from "chai";
-import { ClientManager, Tendermint, MockClientManager } from '../typechain';
+import { ClientManager, Tendermint, MockClientManager, AccessManager } from '../typechain';
 
 let client = require("./proto/compiled.js");
 const { expect } = chai;
@@ -10,64 +10,15 @@ describe('Client', () => {
     let accounts: Signer[]
     let tendermint: Tendermint
     let clientManager: ClientManager
+    let accessManager: AccessManager
     const chainName = "irishub"
 
     before('deploy Tendermint', async () => {
-        await deployContract();
-
-        // create light client
-        let clientState = {
-            chainId: "chain-f6C1TF",
-            trustLevel: {
-                numerator: 1,
-                denominator: 3
-            },
-
-            trustingPeriod: 1000 * 24 * 60 * 60,
-            unbondingPeriod: 1814400,
-            maxClockDrift: 10,
-            latestHeight: {
-                revisionNumber: 1,
-                revisionHeight: 3893
-            },
-            merklePrefix: {
-                keyPrefix: Buffer.from("tibc"),
-            },
-            timeDelay: 10,
-        };
-
-        let consensusState = {
-            timestamp: {
-                secs: 1631155726,
-                nanos: 5829,
-            },
-            root: Buffer.from("gd17k2js3LzwChS4khcRYMwVFWMPQX4TfJ9wG3MP4gs=", "base64"),
-            nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
-        }
-        await createClient(chainName, tendermint.address, clientState, consensusState)
-
-        let irishubClient = await clientManager.clients(chainName)
-        expect(irishubClient).to.eq(tendermint.address)
-
-        let latestHeight = await clientManager.getLatestHeight(chainName)
-        expect(latestHeight[0].toNumber()).to.eq(clientState.latestHeight.revisionNumber)
-        expect(latestHeight[1].toNumber()).to.eq(clientState.latestHeight.revisionHeight)
-
-        let expClientState = (await tendermint.clientState())
-        expect(expClientState.chain_id).to.eq(clientState.chainId)
-
-        let key: any = {
-            revision_number: clientState.latestHeight.revisionNumber,
-            revision_height: clientState.latestHeight.revisionHeight,
-        };
-
-        let expConsensusState = (await tendermint.getConsensusState(key))
-        expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
-        expect(expConsensusState.next_validators_hash.slice(2)).to.eq(consensusState.nextValidatorsHash.toString("hex"))
-
-        let signer = await accounts[0].getAddress();
-        let ret1 = await clientManager.registerRelayer(chainName, signer)
-        expect(ret1.blockNumber).to.greaterThan(0);
+        accounts = await ethers.getSigners();
+        await deployAccessManager();
+        await deployClientManager();
+        await deployTendermint();
+        await initialize();
     })
 
     it("test updateClient", async function () {
@@ -149,11 +100,17 @@ describe('Client', () => {
         expect(2).to.eq(version.toNumber())
     })
 
-    const deployContract = async function () {
-        accounts = await ethers.getSigners();
-        const msrFactory = await ethers.getContractFactory('ClientManager');
-        clientManager = (await upgrades.deployProxy(msrFactory, ["etherum"])) as ClientManager;
+    const deployAccessManager = async function () {
+        const accessFactory = await ethers.getContractFactory('AccessManager');
+        accessManager = (await upgrades.deployProxy(accessFactory, [await accounts[0].getAddress()])) as AccessManager
+    }
 
+    const deployClientManager = async function () {
+        const msrFactory = await ethers.getContractFactory('ClientManager', accounts[0])
+        clientManager = (await upgrades.deployProxy(msrFactory, ["etherum", accessManager.address])) as ClientManager;
+    }
+
+    const deployTendermint = async function () {
         let originChainName = await clientManager.getChainName();
         expect(originChainName).to.eq("etherum");
 
@@ -194,5 +151,62 @@ describe('Client', () => {
         let clientStateBuf = client.ClientState.encode(clientState).finish();
         let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
         await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf);
+    }
+
+    const initialize = async function () {
+        // create light client
+        let clientState = {
+            chainId: "chain-f6C1TF",
+            trustLevel: {
+                numerator: 1,
+                denominator: 3
+            },
+
+            trustingPeriod: 1000 * 24 * 60 * 60,
+            unbondingPeriod: 1814400,
+            maxClockDrift: 10,
+            latestHeight: {
+                revisionNumber: 1,
+                revisionHeight: 3893
+            },
+            merklePrefix: {
+                keyPrefix: Buffer.from("tibc"),
+            },
+            timeDelay: 10,
+        };
+
+        let consensusState = {
+            timestamp: {
+                secs: 1631155726,
+                nanos: 5829,
+            },
+            root: Buffer.from("gd17k2js3LzwChS4khcRYMwVFWMPQX4TfJ9wG3MP4gs=", "base64"),
+            nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
+        }
+
+        await createClient(chainName, tendermint.address, clientState, consensusState)
+
+        let irishubClient = await clientManager.clients(chainName)
+        expect(irishubClient).to.eq(tendermint.address)
+
+        let latestHeight = await clientManager.getLatestHeight(chainName)
+        expect(latestHeight[0].toNumber()).to.eq(clientState.latestHeight.revisionNumber)
+        expect(latestHeight[1].toNumber()).to.eq(clientState.latestHeight.revisionHeight)
+
+        let expClientState = (await tendermint.clientState())
+        expect(expClientState.chain_id).to.eq(clientState.chainId)
+
+        let key: any = {
+            revision_number: clientState.latestHeight.revisionNumber,
+            revision_height: clientState.latestHeight.revisionHeight,
+        };
+
+        let expConsensusState = (await tendermint.getConsensusState(key))
+        expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
+        expect(expConsensusState.next_validators_hash.slice(2)).to.eq(consensusState.nextValidatorsHash.toString("hex"))
+
+        let signer = await accounts[0].getAddress();
+        let ret1 = await clientManager.registerRelayer(chainName, signer)
+        expect(ret1.blockNumber).to.greaterThan(0);
     }
 })

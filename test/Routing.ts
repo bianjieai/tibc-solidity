@@ -2,7 +2,7 @@ import { ethers, upgrades } from "hardhat";
 import { Signer } from "ethers";
 import chai from "chai";
 
-import { Routing } from '../typechain';
+import { Routing, AccessManager } from '../typechain';
 
 const { expect } = chai;
 
@@ -12,8 +12,13 @@ describe('Routing', () => {
 
     before('deploy Routing', async () => {
         accounts = await ethers.getSigners();
+
+        const accessFactory = await ethers.getContractFactory('AccessManager');
+        const accessManager = (await upgrades.deployProxy(accessFactory, [await accounts[0].getAddress()])) as AccessManager
+
+
         const msrFactory = await ethers.getContractFactory('Routing')
-        routing = (await upgrades.deployProxy(msrFactory)) as Routing
+        routing = (await upgrades.deployProxy(msrFactory, [accessManager.address])) as Routing
     })
 
     it("Should success if rule in rules", async function () {

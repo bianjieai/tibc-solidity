@@ -32,7 +32,9 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
         _;
     }
 
-    function initialize() public initializer {}
+    function initialize(address accessManagerContract) public initializer {
+        accessManager = IAccessManager(accessManagerContract);
+    }
 
     /**
      *  @notice return the module contract instance with the specified name
