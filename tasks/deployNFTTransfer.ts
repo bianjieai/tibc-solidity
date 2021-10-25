@@ -15,6 +15,13 @@ task("deployNFTTransfer", "Deploy NFT Transfer")
         console.log("Transfer deployed to:", transfer.address);
     });
 
+
+task("upgradeTransfer", "upgrade NFT Transfer")
+    .setAction(async (taskArgs, hre) => {
+        const mockClientManagerFactory = await hre.ethers.getContractFactory("Transfer");
+        const upgradedClientManager = await hre.upgrades.upgradeProxy("0x71d4a8E91a556B043b82CA673E890C853390f01E", mockClientManagerFactory);
+    });
+
 task("transferNFT", "Sender NFT")
     .addParam("transfer", "transferNft contract address ")
     .addParam("erc1155", "erc1155 contract address ")

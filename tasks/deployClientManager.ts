@@ -18,6 +18,17 @@ task("deployClientManager", "Deploy Client Manager")
         console.log("export CLIENT_MANAGER_ADDRES=%s", clientManager.address);
     });
 
+
+task("deployAccessManager", "Deploy AccessManager")
+    .setAction(async (taskArgs, hre) => {
+        const accessManagerFactory = await hre.ethers.getContractFactory('AccessManager')
+
+        const accessManager = await hre.upgrades.deployProxy(accessManagerFactory, ['0x912dDEE3a9c631229956bDBda8308C6928F8c9f7']);
+        await accessManager.deployed();
+        console.log("AccessManager deployed to:", accessManager.address);
+        console.log("export PACKET_ADDRES=%s", accessManager.address);
+    });
+
 task("upgradeClientManager", "Upgrade Client Manager")
     .addParam("chain", "Chain Name")
     .setAction(async (taskArgs, hre) => {
@@ -36,10 +47,10 @@ task("createClientFromFile", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
 
         const clientStatebytesHex = await readFileSync(taskArgs.clientstate);
-        const clientStatebytes =  Buffer.from(clientStatebytesHex.toString(), "hex");
+        const clientStatebytes = Buffer.from(clientStatebytesHex.toString(), "hex");
 
         const consensusStateBytesHex = await readFileSync(taskArgs.consensusstate);
-        const consensusStateBytes =  Buffer.from(consensusStateBytesHex.toString(), "hex");
+        const consensusStateBytes = Buffer.from(consensusStateBytesHex.toString(), "hex");
 
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
 
