@@ -117,4 +117,61 @@ contract AccessManager is AccessControlUpgradeable {
     {
         super.revokeRole(role, account);
     }
+
+    /**
+     *  @notice dynamically add roles through multi-signature contract addresses
+     *  @param roles       collection of roles
+     *  @param accounts    collection of accounts
+     */
+    function batchAddRole(bytes32[] calldata roles, address[] calldata accounts)
+        external
+        onlyMultiSignWallet
+    {
+        require(
+            roles.length == accounts.length,
+            "batchAdd: roles and accounts length mismatch"
+        );
+
+        for (uint256 i = 0; i < roles.length; ++i) {
+            _setupRole(roles[i], accounts[i]);
+        }
+    }
+
+    /**
+     *  @notice volume authorization, roles and addresses need to be one-to-one correspondence
+     *  @param roles      collection of roles
+     *  @param accounts   collection of accounts
+     */
+    function batchGrantRole(bytes32[] calldata roles, address[] calldata accounts)
+        external
+        onlyMultiSignWallet
+    {
+        require(
+            roles.length == accounts.length,
+            "batchGrant: roles and accounts length mismatch"
+        );
+
+        for (uint256 i = 0; i < roles.length; ++i) {
+            super.grantRole(roles[i], accounts[i]);
+        }
+    }
+
+    /**
+     *  @notice batch deauthorization, roles and addresses need to be one-to-one correspondence
+     *  @param roles      collection of roles
+     *  @param accounts   collection of accounts
+     */
+    function batchRevokeRole(bytes32[] calldata roles, address[] calldata accounts)
+        external
+        onlyMultiSignWallet
+    {
+        require(
+            roles.length == accounts.length,
+            "batchRevoke: roles and accounts length mismatch"
+        );
+
+        for (uint256 i = 0; i < roles.length; ++i) {
+            super.revokeRole(roles[i], accounts[i]);
+        }
+    }
 }
