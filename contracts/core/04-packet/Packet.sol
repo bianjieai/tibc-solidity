@@ -14,6 +14,7 @@ import "../../interfaces/IClient.sol";
 import "../../interfaces/IModule.sol";
 import "../../interfaces/IPacket.sol";
 import "../../interfaces/IRouting.sol";
+import "../../interfaces/IAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -42,8 +43,6 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
         );
         clientManager = IClientManager(clientMgrContract);
         routing = IRouting(routingContract);
-
-        __Ownable_init();
     }
 
     /**
@@ -533,14 +532,6 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
     }
 
     /**
-     * @notice Set client manager contract
-     * @param clientMgrContract contract address
-     */
-    function setClientManager(address clientMgrContract) external onlyOwner {
-        clientManager = IClientManager(clientMgrContract);
-    }
-
-    /**
      * @notice Set max ack sequence
      * @param sourceChain source chain name
      * @param destChain destination chain name
@@ -558,14 +549,6 @@ contract Packet is Initializable, OwnableUpgradeable, IPacket {
             currentMaxAckSeq = sequence;
         }
         sequences[Host.MaxAckSeqKey(sourceChain, destChain)] = currentMaxAckSeq;
-    }
-
-    /**
-     * @notice Set routing contract
-     * @param routingContract contract address
-     */
-    function setRouting(address routingContract) external onlyOwner {
-        routing = IRouting(routingContract);
     }
 
     /**
