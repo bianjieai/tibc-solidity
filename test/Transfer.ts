@@ -1,6 +1,6 @@
 import { Signer, BigNumber } from "ethers";
 import chai from "chai";
-import { Transfer, ERC1155Bank, MockPacket, ClientManager, Routing, Tendermint } from '../typechain';
+import { Transfer, ERC1155Bank, MockPacket, ClientManager, Routing, Tendermint, AccessManager } from '../typechain';
 import { randomBytes } from "crypto";
 
 const { expect } = chai;
@@ -19,6 +19,7 @@ describe('Transfer', () => {
     let clientManager: ClientManager
     let routing: Routing
     let tendermint: Tendermint
+    let accessManager: AccessManager
 
     before('deploy Transfer', async () => {
         accounts = await ethers.getSigners();
@@ -71,8 +72,12 @@ describe('Transfer', () => {
         const erc1155Factory = await ethers.getContractFactory("ERC1155Bank");
         erc1155bank = (await upgrades.deployProxy(erc1155Factory)) as ERC1155Bank;
 
+        let multiAddr = await accounts[0].getAddress();
+        const accessManagerFactory = await ethers.getContractFactory("AccessManager");
+        accessManager = (await upgrades.deployProxy(accessManagerFactory, [multiAddr])) as AccessManager;
+
         const transFactory = await ethers.getContractFactory("Transfer");
-        transfer = (await upgrades.deployProxy(transFactory, [erc1155bank.address, mockPacket.address, clientManager.address])) as Transfer;
+        transfer = (await upgrades.deployProxy(transFactory, [erc1155bank.address, mockPacket.address, clientManager.address, accessManager.address])) as Transfer;
 
         mockPacket.setModule(transfer.address);
     });
@@ -84,6 +89,9 @@ describe('Transfer', () => {
 
         erc1155bank.grantRole(keccak256("MINTER_ROLE"), transfer.address);
         erc1155bank.grantRole(keccak256("BURNER_ROLE"), transfer.address);
+
+        accessManager.grantRole(keccak256("ON_RECVPACKET_ROLE"),mockPacket.address)
+        accessManager.grantRole(keccak256("ON_ACKNOWLEDGEMENT_PACKET_ROLE"),mockPacket.address)
 
         // send nft from irishub to ethereum
         let data = {

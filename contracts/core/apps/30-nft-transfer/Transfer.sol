@@ -12,8 +12,10 @@ import "../../../libraries/utils/Strings.sol";
 import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
+import "../../../interfaces/IAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "hardhat/console.sol";
 
 contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     using Strings for *;
@@ -21,10 +23,15 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
     string private constant PORT = "NFT";
     string private constant PREFIX = "nft";
+    bytes32 public constant ON_RECVPACKET_ROLE =
+        keccak256("ON_RECVPACKET_ROLE");
+    bytes32 public constant ON_ACKNOWLEDGEMENT_PACKET_ROLE =
+        keccak256("ON_ACKNOWLEDGEMENT_PACKET_ROLE");
 
     IPacket public packet;
     IERC1155Bank public bank;
     IClientManager public clientManager;
+    IAccessManager public accessManager;
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
 
@@ -43,20 +50,21 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      */
     event Burn(string srcTokenId, uint256 tokenId, string uri);
 
-    // check if caller is clientManager
-    modifier onlyPacketContract() {
-        require(msg.sender == address(packet), "caller not packet contract");
+    modifier onlyAuthorizee(bytes32 role, address account) {
+        require(accessManager.hasRole(role, account), "not authorized");
         _;
     }
 
     function initialize(
         address bankContract,
         address packetContract,
-        address clientMgrContract
+        address clientMgrContract,
+        address accessManagerContract
     ) public initializer {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
+        accessManager = IAccessManager(accessManagerContract);
     }
 
     /**
@@ -127,13 +135,13 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
     /**
      * @notice this function is to receive packet
-     * @param pac Data package containing nft data
+     * @param pac Data package containing nft data onlyAuthorizee(ON_RECVPACKET_ROLE, address(packet))
      */
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
-        onlyPacketContract
-        returns (bytes memory acknowledgement)
+        onlyAuthorizee(ON_RECVPACKET_ROLE, address(packet))
+        returns (bytes memory)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
         require(data.destContract.parseAddr() != address(0), "invalid address");
@@ -150,15 +158,24 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                 // The following operation is to realize the conversion from nft/A/B/nftClass to nft/A/B/C/nftClass
                 //   example : nft/wenchang/irishub/kitty -> nft/wenchang/irishub/etherum/kitty
                 // The slice.rsplit(needle) method will find the position of the first needle from the right, and then divide the slice into two parts. The slice itself is truncated into the first part (not including needle), and the return value is the second part
+
                 Strings.slice memory originClass = nftClass.rsplit(needle);
-                newClass = nftClass
-                    .concat(needle)
-                    .toSlice()
-                    .concat(pac.destChain.toSlice())
-                    .toSlice()
-                    .concat(needle)
-                    .toSlice()
-                    .concat(originClass);
+
+                {
+                    newClass = nftClass.concat(needle);
+                }
+                {
+                    newClass = newClass.toSlice().concat(
+                        pac.destChain.toSlice()
+                    );
+                }
+                {
+                    newClass = newClass
+                        .toSlice()
+                        .concat(needle)
+                        .toSlice()
+                        .concat(originClass);
+                }
             } else {
                 // class -> nft/irishub/ethereum/class
                 {
@@ -215,7 +232,11 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    ) external override onlyPacketContract {
+    )
+        external
+        override
+        onlyAuthorizee(ON_ACKNOWLEDGEMENT_PACKET_ROLE, address(packet))
+    {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data));
         }
