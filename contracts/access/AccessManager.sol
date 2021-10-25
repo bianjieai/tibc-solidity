@@ -8,8 +8,6 @@ contract AccessManager is AccessControlUpgradeable {
     // clientManager
     bytes32 public constant CREATE_CLIENT_ROLE =
         keccak256("CREATE_CLIENT_ROLE");
-    bytes32 public constant UPDATE_CLIENT_ROLE =
-        keccak256("UPDATE_CLIENT_ROLE");
     bytes32 public constant UPGRADE_CLIENT_ROLE =
         keccak256("UPGRADE_CLIENT_ROLE");
     bytes32 public constant REGISTER_RELAYER_ROLE =
@@ -57,7 +55,6 @@ contract AccessManager is AccessControlUpgradeable {
 
         // clientManager
         _setupRole(CREATE_CLIENT_ROLE, _multiSignWallet);
-        _setupRole(UPDATE_CLIENT_ROLE, _multiSignWallet);
         _setupRole(UPGRADE_CLIENT_ROLE, _multiSignWallet);
         _setupRole(REGISTER_RELAYER_ROLE, _multiSignWallet);
 

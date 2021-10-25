@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../interfaces/IClientManager.sol";
 import "../../interfaces/IClient.sol";
+import "../../interfaces/IAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
@@ -14,16 +15,34 @@ contract ClientManager is Initializable, OwnableUpgradeable, IClientManager {
     mapping(string => IClient) public clients;
     // relayer registered by each light client
     mapping(string => mapping(address => bool)) public relayers;
+    // access control contract
+    IAccessManager public accessManager;
 
-    function initialize(string memory name) public initializer {
-        nativeChainName = name;
-        __Ownable_init();
+    bytes32 public constant CREATE_CLIENT_ROLE =
+        keccak256("CREATE_CLIENT_ROLE");
+    bytes32 public constant UPGRADE_CLIENT_ROLE =
+        keccak256("UPGRADE_CLIENT_ROLE");
+    bytes32 public constant REGISTER_RELAYER_ROLE =
+        keccak256("REGISTER_RELAYER_ROLE");
+
+    // only authorized accounts can perform related transactions
+    modifier onlyAuthorizee(bytes32 role) {
+        require(accessManager.hasRole(role, _msgSender()), "not authorized");
+        _;
     }
 
     // check if caller is relayer
     modifier onlyRelayer(string memory chainName) {
         require(relayers[chainName][msg.sender], "caller not register");
         _;
+    }
+
+    function initialize(string memory name, address accessManagerContract)
+        public
+        initializer
+    {
+        nativeChainName = name;
+        accessManager = IAccessManager(accessManagerContract);
     }
 
     /**
@@ -38,7 +57,7 @@ contract ClientManager is Initializable, OwnableUpgradeable, IClientManager {
         address clientAddress,
         bytes calldata clientState,
         bytes calldata consensusState
-    ) external onlyOwner {
+    ) external onlyAuthorizee(CREATE_CLIENT_ROLE) {
         require(
             address(clients[chainName]) == address(0x0),
             "chainName already exist"
@@ -77,7 +96,7 @@ contract ClientManager is Initializable, OwnableUpgradeable, IClientManager {
         string calldata chainName,
         bytes calldata clientState,
         bytes calldata consensusState
-    ) external onlyOwner {
+    ) external onlyAuthorizee(UPGRADE_CLIENT_ROLE) {
         IClient client = clients[chainName];
         client.upgrade(clientState, consensusState);
     }
@@ -89,7 +108,7 @@ contract ClientManager is Initializable, OwnableUpgradeable, IClientManager {
      */
     function registerRelayer(string calldata chainName, address relayer)
         external
-        onlyOwner
+        onlyAuthorizee(REGISTER_RELAYER_ROLE)
     {
         require(!relayers[chainName][relayer], "relayer already registered");
         relayers[chainName][relayer] = true;
