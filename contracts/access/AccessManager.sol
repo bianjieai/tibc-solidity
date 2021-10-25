@@ -56,28 +56,28 @@ contract AccessManager is AccessControlUpgradeable {
         _setupRole(DEFAULT_ADMIN_ROLE, multiSignWallet);
 
         // clientManager
-        _setupRole(CREATE_CLIENT_ROLE, msg.sender);
-        _setupRole(UPDATE_CLIENT_ROLE, msg.sender);
-        _setupRole(UPGRADE_CLIENT_ROLE, msg.sender);
-        _setupRole(REGISTER_RELAYER_ROLE, msg.sender);
+        _setupRole(CREATE_CLIENT_ROLE, _multiSignWallet);
+        _setupRole(UPDATE_CLIENT_ROLE, _multiSignWallet);
+        _setupRole(UPGRADE_CLIENT_ROLE, _multiSignWallet);
+        _setupRole(REGISTER_RELAYER_ROLE, _multiSignWallet);
 
         // packet
-        _setupRole(SEND_PACKET_ROLE, msg.sender);
-        _setupRole(SET_CLIENT_MANAGER_ROLE, msg.sender);
-        _setupRole(SET_ROUTING_ROLE, msg.sender);
+        _setupRole(SEND_PACKET_ROLE, _multiSignWallet);
+        _setupRole(SET_CLIENT_MANAGER_ROLE, _multiSignWallet);
+        _setupRole(SET_ROUTING_ROLE, _multiSignWallet);
 
         // routing
-        _setupRole(SET_ROUTING_ROULES_ROLE, msg.sender);
-        _setupRole(ADD_ROUTING_ROLE, msg.sender);
+        _setupRole(SET_ROUTING_ROULES_ROLE, _multiSignWallet);
+        _setupRole(ADD_ROUTING_ROLE, _multiSignWallet);
 
         // transfer
-        _setupRole(ON_RECVPACKET_ROLE, msg.sender);
-        _setupRole(ON_ACKNOWLEDGEMENT_PACKET_ROLE, msg.sender);
+        _setupRole(ON_RECVPACKET_ROLE, _multiSignWallet);
+        _setupRole(ON_ACKNOWLEDGEMENT_PACKET_ROLE, _multiSignWallet);
 
         // tendermint
-        _setupRole(INITIALIZESTATE_ROLE, msg.sender);
-        _setupRole(UPGRADE_ROLE, msg.sender);
-        _setupRole(CHECK_HEADER_AND_UPDATE_STATE_ROLE, msg.sender);
+        _setupRole(INITIALIZESTATE_ROLE, _multiSignWallet);
+        _setupRole(UPGRADE_ROLE, _multiSignWallet);
+        _setupRole(CHECK_HEADER_AND_UPDATE_STATE_ROLE, _multiSignWallet);
     }
 
     /**
