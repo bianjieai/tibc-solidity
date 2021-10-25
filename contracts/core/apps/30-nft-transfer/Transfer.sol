@@ -35,6 +35,21 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
 
+    /**
+     * @notice Event triggered when the nft mint
+     * @param srcTokenId the token id of the nft transferred in the cross-chain
+     * @param tokenId newly generated token id
+     * @param uri uri of nft
+     */
+    event Mint(string srcTokenId, uint256 tokenId, string uri);
+    /**
+     * @notice Event triggered when the nft burn
+     * @param srcTokenId the token id of the nft transferred in the cross-chain
+     * @param tokenId newly generated token id
+     * @param uri uri of nft
+     */
+    event Burn(string srcTokenId, uint256 tokenId, string uri);
+
     modifier onlyAuthorizee(bytes32 role, address account) {
         require(accessManager.hasRole(role, account), "not authorized");
         _;
@@ -101,6 +116,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
                 awayFromOrigin: awayFromOrigin,
                 destContract: transferData.destContract
             });
+            emit Burn(nft.id, transferData.tokenId, nft.uri);
         }
         // send packet
         PacketTypes.Packet memory crossPacket = PacketTypes.Packet({
@@ -199,6 +215,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
             ) {
                 // keep trace of class and id and uri
                 bind(tokenId, newClass, data.id, data.uri);
+                emit Mint(data.id, tokenId, data.uri);
                 return _newAcknowledgement(true, "");
             }
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");

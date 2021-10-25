@@ -1,7 +1,7 @@
 import { ethers, upgrades } from "hardhat";
 import { Signer, BigNumber, utils } from "ethers";
 import chai from "chai";
-import { ClientManager, Tendermint } from '../typechain';
+import { ClientManager, Tendermint, MockClientManager } from '../typechain';
 
 let client = require("./proto/compiled.js");
 const { expect } = chai;
@@ -134,6 +134,19 @@ describe('Client', () => {
             1,
             value
         )
+    })
+
+    it("upgrade clientManager", async function () {
+        const mockClientManagerFactory = await ethers.getContractFactory("MockClientManager");
+        const upgradedClientManager = await upgrades.upgradeProxy(clientManager.address, mockClientManagerFactory);
+        expect(upgradedClientManager.address).to.eq(clientManager.address);
+
+        const result = await upgradedClientManager.getLatestHeight(chainName)
+        expect(3893).to.eq(result[1].toNumber())
+
+        await upgradedClientManager.setVersion(2)
+        const version = await upgradedClientManager.version();
+        expect(2).to.eq(version.toNumber())
     })
 
     const deployContract = async function () {
