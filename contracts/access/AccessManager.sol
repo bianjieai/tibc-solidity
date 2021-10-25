@@ -24,13 +24,6 @@ contract AccessManager is AccessControlUpgradeable {
     bytes32 public constant ON_ACKNOWLEDGEMENT_PACKET_ROLE =
         keccak256("ON_ACKNOWLEDGEMENT_PACKET_ROLE");
 
-    // tendermint
-    bytes32 public constant INITIALIZESTATE_ROLE =
-        keccak256("INITIALIZESTATE_ROLE");
-    bytes32 public constant UPGRADE_ROLE = keccak256("UPGRADE_ROLE");
-    bytes32 public constant CHECK_HEADER_AND_UPDATE_STATE_ROLE =
-        keccak256("CHECK_HEADER_AND_UPDATE_STATE_ROLE");
-
     // multi-signature contract address
     address public multiSignWallet;
 
@@ -59,11 +52,6 @@ contract AccessManager is AccessControlUpgradeable {
         // transfer
         _setupRole(ON_RECVPACKET_ROLE, _multiSignWallet);
         _setupRole(ON_ACKNOWLEDGEMENT_PACKET_ROLE, _multiSignWallet);
-
-        // tendermint
-        _setupRole(INITIALIZESTATE_ROLE, _multiSignWallet);
-        _setupRole(UPGRADE_ROLE, _multiSignWallet);
-        _setupRole(CHECK_HEADER_AND_UPDATE_STATE_ROLE, _multiSignWallet);
     }
 
     /**
