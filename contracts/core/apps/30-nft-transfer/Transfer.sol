@@ -23,15 +23,10 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
     string private constant PORT = "NFT";
     string private constant PREFIX = "nft";
-    bytes32 public constant ON_RECVPACKET_ROLE =
-        keccak256("ON_RECVPACKET_ROLE");
-    bytes32 public constant ON_ACKNOWLEDGEMENT_PACKET_ROLE =
-        keccak256("ON_ACKNOWLEDGEMENT_PACKET_ROLE");
 
     IPacket public packet;
     IERC1155Bank public bank;
     IClientManager public clientManager;
-    IAccessManager public accessManager;
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
 
@@ -50,21 +45,20 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
      */
     event Burn(string srcTokenId, uint256 tokenId, string uri);
 
-    modifier onlyAuthorizee(bytes32 role, address account) {
-        require(accessManager.hasRole(role, account), "not authorized");
+    // check if caller is clientManager
+    modifier onlyPacket() {
+        require(msg.sender == address(packet), "caller not packet contract");
         _;
     }
 
     function initialize(
         address bankContract,
         address packetContract,
-        address clientMgrContract,
-        address accessManagerContract
+        address clientMgrContract
     ) public initializer {
         bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
-        accessManager = IAccessManager(accessManagerContract);
     }
 
     /**
@@ -140,7 +134,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
-        onlyAuthorizee(ON_RECVPACKET_ROLE, address(packet))
+        onlyPacket
         returns (bytes memory)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
@@ -232,11 +226,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    )
-        external
-        override
-        onlyAuthorizee(ON_ACKNOWLEDGEMENT_PACKET_ROLE, address(packet))
-    {
+    ) external override onlyPacket {
         if (!_isSuccessAcknowledgement(acknowledgement)) {
             _refundTokens(NftTransfer.decode(pac.data));
         }

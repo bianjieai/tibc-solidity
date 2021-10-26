@@ -20,79 +20,25 @@ describe('Transfer', () => {
     let routing: Routing
     let tendermint: Tendermint
     let accessManager: AccessManager
+    let chainName = "irishub"
 
     before('deploy Transfer', async () => {
         accounts = await ethers.getSigners();
-        const chainName = "irishub"
-
-        const hostFac = await ethers.getContractFactory("Host");
-
-        const host = await hostFac.deploy();
-        await host.deployed();
-
-        // deploy clientManager
-        await deployContract();
-
-        // create light client
-        let clientState = {
-            chainId: "chain-f6C1TF",
-            trustLevel: {
-                numerator: 1,
-                denominator: 3
-            },
-            trustingPeriod: 10 * 24 * 60 * 60,
-            unbondingPeriod: 1814400,
-            maxClockDrift: 10,
-            latestHeight: {
-                revisionNumber: 0,
-                revisionHeight: 3893
-            },
-            merklePrefix: {
-                key_prefix: Buffer.from("74696263", "hex"),
-            },
-            timeDelay: 10,
-        };
-
-        let consensusState = {
-            timestamp: {
-                secs: 1631155726,
-                nanos: 5829,
-            },
-            root: Buffer.from("gd17k2js3LzwChS4khcRYMwVFWMPQX4TfJ9wG3MP4gs=", "base64"),
-            nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
-        }
-        await createClient(chainName, tendermint.address, clientState, consensusState)
-
-        const routingFac = await ethers.getContractFactory("Routing");
-        routing = (await upgrades.deployProxy(routingFac)) as Routing;
-
-        const mockPacketFactory = await ethers.getContractFactory("MockPacket");
-        mockPacket = (await mockPacketFactory.deploy()) as MockPacket;
-
-        const erc1155Factory = await ethers.getContractFactory("ERC1155Bank");
-        erc1155bank = (await upgrades.deployProxy(erc1155Factory)) as ERC1155Bank;
-
-        let multiAddr = await accounts[0].getAddress();
-        const accessManagerFactory = await ethers.getContractFactory("AccessManager");
-        accessManager = (await upgrades.deployProxy(accessManagerFactory, [multiAddr])) as AccessManager;
-
-        const transFactory = await ethers.getContractFactory("Transfer");
-        transfer = (await upgrades.deployProxy(transFactory, [erc1155bank.address, mockPacket.address, clientManager.address, accessManager.address])) as Transfer;
-
-        mockPacket.setModule(transfer.address);
+        await deployAccessManager();
+        await deployClientManager();
+        await deployTendermint();
+        await deployHost();
+        await deployRouting();
+        await deployPacket();
+        await deployERC1155Bank();
+        await deployTransfer();
+        await initialize();
     });
 
     // receive packet from irishub 
     it("onRecvPacket && sendTransfer", async function () {
         let sender = (await accounts[1].getAddress()).toString();
         let receiver = (await accounts[0].getAddress()).toString();
-
-        erc1155bank.grantRole(keccak256("MINTER_ROLE"), transfer.address);
-        erc1155bank.grantRole(keccak256("BURNER_ROLE"), transfer.address);
-
-        accessManager.grantRole(keccak256("ON_RECVPACKET_ROLE"),mockPacket.address)
-        accessManager.grantRole(keccak256("ON_ACKNOWLEDGEMENT_PACKET_ROLE"),mockPacket.address)
-
         // send nft from irishub to ethereum
         let data = {
             class: "nft/wenchang/irishub/kitty",
@@ -100,8 +46,8 @@ describe('Transfer', () => {
             uri: "www.test.com",
             sender: sender,
             receiver: receiver,
-            awayFromOrigin: true, 
-            destContract:erc1155bank.address.toString()
+            awayFromOrigin: true,
+            destContract: erc1155bank.address.toString()
         }
         let packet = {
             sequence: 1,
@@ -118,12 +64,13 @@ describe('Transfer', () => {
         await mockPacket.recvPacket(packet, Buffer.from(""), height);
 
         let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
-        
+
         let scNFT = await transfer.getBinding(expTokenId)
+        console.log(scNFT)
         expect(scNFT.id).to.eq(data.id);
         expect(scNFT.uri).to.eq(data.uri);
         expect(scNFT.class).to.eq("nft/wenchang/irishub/ethereum/kitty");
-        
+
         let receiveUri = await erc1155bank.uri(expTokenId);
         expect(receiveUri).to.eq(data.uri);
 
@@ -136,7 +83,7 @@ describe('Transfer', () => {
             class: "nft/wenchang/irishub/ethereum/kitty",
             destChain: "irishub",
             relayChain: "",
-            destContract:erc1155bank.address
+            destContract: erc1155bank.address
         }
         await transfer.sendTransfer(transferData);
         let balance = await erc1155bank.balanceOf(sender, expTokenId);
@@ -164,7 +111,7 @@ describe('Transfer', () => {
             sender: sender,
             receiver: receiver,
             awayFromOrigin: true,
-            destContract:erc1155bank.address
+            destContract: erc1155bank.address
         }
         let packet = {
             sequence: 1,
@@ -182,7 +129,7 @@ describe('Transfer', () => {
         await mockPacket.recvPacket(packet, Buffer.from(""), height);
 
         let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
-        
+
         let scNFT = await transfer.getBinding(expTokenId)
         expect(scNFT.id).to.eq(data.id);
         expect(scNFT.uri).to.eq(data.uri);
@@ -195,33 +142,40 @@ describe('Transfer', () => {
         let dd = ack.Acknowledgement.encode(acknowledgement).finish();
 
         await mockPacket.acknowledgePacket(packet, dd, Buffer.from(""), height);
-        
+
         let balance1 = await erc1155bank.balanceOf(sender, expTokenId);
         expect(balance1).to.eq(0);
     })
 
-   
+    const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
+        let clientStateBuf = client.ClientState.encode(clientState).finish();
+        let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
+        await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf);
+    }
 
-    const deployContract = async function () {
-        accounts = await ethers.getSigners();
-        const msrFactory = await ethers.getContractFactory('ClientManager', {
-            signer: accounts[0],
-            libraries: {},
-        })
-        clientManager = (await upgrades.deployProxy(msrFactory, ["ethereum"])) as ClientManager
+    const deployAccessManager = async function () {
+        const accessFactory = await ethers.getContractFactory('AccessManager');
+        accessManager = (await upgrades.deployProxy(accessFactory, [await accounts[0].getAddress()])) as AccessManager
+    }
 
+    const deployClientManager = async function () {
+        const msrFactory = await ethers.getContractFactory('ClientManager', accounts[0])
+        clientManager = (await upgrades.deployProxy(msrFactory, ["etherum", accessManager.address])) as ClientManager;
+    }
+
+    const deployTendermint = async function () {
         let originChainName = await clientManager.getChainName();
-        expect(originChainName).to.eq("ethereum")
+        expect(originChainName).to.eq("etherum");
 
-        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec')
+        const ClientStateCodec = await ethers.getContractFactory('ClientStateCodec');
         const clientStateCodec = await ClientStateCodec.deploy();
         await clientStateCodec.deployed();
 
-        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec')
+        const ConsensusStateCodec = await ethers.getContractFactory('ConsensusStateCodec');
         const consensusStateCodec = await ConsensusStateCodec.deploy();
         await consensusStateCodec.deployed();
 
-        const ProofCodec = await ethers.getContractFactory('ProofCodec')
+        const ProofCodec = await ethers.getContractFactory('ProofCodec');
         const proofCodec = await ProofCodec.deploy();
         await proofCodec.deployed();
 
@@ -235,11 +189,10 @@ describe('Transfer', () => {
         await verifierLib.deployed();
 
         const tmFactory = await ethers.getContractFactory('Tendermint', {
-            signer: accounts[0],
             libraries: {
                 ClientStateCodec: clientStateCodec.address,
                 ConsensusStateCodec: consensusStateCodec.address,
-                Verifier: verifierLib.address
+                Verifier: verifierLib.address,
             },
         })
         tendermint = (await upgrades.deployProxy(tmFactory, [clientManager.address],
@@ -247,9 +200,94 @@ describe('Transfer', () => {
         )) as Tendermint;
     }
 
-    const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
-        let clientStateBuf = client.ClientState.encode(clientState).finish();
-        let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
-        await clientManager.createClient(chainName, lightClientAddress, clientStateBuf, consensusStateBuf);
+    const deployHost = async function () {
+        const hostFac = await ethers.getContractFactory("Host");
+        const host = await hostFac.deploy();
+        await host.deployed();
+    }
+
+    const deployRouting = async function () {
+        const routingFac = await ethers.getContractFactory("Routing");
+        routing = (await upgrades.deployProxy(routingFac, [accessManager.address])) as Routing;
+    }
+
+    const deployPacket = async function () {
+        const mockPacketFactory = await ethers.getContractFactory("MockPacket");
+        mockPacket = (await mockPacketFactory.deploy()) as MockPacket;
+    }
+
+    const deployERC1155Bank = async function () {
+        const erc1155Factory = await ethers.getContractFactory("ERC1155Bank");
+        erc1155bank = (await upgrades.deployProxy(erc1155Factory)) as ERC1155Bank;
+    }
+
+    const deployTransfer = async function () {
+        const transFactory = await ethers.getContractFactory("Transfer");
+        transfer = (await upgrades.deployProxy(transFactory, [
+            erc1155bank.address,
+            mockPacket.address,
+            clientManager.address
+        ])) as Transfer;
+    }
+
+    const initialize = async function () {
+        // create light client
+        let clientState = {
+            chainId: "chain-f6C1TF",
+            trustLevel: {
+                numerator: 1,
+                denominator: 3
+            },
+
+            trustingPeriod: 1000 * 24 * 60 * 60,
+            unbondingPeriod: 1814400,
+            maxClockDrift: 10,
+            latestHeight: {
+                revisionNumber: 1,
+                revisionHeight: 3893
+            },
+            merklePrefix: {
+                keyPrefix: Buffer.from("tibc"),
+            },
+            timeDelay: 10,
+        };
+
+        let consensusState = {
+            timestamp: {
+                secs: 1631155726,
+                nanos: 5829,
+            },
+            root: Buffer.from("gd17k2js3LzwChS4khcRYMwVFWMPQX4TfJ9wG3MP4gs=", "base64"),
+            nextValidatorsHash: Buffer.from("B1fwvGc/jfJtYdPnS7YYGsnfiMCaEQDG+t4mRgS0xHg=", "base64")
+        }
+
+        await createClient(chainName, tendermint.address, clientState, consensusState)
+
+        let irishubClient = await clientManager.clients(chainName)
+        expect(irishubClient).to.eq(tendermint.address)
+
+        let latestHeight = await clientManager.getLatestHeight(chainName)
+        expect(latestHeight[0].toNumber()).to.eq(clientState.latestHeight.revisionNumber)
+        expect(latestHeight[1].toNumber()).to.eq(clientState.latestHeight.revisionHeight)
+
+        let expClientState = (await tendermint.clientState())
+        expect(expClientState.chain_id).to.eq(clientState.chainId)
+
+        let key: any = {
+            revision_number: clientState.latestHeight.revisionNumber,
+            revision_height: clientState.latestHeight.revisionHeight,
+        };
+
+        let expConsensusState = (await tendermint.getConsensusState(key))
+        expect(expConsensusState.root.slice(2)).to.eq(consensusState.root.toString("hex"))
+        expect(expConsensusState.next_validators_hash.slice(2)).to.eq(consensusState.nextValidatorsHash.toString("hex"))
+
+        let signer = await accounts[0].getAddress();
+        let ret1 = await clientManager.registerRelayer(chainName, signer)
+        expect(ret1.blockNumber).to.greaterThan(0);
+
+        mockPacket.setModule(transfer.address);
+        erc1155bank.grantRole(keccak256("MINTER_ROLE"), transfer.address);
+        erc1155bank.grantRole(keccak256("BURNER_ROLE"), transfer.address);
     }
 })

@@ -18,7 +18,8 @@ contract MockTransfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     IClientManager public clientManager;
 
     // check if caller is clientManager
-    modifier onlyPacketContract() {
+    // check if caller is clientManager
+    modifier onlyPacket() {
         require(msg.sender == address(packet), "caller not packet contract");
         _;
     }
@@ -57,7 +58,7 @@ contract MockTransfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onRecvPacket(PacketTypes.Packet calldata pac)
         external
         override
-        onlyPacketContract
+        onlyPacket
         returns (bytes memory acknowledgement)
     {
         if (pac.data.length != 0) {
@@ -74,7 +75,7 @@ contract MockTransfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     function onAcknowledgementPacket(
         PacketTypes.Packet calldata pac,
         bytes calldata acknowledgement
-    ) external override onlyPacketContract {}
+    ) external override onlyPacket {}
 
     /**
      * @notice this function is to create ack
