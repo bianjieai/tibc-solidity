@@ -47,6 +47,7 @@ yarn hardhat deployClientManager --network ropsten --chain eth --wallet <walletA
 ```
 
 * Deploy Tendermint Client
+**When multiple light clients need to be created, multiple instances need to be deployed (Tendermint contracts)**
 
 ```shell
 yarn hardhat deployTendermint --network ropsten
@@ -84,26 +85,17 @@ For the safe upgrade of the contract, it is necessary to cooperate with the oper
 npx hardhat run --network ropsten scripts/transfer-ownership.js
 ```
 
-### Import the contract to Defender && Authorize account
-
-Currently, only the `AccessManager` contract uses multi-signature control (except for the upgrade operation). The management authority of other contracts is managed by `AccessManager`, so in order to facilitate the operation, you need to import the `AccessManager` and `ClientManager` contracts into the `Defender`, Use the console to assign permissions according to the following table.
-
-| contract      | role_name                      | role_value                                                       |
-| ------------- | ------------------------------ | ---------------------------------------------------------------- |
-| clientManager | CREATE_CLIENT_ROLE             | cf83526043951e0ae3bc5b11e7a485f61baaf17277b2ad0841e35d5abe0d05fd |
-| clientManager | UPGRADE_CLIENT_ROLE            | 8f5d2792a1fa2e423bdb2f27e1d5fbe0bf82904d867257a47a12c00f619f3fa9 |
-| clientManager | REGISTER_RELAYER_ROLE          | 7d1460b63cf4a7c6c430432e77ee5362c0ab212bae6ee332cd661bb15f52c809 |
-| routing       | SET_ROUTING_ROULES_ROLE        | 4e98d329974ca80a93cf972d0cb6da6ab889cef98382664c47b8e3adbdcde764 |
-| routing       | ADD_ROUTING_ROLE               | 1f5d5d13d11690c734f3783b436f0f33696a050aed979e5362a3c49324de4427 |
-| transfer      | ON_RECVPACKET_ROLE             | 37047b08f3a23fe2015ab7a09e9ea8fa4cd754a9cf05e3e1a97eaf5f7377cba4 |
-| transfer      | ON_ACKNOWLEDGEMENT_PACKET_ROLE | 177411b22008009546b1b5adeaef545c56fc807383f00c329ad0647abc0ebbf0 |
-|               |                                |                                                                  |
-
 ### Register relayer
 
 ```shell
-yarn hardhat reisterRelayer --network ropsten --relayer <relayer-eth-address>
+yarn hardhat reisterRelayer --network ropsten --relayer <relayer-address>
 ```
+
+### Import the contract to Defender(optional)
+
+Currently, only the `AccessManager` contract uses multi-signature control (except for the upgrade operation). The management authority of other contracts is managed by `AccessManager`, so in order to facilitate the operation, you need to import the `AccessManager` and `ClientManager` contracts into the `Defender`, Use the console to assign permissions.
+
+### Authorize relayer
 
 ## Upgrade contract
 
