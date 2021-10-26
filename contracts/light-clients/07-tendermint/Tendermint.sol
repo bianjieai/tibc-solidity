@@ -28,10 +28,17 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
     mapping(uint128 => ConsensusState.Data) private consensusStates;
     // system time each time the client status is updated
     mapping(uint128 => uint256) private processedTime;
+    // clientManager contract address
+    address clientManager;
+
+    // check if caller is clientManager
+    modifier onlyClientManager() {
+        require(msg.sender == clientManager, "caller not packet contract");
+        _;
+    }
 
     function initialize(address clientManagerAddr) public initializer {
-        __Ownable_init();
-        transferOwnership(clientManagerAddr);
+        clientManager = clientManagerAddr;
     }
 
     /**
@@ -87,7 +94,7 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
     function initializeState(
         bytes calldata clientStateBz,
         bytes calldata consensusStateBz
-    ) external override onlyOwner {
+    ) external override onlyClientManager {
         ClientStateCodec.decode(clientState, clientStateBz);
 
         uint128 key = getStorageKey(clientState.latest_height);
@@ -103,7 +110,7 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
     function upgrade(
         bytes calldata clientStateBz,
         bytes calldata consensusStateBz
-    ) external override onlyOwner {
+    ) external override onlyClientManager {
         ClientStateCodec.decode(clientState, clientStateBz);
 
         uint128 key = getStorageKey(clientState.latest_height);
@@ -118,7 +125,7 @@ contract Tendermint is Initializable, IClient, OwnableUpgradeable {
     function checkHeaderAndUpdateState(bytes calldata headerBz)
         external
         override
-        onlyOwner
+        onlyClientManager
     {
         SimpleHeader memory header = abi.decode(headerBz, (SimpleHeader));
         //revision_number must be consistent

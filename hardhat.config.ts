@@ -11,6 +11,7 @@ import "./tasks/deployPacket"
 import "./tasks/deployRouting"
 import "./tasks/deployERC1155Bank"
 import "./tasks/deployNFTTransfer"
+import "./tasks/deployAccessManager"
 
 
 import { HardhatUserConfig } from 'hardhat/types'

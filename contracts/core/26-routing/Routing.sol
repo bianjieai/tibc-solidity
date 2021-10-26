@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../../libraries/utils/Strings.sol";
 import "../../interfaces/IRouting.sol";
 import "../../interfaces/IModule.sol";
+import "../../interfaces/IAccessManager.sol";
 
 contract Routing is Initializable, OwnableUpgradeable, IRouting {
     using Strings for *;
@@ -18,9 +19,21 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
 
     mapping(string => IModule) public modules;
     mapping(string => Rule) public router;
+    // access control contract
+    IAccessManager public accessManager;
 
-    function initialize() public initializer {
-        __Ownable_init();
+    bytes32 public constant SET_ROUTING_ROULES_ROLE =
+        keccak256("SET_ROUTING_ROULES_ROLE");
+    bytes32 public constant ADD_ROUTING_ROLE = keccak256("ADD_ROUTING_ROLE");
+
+    // only authorized accounts can perform related transactions
+    modifier onlyAuthorizee(bytes32 role) {
+        require(accessManager.hasRole(role, _msgSender()), "not authorized");
+        _;
+    }
+
+    function initialize(address accessManagerContract) public initializer {
+        accessManager = IAccessManager(accessManagerContract);
     }
 
     /**
@@ -96,7 +109,10 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
      * @notice add new routing rules
      * @param _rules routing rules
      */
-    function setRoutingRules(string[] calldata _rules) external onlyOwner {
+    function setRoutingRules(string[] calldata _rules)
+        external
+        onlyAuthorizee(SET_ROUTING_ROULES_ROLE)
+    {
         string[] memory mRules = new string[](_rules.length);
         for (uint256 i = 0; i < _rules.length; i++) {
             mRules[i] = _rules[i];
@@ -111,7 +127,7 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
      */
     function addRouting(string calldata moduleName, address moduleContract)
         external
-        onlyOwner
+        onlyAuthorizee(ADD_ROUTING_ROLE)
     {
         modules[moduleName] = IModule(moduleContract);
     }
