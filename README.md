@@ -110,3 +110,7 @@ yarn hardhat reisterRelayer --network ropsten --relayer <relayer-eth-address>
 When you need to upgrade a contract, you need to recompile the updated code (note that the configuration in the .openzeppelin directory does not change), and then modify [script](#./script/propose-upgrade.js), where `proxyAddress` It refers to the contract address that needs to be upgraded (actually the proxy contract address), and then the contract to be upgraded is specified in the `getContractFactory` parameter.
 
 Another thing to note is that when using `Defender` to cooperate with a multi-signature wallet to upgrade the contract, the key information provided by the `Defender` platform (the `defender` configuration domain in the `hardhat.config.ts` file) is required to create an upgrade proposal The upgrade proposal is sent to the members of the group, and the upgrade operation will only be performed after the upgrade proposal is approved by the multi-signature strategy.
+
+```shell
+npx hardhat run --network ropsten scripts/propose-upgrade.js
+```

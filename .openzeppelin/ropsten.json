@@ -1101,6 +1101,109 @@
           }
         }
       }
+    },
+    "2fea30990fe43e2a8eed270e493af74dc80a19d61f9bbce2141eeb9cf53a9b9d": {
+      "address": "0x40E0062627A72040f1080914f0bB5d7d17BBF7A2",
+      "txHash": "0x2fa906eaa7e03df3c9dea9a167527d0fffb1437718fc9acf3c34d71f609127e5",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:30"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:31"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:20"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:74"
+          },
+          {
+            "contract": "MockClientManager",
+            "label": "nativeChainName",
+            "type": "t_string_storage",
+            "src": "contracts/test/MockClientManager.sol:17"
+          },
+          {
+            "contract": "MockClientManager",
+            "label": "clients",
+            "type": "t_mapping(t_string_memory_ptr,t_contract(IClient)6505)",
+            "src": "contracts/test/MockClientManager.sol:19"
+          },
+          {
+            "contract": "MockClientManager",
+            "label": "relayers",
+            "type": "t_mapping(t_string_memory_ptr,t_mapping(t_address,t_bool))",
+            "src": "contracts/test/MockClientManager.sol:21"
+          },
+          {
+            "contract": "MockClientManager",
+            "label": "accessManager",
+            "type": "t_contract(IAccessManager)6416",
+            "src": "contracts/test/MockClientManager.sol:23"
+          },
+          {
+            "contract": "MockClientManager",
+            "label": "version",
+            "type": "t_uint256",
+            "src": "contracts/test/MockClientManager.sol:32"
+          }
+        ],
+        "types": {
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_mapping(t_string_memory_ptr,t_contract(IClient)6505)": {
+            "label": "mapping(string => contract IClient)"
+          },
+          "t_contract(IClient)6505": {
+            "label": "contract IClient"
+          },
+          "t_mapping(t_string_memory_ptr,t_mapping(t_address,t_bool))": {
+            "label": "mapping(string => mapping(address => bool))"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_contract(IAccessManager)6416": {
+            "label": "contract IAccessManager"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
     }
   }
 }
