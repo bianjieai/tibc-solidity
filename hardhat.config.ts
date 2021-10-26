@@ -1,5 +1,7 @@
 import "@nomiclabs/hardhat-waffle"
 import "@openzeppelin/hardhat-upgrades"
+import "@openzeppelin/hardhat-defender"
+import "@nomiclabs/hardhat-ethers"
 import "@typechain/hardhat"
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer"
@@ -13,11 +15,31 @@ import "./tasks/deployERC1155Bank"
 import "./tasks/deployNFTTransfer"
 import "./tasks/deployAccessManager"
 
-
-import { HardhatUserConfig } from 'hardhat/types'
-
-const config: HardhatUserConfig = {
+module.exports = {
   defaultNetwork: 'hardhat',
+  defender: {
+    apiKey: "[apiKey]",
+    apiSecret: "[apiSecret]",
+  },
+  networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
+    rinkeby: {
+      url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
+      gasPrice: 1500000000,
+      chainId: 4,
+      gas: 4100000,
+      accounts: ['d0ce43e074a9a057b4ba6b018e7a1f4072246f288be3a6e72d1805de4c9ad4dd'],
+    },
+    ropsten: {
+      url: 'https://ropsten.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
+      gasPrice: 1500000000,
+      chainId: 3,
+      gas: 4100000,
+      accounts: [''],
+    }
+  },
   solidity: {
     compilers: [{
       version: '0.6.8', settings: {
@@ -27,26 +49,6 @@ const config: HardhatUserConfig = {
         },
       }
     }],
-  },
-  networks: {
-    hardhat: {
-      allowUnlimitedContractSize: true,
-      //blockGasLimit: 80000000,
-    },
-    // rinkeby : {
-    //   url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
-    //   gasPrice: 1500000000,
-    //   chainId: 4,
-    //   gas: 4100000,
-    //   accounts: [],
-    // }
-    rinkeby: {
-      url: 'https://ropsten.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
-      gasPrice: 1500000000,
-      chainId: 3,
-      gas: 4100000,
-      accounts: [],
-    }
   },
   gasReporter: {
     enabled: true,
@@ -64,5 +66,3 @@ const config: HardhatUserConfig = {
     spacing: 2,
   }
 }
-
-export default config
