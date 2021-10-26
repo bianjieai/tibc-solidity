@@ -25,13 +25,13 @@ module.exports = {
     hardhat: {
       allowUnlimitedContractSize: true,
     },
-    rinkeby: {
-      url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
-      gasPrice: 1500000000,
-      chainId: 4,
-      gas: 4100000,
-      accounts: ['d0ce43e074a9a057b4ba6b018e7a1f4072246f288be3a6e72d1805de4c9ad4dd'],
-    },
+    // rinkeby: {
+    //   url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
+    //   gasPrice: 1500000000,
+    //   chainId: 4,
+    //   gas: 4100000,
+    //   accounts: [''],
+    // },
     ropsten: {
       url: 'https://ropsten.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
       gasPrice: 1500000000,

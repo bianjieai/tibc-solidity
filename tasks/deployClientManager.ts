@@ -163,11 +163,8 @@ task("reisterRelayer", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
-
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
         const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-
         const result = await clientManager.registerRelayer(taskArgs.chain, taskArgs.relayer);
         console.log(result);
     });
