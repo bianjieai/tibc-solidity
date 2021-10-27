@@ -224,7 +224,6 @@ describe('Transfer', () => {
     const deployTransfer = async function () {
         const transFactory = await ethers.getContractFactory("Transfer");
         transfer = (await upgrades.deployProxy(transFactory, [
-            erc1155bank.address,
             mockPacket.address,
             clientManager.address
         ])) as Transfer;

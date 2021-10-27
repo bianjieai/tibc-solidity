@@ -25,7 +25,6 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     string private constant PREFIX = "nft";
 
     IPacket public packet;
-    IERC1155Bank public bank;
     IClientManager public clientManager;
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
@@ -52,11 +51,9 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
     }
 
     function initialize(
-        address bankContract,
         address packetContract,
         address clientMgrContract
     ) public initializer {
-        bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
     }
@@ -138,7 +135,14 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
         returns (bytes memory)
     {
         NftTransfer.Data memory data = NftTransfer.decode(pac.data);
-        require(data.destContract.parseAddr() != address(0), "invalid address");
+        require(
+            bytes(data.destContract).length > 0,
+            "transfer: invalid destContract"
+        );
+        require(
+            data.destContract.parseAddr() != address(0),
+            "transfer: invalid address"
+        );
         string memory newClass;
         if (data.awayFromOrigin) {
             Strings.slice memory needle = "/".toSlice();
@@ -197,6 +201,7 @@ contract Transfer is Initializable, ITransfer, ERC1155HolderUpgradeable {
 
             // generate tokenId
             uint256 tokenId = genTokenId(newClass, data.id);
+
             // mint nft
             if (
                 _mint(
