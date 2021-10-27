@@ -85,17 +85,29 @@ For the safe upgrade of the contract, it is necessary to cooperate with the oper
 npx hardhat run --network ropsten scripts/transfer-ownership.js
 ```
 
+### Import the contract to Defender(optional)
+
+Currently, only the `AccessManager` contract uses multi-signature control (except for the upgrade operation). The management authority of other contracts is managed by `AccessManager`, so in order to facilitate the operation, you need to import the `AccessManager` and `ClientManager` contracts into the `Defender`, Use the console to assign permissions.
+
 ### Register relayer
+
+1. Grant someone permission to add relayer through the Defender management interface.
+
+2. The authorized person can add a relayer through the ClientManager contract
 
 ```shell
 yarn hardhat reisterRelayer --network ropsten --relayer <relayer-address>
 ```
 
-### Import the contract to Defender(optional)
+But, both of the above steps can be operated by Defender.
 
-Currently, only the `AccessManager` contract uses multi-signature control (except for the upgrade operation). The management authority of other contracts is managed by `AccessManager`, so in order to facilitate the operation, you need to import the `AccessManager` and `ClientManager` contracts into the `Defender`, Use the console to assign permissions.
+### Add data packet receiving module
 
-### Authorize relayer
+Grant operator ADD_ROUTING_ROLE(1f5d5d13d11690c734f3783b436f0f33696a050aed979e5362a3c49324de4427) permission
+
+```shell
+yarn hardhat addRouting --module NFT --address <transfer-contract-address>  --network ropsten
+```
 
 ## Upgrade contract
 
