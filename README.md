@@ -111,6 +111,10 @@ Grant operator ADD_ROUTING_ROLE(1f5d5d13d11690c734f3783b436f0f33696a050aed979e53
 yarn hardhat addRouting --module NFT --address <transfer-contract-address>  --network ropsten
 ```
 
+### Authorized transfer contract
+
+Grant mint and burn permissions to the `<transfer-contract-address>`
+
 ## Upgrade contract
 
 When you need to upgrade a contract, you need to recompile the updated code (note that the configuration in the .openzeppelin directory does not change), and then modify [script](#./script/propose-upgrade.js), where `proxyAddress` It refers to the contract address that needs to be upgraded (actually the proxy contract address), and then the contract to be upgraded is specified in the `getContractFactory` parameter.

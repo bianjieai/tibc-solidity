@@ -38,17 +38,16 @@ module.exports = {
       chainId: 3,
       gas: 4100000,
       accounts: [''],
-    }
+    },
   },
   solidity: {
-    compilers: [{
-      version: '0.6.8', settings: {
-        optimizer: {
-          enabled: true,
-          runs: 1000,
-        },
-      }
-    }],
+    version: '0.6.8',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1000,
+      },
+    }
   },
   gasReporter: {
     enabled: true,
@@ -59,6 +58,12 @@ module.exports = {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
   },
   abiExporter: {
     path: './abi',
