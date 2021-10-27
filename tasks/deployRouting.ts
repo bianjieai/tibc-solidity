@@ -5,10 +5,10 @@ import { task, types } from "hardhat/config"
 const ROUTING_ADDRES = process.env.ROUTING_ADDRES;
 
 task("deployRouting", "Deploy Routing")
+    .addParam("accm", "AccessManager contract address")
     .setAction(async (taskArgs, hre) => {
         const routingFactory = await hre.ethers.getContractFactory('Routing')
-
-        const routing = await hre.upgrades.deployProxy(routingFactory);
+        const routing = await hre.upgrades.deployProxy(routingFactory, [taskArgs.accm]);
         await routing.deployed();
         console.log("Routing deployed to:", routing.address);
         console.log("export ROUTING_ADDRES=%s", routing.address);

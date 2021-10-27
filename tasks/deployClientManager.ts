@@ -4,15 +4,19 @@ import { task, types } from "hardhat/config"
 import { readFileSync } from 'fs';
 
 const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
+const ACCESS_MANAGER_ADDRES = process.env.ACCESS_MANAGER_ADDRES;
 
 let client = require("../test/proto/compiled.js");
 
 task("deployClientManager", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
+    .addParam("accm", "AccessManager contract address")
     .setAction(async (taskArgs, hre) => {
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [taskArgs.chain]);
+        const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
+            taskArgs.chain,
+            taskArgs.accm
+        ]);
         await clientManager.deployed();
         console.log("Client Manager deployed to:", clientManager.address);
         console.log("export CLIENT_MANAGER_ADDRES=%s", clientManager.address);
@@ -36,10 +40,10 @@ task("createClientFromFile", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
 
         const clientStatebytesHex = await readFileSync(taskArgs.clientstate);
-        const clientStatebytes =  Buffer.from(clientStatebytesHex.toString(), "hex");
+        const clientStatebytes = Buffer.from(clientStatebytesHex.toString(), "hex");
 
         const consensusStateBytesHex = await readFileSync(taskArgs.consensusstate);
-        const consensusStateBytes =  Buffer.from(consensusStateBytesHex.toString(), "hex");
+        const consensusStateBytes = Buffer.from(consensusStateBytesHex.toString(), "hex");
 
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
 
@@ -159,11 +163,8 @@ task("reisterRelayer", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
-
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
         const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-
         const result = await clientManager.registerRelayer(taskArgs.chain, taskArgs.relayer);
         console.log(result);
     });
