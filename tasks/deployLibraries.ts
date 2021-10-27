@@ -1,6 +1,5 @@
 import "@nomiclabs/hardhat-web3";
-import { ethers } from "hardhat";
-import { task, types } from "hardhat/config"
+import { task } from "hardhat/config"
 
 task("deployLibraries", "Deploy All Libraries")
     .setAction(async (taskArgs, hre) => {
