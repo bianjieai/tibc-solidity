@@ -66,7 +66,6 @@ describe('Transfer', () => {
         let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
 
         let scNFT = await transfer.getBinding(expTokenId)
-        console.log(scNFT)
         expect(scNFT.id).to.eq(data.id);
         expect(scNFT.uri).to.eq(data.uri);
         expect(scNFT.class).to.eq("nft/wenchang/irishub/ethereum/kitty");

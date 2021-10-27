@@ -54,4 +54,14 @@ describe('Routing', () => {
         const result = await routing.authenticate(source, dest, port);
         expect(result).to.equal(false);
     });
+
+    it("upgrade routing", async function () {
+        const mockRoutingUpgradeFactory = await ethers.getContractFactory("MockRoutingUpgrade");
+        const upgradedRouting = await upgrades.upgradeProxy(routing.address, mockRoutingUpgradeFactory);
+        expect(upgradedRouting.address).to.eq(routing.address);
+
+        await upgradedRouting.setVersion(2)
+        const version = await upgradedRouting.version();
+        expect(2).to.eq(version.toNumber())
+    })
 })
