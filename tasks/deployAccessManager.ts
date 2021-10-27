@@ -1,8 +1,5 @@
 import "@nomiclabs/hardhat-web3";
-import { ethers } from "hardhat";
-import { task, types } from "hardhat/config"
-
-const ACCESS_MANAGER_ADDRES = process.env.ACCESS_MANAGER_ADDRES;
+import { task } from "hardhat/config"
 
 task("deployAcessManager", "Deploy acessManager")
     .addParam("wallet", "multi sign address")

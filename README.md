@@ -31,50 +31,52 @@ Export the environment variables for each step below.
 * Deploy libraries
 
 ```shell
-yarn hardhat deployLibraries --network ropsten
+yarn hardhat deployLibraries --network <ropsten>
 ```
 
 * Deploy AccessManager
 
 ```shell
-yarn hardhat deployAcessManager --network ropsten --wallet <walletAddress>
+yarn hardhat deployAcessManager --network <ropsten> --wallet <walletAddress>
 ```
+
+**The `<native-chain-name>` requires at least 9 characters in the cross-chain protocol.**
 
 * Deploy ClientManager
 
 ```shell
-yarn hardhat deployClientManager --network ropsten --chain eth --wallet <walletAddress>
+yarn hardhat deployClientManager --network <ropsten> --chain <native-chain-name> --accm <acessManagerAddress>
 ```
 
 * Deploy Tendermint Client
 **When multiple light clients need to be created, multiple instances need to be deployed (Tendermint contracts)**
 
 ```shell
-yarn hardhat deployTendermint --network ropsten
+yarn hardhat deployTendermint --network <ropsten>
 ```
 
 * Deploy Routing
 
 ```shell
-yarn hardhat deployRouting --network ropsten --wallet <walletAddress>
+yarn hardhat deployRouting --network <ropsten> --accm <acessManagerAddress>
 ```
 
 * Deploy Packet
 
 ```shell
-yarn hardhat deployPacket --network ropsten
+yarn hardhat deployPacket --network <ropsten>
 ```
 
 * Deploy ERC1155
 
 ```shell
-yarn hardhat deployERC1155Bank --network ropsten
+yarn hardhat deployERC1155Bank --network <ropsten>
 ```
 
 * Deploy NFT Transfer
 
 ```shell
-yarn hardhat deployNFTTransfer --network ropsten
+yarn hardhat deployNFTTransfer --network <ropsten>
 ```
 
 ### Transfer proxy contract ownership

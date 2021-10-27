@@ -10,12 +10,12 @@ let client = require("../test/proto/compiled.js");
 
 task("deployClientManager", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
-    .addParam("wallet", "Multi-sign wallet address")
+    .addParam("accm", "AccessManager contract address")
     .setAction(async (taskArgs, hre) => {
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
         const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
             taskArgs.chain,
-            taskArgs.wallet
+            taskArgs.accm
         ]);
         await clientManager.deployed();
         console.log("Client Manager deployed to:", clientManager.address);

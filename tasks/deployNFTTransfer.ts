@@ -29,21 +29,16 @@ task("transferNFT", "Sender NFT")
     .addParam("relaychain", "relay chain name", "", types.string, true)
     .setAction(async (taskArgs, hre) => {
         const transferFactory = await hre.ethers.getContractFactory('Transfer')
-
         const transfer = await transferFactory.attach(taskArgs.transfer);
-
         const tokenID = BigNumber.from(taskArgs.nftid)
-
         const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank')
-
         const erc1155Bank = await erc1155BankFactory.attach(taskArgs.erc1155);
-
-        const classID = await erc1155Bank.getClass(tokenID)
+        const originToken = await transfer.getBinding(tokenID)
 
         let transferdata = {
             tokenId: tokenID,
             receiver: taskArgs.receiver,
-            class: classID,
+            class: originToken.class,
             destChain: taskArgs.destchain,
             relayChain: taskArgs.relaychain
         }

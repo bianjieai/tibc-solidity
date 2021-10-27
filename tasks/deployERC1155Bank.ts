@@ -1,5 +1,5 @@
 import "@nomiclabs/hardhat-web3";
-import { task, types } from "hardhat/config"
+import { task } from "hardhat/config"
 
 task("deployERC1155Bank", "Deploy ERC1155Bank")
     .setAction(async (taskArgs, hre) => {
