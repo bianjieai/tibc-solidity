@@ -25,7 +25,6 @@ contract MockTransferUpgrade is Initializable, ITransfer, ERC1155HolderUpgradeab
     string private constant PREFIX = "nft";
 
     IPacket public packet;
-    IERC1155Bank public bank;
     IClientManager public clientManager;
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
@@ -58,11 +57,9 @@ contract MockTransferUpgrade is Initializable, ITransfer, ERC1155HolderUpgradeab
     }
 
     function initialize(
-        address bankContract,
         address packetContract,
         address clientMgrContract
     ) public initializer {
-        bank = IERC1155Bank(bankContract);
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
     }
