@@ -1,6 +1,6 @@
 import { Signer, BigNumber } from "ethers";
 import chai from "chai";
-import { Transfer, ERC1155Bank, MockPacket, ClientManager, Routing, Tendermint, AccessManager } from '../typechain';
+import { Transfer, ERC1155Bank, MockPacket, ClientManager, Routing, Tendermint, AccessManager,MockTransferUpgrade } from '../typechain';
 import { randomBytes } from "crypto";
 
 const { expect } = chai;
@@ -145,6 +145,73 @@ describe('Transfer', () => {
 
         let balance1 = await erc1155bank.balanceOf(sender, expTokenId);
         expect(balance1).to.eq(0);
+    })
+
+    it("upgrade transfer", async function () {
+        // test if the addresses are the same
+        const mockTransferFactory = await ethers.getContractFactory("MockTransferUpgrade");
+        const upgradedTransfer = await upgrades.upgradeProxy(transfer.address, mockTransferFactory);
+        expect(upgradedTransfer.address).to.eq(transfer.address);
+
+
+        // test that the old contract data can be read by the new contract
+        let sender = (await accounts[1].getAddress()).toString();
+        let receiver = (await accounts[0].getAddress()).toString();
+        
+        let data = {
+            class: "nft/wenchang/irishub/kitty",
+            id: "tokenid",
+            uri: "www.test.com",
+            sender: sender,
+            receiver: receiver,
+            awayFromOrigin: true,
+            destContract: erc1155bank.address.toString()
+        }
+        let packet = {
+            sequence: 1,
+            port: "nft",
+            sourceChain: "irishub",
+            destChain: "ethereum",
+            relayChain: "",
+            data: nft.NftTransfer.encode(data).finish(),
+        };
+        let height = {
+            revision_number: 1,
+            revision_height: 100
+        }
+        await mockPacket.recvPacket(packet, Buffer.from(""), height);
+
+        let expTokenId = "108887869359828871843163086512371705577572570612225203856540491342869629216064"
+
+        let scNFT = await transfer.getBinding(expTokenId)
+        expect(scNFT.id).to.eq(data.id);
+        expect(scNFT.uri).to.eq(data.uri);
+        expect(scNFT.class).to.eq("nft/wenchang/irishub/ethereum/kitty");
+
+        let receiveUri = await erc1155bank.uri(expTokenId);
+        expect(receiveUri).to.eq(data.uri);
+
+        // test the new contract to change the method of the old contract
+        let packet1 = {
+            sequence: 1,
+            port: "nft",
+            sourceChain: "irishub",
+            destChain: "ethereum",
+            relayChain: "",
+            data: nft.NftTransfer.encode(data).finish(),
+        };
+        let res = await upgradedTransfer.onRecvPacket(packet1);
+        await res.wait();
+
+        let scNFT1 = await upgradedTransfer.getBinding("1")
+        expect(scNFT1.id).to.eq("taidy");
+        expect(scNFT1.uri).to.eq("www.test.com");
+        expect(scNFT1.class).to.eq("nft/irishub/dog");
+
+        // test the new contract and add new status fields and methods
+        await upgradedTransfer.setVersion(2)
+        const version = await upgradedTransfer.version();
+        expect(2).to.eq(version.toNumber())
     })
 
     const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
