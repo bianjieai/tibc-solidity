@@ -31,8 +31,8 @@ library Verifier {
         bytes memory commitmentBytes
     ) public view {
         require(
-            lastProcessedTime + state.time_delay <= now,
-            "processedTime + time_delay should be greater than current time"
+            lastProcessedTime + state.time_delay <= block.timestamp,
+            "processedTime + time_delay should be less than current time"
         );
         string[] memory path = new string[](2);
         path[0] = string(state.merkle_prefix.key_prefix);
@@ -69,8 +69,8 @@ library Verifier {
         bytes memory acknowledgement
     ) public view {
         require(
-            lastProcessedTime + state.time_delay <= now,
-            "processedTime + time_delay should be greater than current time"
+            lastProcessedTime + state.time_delay <= block.timestamp,
+            "processedTime + time_delay should be less than current time"
         );
         string[] memory path = new string[](2);
         path[0] = string(state.merkle_prefix.key_prefix);
@@ -108,8 +108,8 @@ library Verifier {
         uint64 sequence
     ) public view {
         require(
-            lastProcessedTime + state.time_delay <= now,
-            "processedTime + time_delay should be greater than current time"
+            lastProcessedTime + state.time_delay <= block.timestamp,
+            "processedTime + time_delay should be less than current time"
         );
         string[] memory path = new string[](2);
         path[0] = string(state.merkle_prefix.key_prefix);
