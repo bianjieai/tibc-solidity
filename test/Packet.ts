@@ -125,6 +125,16 @@ describe('Packet', () => {
         expect(ackCommit).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
     });
 
+    it("upgrade packet", async function () {
+        const mockPacketUpgradeFactory = await ethers.getContractFactory("MockPacketUpgrade");
+        const upgradedPacket = await upgrades.upgradeProxy(packet.address, mockPacketUpgradeFactory);
+        expect(upgradedPacket.address).to.eq(packet.address);
+
+        await upgradedPacket.setVersion(2)
+        const version = await upgradedPacket.version();
+        expect(2).to.eq(version.toNumber())
+    })
+
     const deployAccessManager = async function () {
         const accessFactory = await ethers.getContractFactory('AccessManager');
         accessManager = (await upgrades.deployProxy(accessFactory, [await accounts[0].getAddress()])) as AccessManager
