@@ -22,8 +22,8 @@ contract MockRoutingUpgrade is Initializable, OwnableUpgradeable, IRouting {
     // access control contract
     IAccessManager public accessManager;
 
-    bytes32 public constant SET_ROUTING_ROULES_ROLE =
-        keccak256("SET_ROUTING_ROULES_ROLE");
+    bytes32 public constant SET_ROUTING_RULES_ROLE =
+        keccak256("SET_ROUTING_RULES_ROLE");
     bytes32 public constant ADD_ROUTING_ROLE = keccak256("ADD_ROUTING_ROLE");
 
     uint256 public version;
@@ -118,7 +118,7 @@ contract MockRoutingUpgrade is Initializable, OwnableUpgradeable, IRouting {
      */
     function setRoutingRules(string[] calldata _rules)
         external
-        onlyAuthorizee(SET_ROUTING_ROULES_ROLE)
+        onlyAuthorizee(SET_ROUTING_RULES_ROLE)
     {
         string[] memory mRules = new string[](_rules.length);
         for (uint256 i = 0; i < _rules.length; i++) {
