@@ -98,7 +98,7 @@ Currently, only the `AccessManager` contract uses multi-signature control (excep
 2. The authorized person can add a relayer through the ClientManager contract
 
 ```shell
-yarn hardhat reisterRelayer --network ropsten --relayer <relayer-address>
+yarn hardhat registerRelayer --network ropsten --relayer <relayer-address> --chain <chain-name>
 ```
 
 But, both of the above steps can be operated by Defender.
@@ -113,7 +113,13 @@ yarn hardhat addRouting --module NFT --address <transfer-contract-address>  --ne
 
 ### Authorized transfer contract
 
-Grant mint and burn permissions to the `<transfer-contract-address>`
+Grant mint and burn permissions to the `<transfer-contract-address>`  EOA
+
+### Create light client
+
+```shell
+DEBUG=* yarn hardhat createClient --chain irishub-testnet --client <tendermint client contract address> --clientstate <encode-clientstate> --consensusstate <encode-consensusstate> --network <ropsten>
+```
 
 ## Upgrade contract
 

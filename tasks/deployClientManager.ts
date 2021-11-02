@@ -159,7 +159,7 @@ task("createClient", "Deploy Client Manager")
 
     });
 
-task("reisterRelayer", "Deploy Client Manager")
+task("registerRelayer", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
