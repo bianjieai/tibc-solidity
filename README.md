@@ -98,7 +98,7 @@ Currently, only the `AccessManager` contract uses multi-signature control (excep
 2. The authorized person can add a relayer through the ClientManager contract
 
 ```shell
-yarn hardhat reisterRelayer --network ropsten --relayer <relayer-address> --chain <chain-name>
+yarn hardhat registerRelayer --network ropsten --relayer <relayer-address> --chain <chain-name>
 ```
 
 But, both of the above steps can be operated by Defender.
