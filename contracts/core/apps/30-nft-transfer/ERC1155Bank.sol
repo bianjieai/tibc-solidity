@@ -70,4 +70,11 @@ contract ERC1155Bank is
         // need to get uri function from transfer contract
         return string(uriMap[id]);
     }
+
+    /**
+     * @notice customizing the metadata for your smart contract, refrence: https://docs.opensea.io/docs/contract-level-metadata
+     */
+    function contractURI() public view returns (string memory) {
+        return "https://metadata-url.com/my-metadata";
+    }
 }
