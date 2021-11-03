@@ -18,8 +18,8 @@ import "./tasks/deployAccessManager"
 module.exports = {
   defaultNetwork: 'hardhat',
   defender: {
-    apiKey: "[apiKey]",
-    apiSecret: "[apiSecret]",
+    apiKey: "",
+    apiSecret: "",
   },
   networks: {
     hardhat: {
@@ -39,6 +39,13 @@ module.exports = {
       gas: 4100000,
       accounts: ['0x37ffa616c55258c1ba09990fb2c24b02c734988fe467bc770e74bd9955774c74'],
     },
+    mainnet: {
+      url: '',
+      gasPrice: 130000000000,
+      chainId: 1,
+      gas: 4100000,
+      accounts: [''],
+    }
   },
   solidity: {
     version: '0.6.8',
