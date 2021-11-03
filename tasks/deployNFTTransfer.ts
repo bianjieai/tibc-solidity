@@ -20,7 +20,7 @@ task("deployNFTTransfer", "Deploy NFT Transfer")
 
 task("transferNFT", "Sender NFT")
     .addParam("transfer", "transferNft contract address ")
-    .addParam("erc1155", "erc1155 contract address ")
+    .addParam("destContract", "erc1155 contract address ")
     .addParam("nftid", "nft token id")
     .addParam("destchain", "dest chain name")
     .addParam("receiver", "receiver address")
@@ -31,7 +31,7 @@ task("transferNFT", "Sender NFT")
         const tokenID = BigNumber.from(taskArgs.nftid)
         const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank')
         const erc1155Bank = await erc1155BankFactory.attach(taskArgs.erc1155);
-        const originToken = await transfer.getBinding(tokenID)
+        const originToken = await transfer.getBinding(tokenID);
 
         let transferdata = {
             tokenId: tokenID,
@@ -39,7 +39,7 @@ task("transferNFT", "Sender NFT")
             class: originToken.class,
             destChain: taskArgs.destchain,
             relayChain: taskArgs.relaychain,
-            destContract: erc1155Bank,
+            destContract: erc1155Bank.address,
         }
         let res = await transfer.sendTransfer(transferdata);
         console.log(await res.wait())
