@@ -20,7 +20,7 @@ task("deployNFTTransfer", "Deploy NFT Transfer")
 
 task("transferNFT", "Sender NFT")
     .addParam("transfer", "transferNft contract address ")
-    .addParam("destContract", "erc1155 contract address ")
+    .addParam("erc1155", "erc1155 contract address ")
     .addParam("nftid", "nft token id")
     .addParam("destchain", "dest chain name")
     .addParam("receiver", "receiver address")
