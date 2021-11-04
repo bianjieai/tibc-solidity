@@ -88,12 +88,12 @@ contract Routing is Initializable, OwnableUpgradeable, IRouting {
         }
 
         //6. *,dest,model
-        if (_isExistRule(_genCondition(sourceChain, destChain, port))) {
+        if (_isExistRule(_genCondition(wildcard, destChain, port))) {
             return true;
         }
 
         //7. *,dest,*,
-        if (_isExistRule(_genCondition(wildcard, sourceChain, wildcard))) {
+        if (_isExistRule(_genCondition(wildcard, destChain, wildcard))) {
             return true;
         }
 
