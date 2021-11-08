@@ -37,14 +37,12 @@ module.exports = {
       gasPrice: 1500000000,
       chainId: 3,
       gas: 4100000,
-      accounts: ['0x37ffa616c55258c1ba09990fb24b02c734988fe467bc770e74bd9955774c74'],
+      accounts: [''],
     },
     mainnet: {
-      url: '',
-      gasPrice: 130000000000,
+      gasPrice: 120000000000,
       chainId: 1,
       gas: 4100000,
-      accounts: [''],
     }
   },
   solidity: {
