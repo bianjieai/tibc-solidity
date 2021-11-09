@@ -3,26 +3,18 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "../../../interfaces/IERC1155Bank.sol";
+import "./Auth.sol";
 
-contract ERC1155Bank is
-    Initializable,
-    ERC1155Upgradeable,
-    IERC1155Bank,
-    AccessControlUpgradeable
-{
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+contract ERC1155Bank is ERC1155Upgradeable, IERC1155Bank, Auth {
+    bytes32 public constant MINTER = keccak256("MINTER_ROLE");
+    bytes32 public constant BURNER = keccak256("BURNER_ROLE");
 
     mapping(uint256 => bytes) public uriMap;
 
-    function initialize() public initializer {
+    function initialize(address _owner) public initializer {
         __ERC1155_init("");
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(MINTER_ROLE, msg.sender);
-        _setupRole(BURNER_ROLE, msg.sender);
+        super.init(_owner);
     }
 
     /**
@@ -40,8 +32,7 @@ contract ERC1155Bank is
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public override {
-        require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
+    ) public override onlyAuthorizee(MINTER, msg.sender) {
         _mint(account, id, amount, data);
         uriMap[id] = data;
     }
@@ -56,8 +47,7 @@ contract ERC1155Bank is
         address account,
         uint256 id,
         uint256 amount
-    ) public override {
-        require(hasRole(BURNER_ROLE, msg.sender), "Caller is not a burner");
+    ) public override onlyAuthorizee(BURNER, msg.sender) {
         _burn(account, id, amount);
         delete uriMap[id];
     }
