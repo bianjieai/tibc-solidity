@@ -284,7 +284,9 @@ describe('Transfer', () => {
 
     const deployERC1155Bank = async function () {
         const erc1155Factory = await ethers.getContractFactory("ERC1155Bank");
-        erc1155bank = (await upgrades.deployProxy(erc1155Factory)) as ERC1155Bank;
+        erc1155bank = (await upgrades.deployProxy(erc1155Factory,
+            [(await accounts[0].getAddress())
+        ])) as ERC1155Bank;
     }
 
     const deployTransfer = async function () {
