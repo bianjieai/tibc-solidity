@@ -128,7 +128,7 @@ task("createClient", "Deploy Client Manager")
             merklePrefix: {
                 keyPrefix: Buffer.from("tibc"),
             },
-            timeDelay: 10,
+            timeDelay: 0,
         }
 
 

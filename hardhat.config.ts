@@ -18,8 +18,8 @@ import "./tasks/deployAccessManager"
 module.exports = {
   defaultNetwork: 'hardhat',
   defender: {
-    apiKey: "",
-    apiSecret: "",
+    apiKey: "7NjXBPfAZADSgKbUHDc3WYpDmKuVzhR9",
+    apiSecret: "3TsyWorpswm8vjwGQ3PB7Z3vpEK8dVMsfY4NtCGEKksd9QJmqA29EbWLYUyffsX8",
   },
   networks: {
     hardhat: {
@@ -33,17 +33,12 @@ module.exports = {
     //   accounts: [''],
     // },
     ropsten: {
-      url: 'https://ropsten.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
+      url: 'https://ropsten.infura.io/v3/',
       gasPrice: 1500000000,
       chainId: 3,
       gas: 4100000,
       accounts: [''],
     },
-    mainnet: {
-      gasPrice: 120000000000,
-      chainId: 1,
-      gas: 4100000,
-    }
   },
   solidity: {
     version: '0.6.8',
@@ -58,6 +53,9 @@ module.exports = {
     enabled: true,
     showMethodSig: true,
     maxMethodDiff: 10,
+    currency: 'USD',
+    gasPrice: 127,
+    coinmarketcap: '5a0938c9-7912-438b-9baa-fcd71007b3d0'
   },
   contractSizer: {
     alphaSort: true,
