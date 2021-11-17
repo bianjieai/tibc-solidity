@@ -18,26 +18,19 @@ import "./tasks/deployAccessManager"
 module.exports = {
   defaultNetwork: 'hardhat',
   defender: {
-    apiKey: "7NjXBPfAZADSgKbUHDc3WYpDmKuVzhR9",
-    apiSecret: "3TsyWorpswm8vjwGQ3PB7Z3vpEK8dVMsfY4NtCGEKksd9QJmqA29EbWLYUyffsX8",
+    apiKey: "",
+    apiSecret: "",
   },
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
     },
-    // rinkeby: {
-    //   url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
-    //   gasPrice: 1500000000,
-    //   chainId: 4,
-    //   gas: 4100000,
-    //   accounts: [''],
-    // },
-    ropsten: {
-      url: 'https://ropsten.infura.io/v3/',
+    rinkeby: {
+      url: 'https://rinkeby.infura.io/v3/023f2af0f670457d9c4ea9cb524f0810',
       gasPrice: 1500000000,
-      chainId: 3,
+      chainId: 4,
       gas: 4100000,
-      accounts: [''],
+      accounts: ['d0ce43e074a9a057b4ba6b018e7a1f4072246f288be3a6e72d1805de4c9ad4dd'],
     },
   },
   solidity: {
