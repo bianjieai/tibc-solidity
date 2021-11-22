@@ -65,6 +65,6 @@ contract ERC1155Bank is ERC1155Upgradeable, IERC1155Bank, Auth {
      * @notice customizing the metadata for your smart contract, refrence: https://docs.opensea.io/docs/contract-level-metadata
      */
     function contractURI() public view returns (string memory) {
-        return "https://metadata.ip.pub/collection";
+        return "https://<collection_metadata_uri>";
     }
 }
