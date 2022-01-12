@@ -14,6 +14,7 @@ import "./tasks/deployRouting"
 import "./tasks/deployERC1155Bank"
 import "./tasks/deployNFTTransfer"
 import "./tasks/deployAccessManager"
+import "./tasks/deployUptickGateway"
 
 module.exports = {
   defaultNetwork: 'hardhat',
@@ -30,6 +31,12 @@ module.exports = {
       gasPrice: 1500000000,
       chainId: 4,
       gas: 4100000,
+      accounts: [''],
+    },
+    bsc: {
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      gasPrice: 20000000000,
+      chainId: 97,
       accounts: [''],
     },
   },
@@ -64,6 +71,6 @@ module.exports = {
   abiExporter: {
     path: './abi',
     clear: true,
-    spacing: 2,
+    spacing: 2
   }
 }
