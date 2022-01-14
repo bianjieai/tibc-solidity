@@ -19,8 +19,8 @@ import "./tasks/deployUptickGateway"
 module.exports = {
   defaultNetwork: 'hardhat',
   defender: {
-    apiKey: "6UvGPFzX5gTqAqmGtWCaDAyQYo9SVDp6",
-    apiSecret: "3AqC3Hz7ZQURBj47C6ZHFbr5fc4YENUQkv4JmFa2eehEdS71tKofsstkb4rWaDMf",
+    apiKey: "",
+    apiSecret: "",
   },
   networks: {
     hardhat: {
@@ -37,7 +37,7 @@ module.exports = {
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
       gasPrice: 20000000000,
       chainId: 97,
-      accounts: ['d0ce43e074a9a057b4ba6b018e7a1f4072246f288be3a6e72d1805de4c9ad4dd'],
+      accounts: [''],
     },
   },
   solidity: {
