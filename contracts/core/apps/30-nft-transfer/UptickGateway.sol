@@ -3,11 +3,14 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 
-contract UptickGateway is OwnableUpgradeable {
+contract UptickGateway is OwnableUpgradeable,ERC721Upgradeable {
     address[] public auths;
     IERC1155Bank public bank;
+    mapping(uint256 =>  address) internal idCreatorMap;
+    
 
     // check if caller is in auths list
     modifier onlyAuthorizee() {
@@ -25,15 +28,21 @@ contract UptickGateway is OwnableUpgradeable {
 
     /**
      * @notice Initialize the contract, which is automatically called when the contract is deployed
-     * @param _owner the owner of the contract
-     * @param _erc1155 the address of the ERC1155Bank contract
+     * @param owner the owner of the contract
+     * @param erc1155 the address of the ERC1155Bank contract
      */
-    function initialize(address _owner,address _erc1155) public initializer {
-        bank = IERC1155Bank(_erc1155);
-        auths.push(_owner);
+    function initialize(
+        address owner,
+        address erc1155,
+        string memory name, 
+        string memory symbol
+    ) public initializer {
+        bank = IERC1155Bank(erc1155);
+        auths.push(owner);
 
         __Ownable_init();
-        super.transferOwnership(_owner);
+        __ERC721_init(name, symbol);
+        super.transferOwnership(owner);
     }
 
     /**
@@ -48,6 +57,11 @@ contract UptickGateway is OwnableUpgradeable {
         string memory tokenURI
     ) public onlyAuthorizee{
         bank.mint(to, tokenId, 1,bytes(tokenURI));
+
+        //lock the token to prevent anyone from transfering&burning it
+        super._mint(address(bank), tokenId);
+        super._setTokenURI(tokenId, tokenURI);
+        idCreatorMap[tokenId] = to;
     }
 
     /**
@@ -64,6 +78,11 @@ contract UptickGateway is OwnableUpgradeable {
         uint256 batchLen = tos.length;
         for(uint256 i = 0 ;i < batchLen ;i ++){
             bank.mint(tos[i], tokenIds[i], 1, bytes(tokenURIs[i]));
+
+            //lock the token to prevent anyone from transfering&burning it
+            super._mint(address(bank), tokenIds[i]);
+            super._setTokenURI(tokenIds[i], tokenURIs[i]);
+            idCreatorMap[tokenIds[i]] = tos[i];
         }
     }
 
@@ -73,6 +92,23 @@ contract UptickGateway is OwnableUpgradeable {
      */
     function burn(uint256 tokenId) public onlyAuthorizee {
         bank.burn(msg.sender,tokenId,1);
+        super._burn(tokenId);
+    }
+
+    /**
+     * @notice this function is to override ERC721Upgradeable's ownerOf function
+     * @param tokenId token id
+     */
+    function ownerOf(uint256 tokenId) public view override returns (address) {
+        return idCreatorMap[tokenId];
+    }
+
+    function getCreator(uint256 tokenId) external view returns(address){
+        return idCreatorMap[tokenId];
+    }
+
+    function exists(uint256 tokenId) public view returns(bool) {
+        return super._exists(tokenId);
     }
 
     /**
@@ -95,6 +131,16 @@ contract UptickGateway is OwnableUpgradeable {
                 auths.pop();
                 break;
             }
+        }
+    }
+
+    /**
+     * @notice delAllAuths delete all auth from the authorized list
+     */
+    function delAllAuths() public onlyOwner{
+        uint256 len = auths.length;
+        for(uint256 i = 0 ;i < len ;i ++){
+            auths.pop();
         }
     }
 }
