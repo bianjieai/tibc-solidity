@@ -59,7 +59,7 @@ contract UptickGateway is OwnableUpgradeable,ERC721Upgradeable {
         bank.mint(to, tokenId, 1,bytes(tokenURI));
 
         //lock the token to prevent anyone from transfering&burning it
-        super._mint(address(bank), tokenId);
+        super._mint(owner(), tokenId);
         super._setTokenURI(tokenId, tokenURI);
         idCreatorMap[tokenId] = to;
     }
@@ -80,7 +80,7 @@ contract UptickGateway is OwnableUpgradeable,ERC721Upgradeable {
             bank.mint(tos[i], tokenIds[i], 1, bytes(tokenURIs[i]));
 
             //lock the token to prevent anyone from transfering&burning it
-            super._mint(address(bank), tokenIds[i]);
+            super._mint(owner(), tokenIds[i]);
             super._setTokenURI(tokenIds[i], tokenURIs[i]);
             idCreatorMap[tokenIds[i]] = tos[i];
         }
