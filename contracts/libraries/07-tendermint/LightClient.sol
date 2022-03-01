@@ -10,7 +10,7 @@ import "../utils/Timestamp.sol";
 import "../utils/Bytes.sol";
 import "./Ed25519.sol";
 import "./MerkleTree.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 library LightClient {
     using TimestampLib for Timestamp.Data;
@@ -272,7 +272,7 @@ library LightClient {
             );
         }
 
-        (bool success, uint256 totalVotingPowerMulByNumerator) = SafeMath
+        (bool success, uint256 totalVotingPowerMulByNumerator) = SafeMathUpgradeable
             .tryMul(totalVotingPower, uint256(trustLevel.numerator));
         require(
             success,
