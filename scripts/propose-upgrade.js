@@ -2,10 +2,10 @@
 const { defender } = require("hardhat");
 
 async function main() {
-  const proxyAddress = '';
-  const MockAccessManager = await ethers.getContractFactory("MockClientManager");
+  const proxyAddress = '0x5696b6aCe2ee93696D9866FaA5ca000d00696109';
+  const upgradedContract = await ethers.getContractFactory("UptickGateway");
   console.log("Preparing proposal...");
-  const proposal = await defender.proposeUpgrade(proxyAddress, MockAccessManager);
+  const proposal = await defender.proposeUpgrade(proxyAddress, upgradedContract);
   console.log("Upgrade proposal created at:", proposal.url);
 }
 

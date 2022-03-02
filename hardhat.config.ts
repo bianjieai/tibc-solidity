@@ -14,6 +14,7 @@ import "./tasks/deployRouting"
 import "./tasks/deployERC1155Bank"
 import "./tasks/deployNFTTransfer"
 import "./tasks/deployAccessManager"
+import "./tasks/deployUptickGateway"
 
 module.exports = {
   defaultNetwork: 'hardhat',
@@ -25,12 +26,24 @@ module.exports = {
     hardhat: {
       allowUnlimitedContractSize: true,
     },
-    rinkeby: {
-      url: 'https://rinkeby.infura.io/v3/',
-      gasPrice: 1500000000,
-      chainId: 4,
-      gas: 4100000,
-      accounts: [''],
+    // rinkeby: {
+    //   url: 'https://rinkeby.infura.io/v3/',
+    //   gasPrice: 1500000000,
+    //   chainId: 4,
+    //   gas: 4100000,
+    //   accounts: [''],
+    // },
+    bsctestnet: {
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      gasPrice: 20000000000,
+      chainId: 97,
+      //accounts: [''],
+    },
+    bsc: {
+      url: 'https://bsc-dataseed.binance.org',
+      gasPrice: 20000000000,
+      chainId: 56,
+      //accounts: [''],
     },
   },
   solidity: {
@@ -64,6 +77,6 @@ module.exports = {
   abiExporter: {
     path: './abi',
     clear: true,
-    spacing: 2,
+    spacing: 2
   }
 }
