@@ -1,17 +1,19 @@
 import "@nomiclabs/hardhat-web3";
 import { ethers } from "hardhat";
 import { task, types } from "hardhat/config"
+const fs = require('./utils')
 
 const ROUTING_ADDRES = process.env.ROUTING_ADDRES;
 
 task("deployRouting", "Deploy Routing")
-    .addParam("accm", "AccessManager contract address")
     .setAction(async (taskArgs, hre) => {
-        const routingFactory = await hre.ethers.getContractFactory('Routing')
-        const routing = await hre.upgrades.deployProxy(routingFactory, [taskArgs.accm]);
-        await routing.deployed();
-        console.log("Routing deployed to:", routing.address);
-        console.log("export ROUTING_ADDRES=%s", routing.address);
+        await fs.readAndWriteEnv(async function (env: any) {
+            const routingFactory = await hre.ethers.getContractFactory('Routing')
+            const routing = await hre.upgrades.deployProxy(routingFactory, [env.ACCESS_MANAGER_ADDRES]);
+            await routing.deployed();
+            console.log("Routing deployed to:", routing.address);
+            env.ROUTING_ADDRES = routing.address
+        })
     });
 
 task("setRoutingRules", "Set Routing Rules")

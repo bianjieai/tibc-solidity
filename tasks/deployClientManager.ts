@@ -2,6 +2,7 @@ import "@nomiclabs/hardhat-web3";
 import { ethers, upgrades } from "hardhat";
 import { task, types } from "hardhat/config"
 import { readFileSync } from 'fs';
+const fs = require('./utils')
 
 const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
 const ACCESS_MANAGER_ADDRES = process.env.ACCESS_MANAGER_ADDRES;
@@ -10,16 +11,17 @@ let client = require("../test/proto/compiled.js");
 
 task("deployClientManager", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
-    .addParam("accm", "AccessManager contract address")
     .setAction(async (taskArgs, hre) => {
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-        const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
-            taskArgs.chain,
-            taskArgs.accm
-        ]);
-        await clientManager.deployed();
-        console.log("Client Manager deployed to:", clientManager.address);
-        console.log("export CLIENT_MANAGER_ADDRES=%s", clientManager.address);
+        await fs.readAndWriteEnv(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
+                taskArgs.chain,
+                env.ACCESS_MANAGER_ADDRES
+            ]);
+            await clientManager.deployed();
+            console.log("Client Manager deployed to:", clientManager.address);
+            env.CLIENT_MANAGER_ADDRES = clientManager.address
+        })
     });
 
 task("upgradeClientManager", "Upgrade Client Manager")
