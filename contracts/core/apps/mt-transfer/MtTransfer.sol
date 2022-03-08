@@ -16,7 +16,7 @@ import "../../../interfaces/IAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract Transfer is Initializable, IMtTransfer, OwnableUpgradeable {
+contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
     using Strings for *;
     using Bytes for *;
 
@@ -208,7 +208,6 @@ contract Transfer is Initializable, IMtTransfer, OwnableUpgradeable {
 
             // generate tokenId
             uint256 tokenId = genTokenId(newClass, data.id);
-
             // mint mt
             if (
                 _mint(
