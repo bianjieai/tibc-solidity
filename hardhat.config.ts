@@ -16,6 +16,7 @@ import "./tasks/deployNFTTransfer"
 import "./tasks/deployMTTransfer"
 import "./tasks/deployAccessManager"
 import "./tasks/deployUptickGateway"
+import "./tasks/deployMtTransfer"
 
 module.exports = {
   defaultNetwork: 'hardhat',
