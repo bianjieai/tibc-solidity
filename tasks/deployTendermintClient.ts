@@ -7,13 +7,13 @@ task("deployTendermint", "Deploy Tendermint Client")
         await fs.readAndWriteEnv(async function (env: any) {
             const tendermintFactory = await hre.ethers.getContractFactory('Tendermint', {
                 libraries: {
-                    ClientStateCodec: String(env.CLIENT_STATE_CODEC_ADDRES),
-                    ConsensusStateCodec: String(env.CONSENSUS_STATE_CODEC_ADDRES),
-                    Verifier: String(env.VERIFIER_ADDRES),
+                    ClientStateCodec: env.CLIENT_STATE_CODEC_ADDRES,
+                    ConsensusStateCodec: env.CONSENSUS_STATE_CODEC_ADDRES,
+                    Verifier: env.VERIFIER_ADDRES,
                 }
             })
 
-            const tendermint = await hre.upgrades.deployProxy(tendermintFactory, [String(env.CLIENT_MANAGER_ADDRES)],
+            const tendermint = await hre.upgrades.deployProxy(tendermintFactory, [env.CLIENT_MANAGER_ADDRES],
                 { "unsafeAllowLinkedLibraries": true });
             await tendermint.deployed();
             env.TENDERMINT_ADDRES = tendermint.address

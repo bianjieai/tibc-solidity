@@ -19,25 +19,24 @@ task("deployRouting", "Deploy Routing")
 task("setRoutingRules", "Set Routing Rules")
     .addParam("rules", "routing rules")
     .setAction(async (taskArgs, hre) => {
-        const routingFactory = await hre.ethers.getContractFactory('Routing')
-
-        const routing = await routingFactory.attach(String(ROUTING_ADDRES));
-        let rules: string[] = taskArgs.rules.split("|")
-        const result = await routing.setRoutingRules(rules)
-        console.log(result);
+        await fs.readEnv(async function (env: any) {
+            const routingFactory = await hre.ethers.getContractFactory('Routing')
+            const routing = await routingFactory.attach(env.ROUTING_ADDRES);
+            let rules: string[] = taskArgs.rules.split("|")
+            const result = await routing.setRoutingRules(rules)
+            console.log(result);
+        })
     });
 
 task("addRouting", "Add module routing")
     .addParam("module", "module name")
-    .addParam("address", "module address")
+    .addParam("address", "the module address handled cross-chain packet ")
     .setAction(async (taskArgs, hre) => {
-        const routingFactory = await hre.ethers.getContractFactory('Routing')
-
-        const routing = await routingFactory.attach(String(ROUTING_ADDRES));
-
-        let rules: string[] = taskArgs.rules
-        const result = await routing.addRouting(taskArgs.module, taskArgs.address)
-        console.log(result);
+        await fs.readEnv(async function (env: any) {
+            const routingFactory = await hre.ethers.getContractFactory('Routing')
+            const routing = await routingFactory.attach(env.ROUTING_ADDRES);
+            const result = await routing.addRouting(taskArgs.module, taskArgs.address)
+            console.log(result);
+        })
     });
-
 module.exports = {};

@@ -100,114 +100,100 @@ task("createClientFromFile", "Deploy Client Manager")
 
 task("createClient", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
-    .addParam("client", "Client Address")
     .addParam("clientstate", "HEX encoding client client")
     .addParam("consensusstate", "HEX encoding consensus state")
     .setAction(async (taskArgs, hre) => {
+        await fs.readEnv(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const clientStatebytes = Buffer.from(taskArgs.clientstate, "hex")
+            const clientStateObj = JSON.parse(clientStatebytes.toString())
+            const clientStateEncode = {
+                chainId: clientStateObj.chainId,
+                trustLevel: {
+                    numerator: clientStateObj.trustLevel.numerator,
+                    denominator: clientStateObj.trustLevel.denominator
+                },
 
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-
-        const clientStatebytes = Buffer.from(taskArgs.clientstate, "hex")
-
-        const clientStateObj = JSON.parse(clientStatebytes.toString())
-
-        const clientStateEncode = {
-            chainId: clientStateObj.chainId,
-            trustLevel: {
-                numerator: clientStateObj.trustLevel.numerator,
-                denominator: clientStateObj.trustLevel.denominator
-            },
-
-            trustingPeriod: clientStateObj.trustingPeriod,
-            unbondingPeriod: clientStateObj.unbondingPeriod,
-            maxClockDrift: clientStateObj.maxClockDrift,
-            latestHeight: {
-                revisionNumber: clientStateObj.latestHeight.revisionNumber,
-                revisionHeight: clientStateObj.latestHeight.revisionHeight
-            },
-            merklePrefix: {
-                keyPrefix: Buffer.from("tibc"),
-            },
-            timeDelay: 0,
-        }
+                trustingPeriod: clientStateObj.trustingPeriod,
+                unbondingPeriod: clientStateObj.unbondingPeriod,
+                maxClockDrift: clientStateObj.maxClockDrift,
+                latestHeight: {
+                    revisionNumber: clientStateObj.latestHeight.revisionNumber,
+                    revisionHeight: clientStateObj.latestHeight.revisionHeight
+                },
+                merklePrefix: {
+                    keyPrefix: Buffer.from("tibc"),
+                },
+                timeDelay: 0,
+            }
 
 
-        const clientState = client.ClientState.encode(clientStateEncode).finish();
-
-        const consensusStateBytes = Buffer.from(taskArgs.consensusstate, "hex")
-
-        const consensusStateObj = JSON.parse(consensusStateBytes.toString())
-
-        const consensusStateEncode = {
-            timestamp: {
-                secs: consensusStateObj.timestamp.secs,
-                nanos: consensusStateObj.timestamp.nanos,
-            },
-            // root: Buffer.from("YXBwX2hhc2g=", "base64"),
-            root: Buffer.from(consensusStateObj.root, "hex"),
-            nextValidatorsHash: Buffer.from(consensusStateObj.nextValidatorsHash, "hex")
-        }
-
-        const consensusState = client.ConsensusState.encode(consensusStateEncode).finish();
-
-        const result = await clientManager.createClient(
-            taskArgs.chain,
-            taskArgs.client,
-            clientState,
-            consensusState);
-        console.log(result);
-
+            const clientState = client.ClientState.encode(clientStateEncode).finish();
+            const consensusStateBytes = Buffer.from(taskArgs.consensusstate, "hex")
+            const consensusStateObj = JSON.parse(consensusStateBytes.toString())
+            const consensusStateEncode = {
+                timestamp: {
+                    secs: consensusStateObj.timestamp.secs,
+                    nanos: consensusStateObj.timestamp.nanos,
+                },
+                root: Buffer.from(consensusStateObj.root, "hex"),
+                nextValidatorsHash: Buffer.from(consensusStateObj.nextValidatorsHash, "hex")
+            }
+            const consensusState = client.ConsensusState.encode(consensusStateEncode).finish();
+            const result = await clientManager.createClient(
+                taskArgs.chain,
+                taskArgs.client,
+                clientState,
+                consensusState);
+            console.log(result);
+        })
     });
 
 task("registerRelayer", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-        const result = await clientManager.registerRelayer(taskArgs.chain, taskArgs.relayer);
-        console.log(result);
+        await fs.readEnv(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const result = await clientManager.registerRelayer(taskArgs.chain, taskArgs.relayer);
+            console.log(result);
+        })
     });
 
 task("updateClient", "Deploy Client Manager")
     .addParam("chain", "chain name")
     .addParam("header", "HEX encoding header")
     .setAction(async (taskArgs, hre) => {
-
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-
-        const result = await clientManager.updateClient(taskArgs.chain, Buffer.from(taskArgs.header, "hex"))
-
-        console.log(await result.wait());
+        await fs.readEnv(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const result = await clientManager.updateClient(taskArgs.chain, Buffer.from(taskArgs.header, "hex"))
+            console.log(await result.wait());
+        })
     });
 task("getRelayers", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
-
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-
-        const result = await clientManager.relayers(taskArgs.chain, taskArgs.relayer)
-        console.log(result);
+        await fs.readEnv(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const result = await clientManager.relayers(taskArgs.chain, taskArgs.relayer)
+            console.log(result);
+        })
     });
 
 task("lastheight", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .setAction(async (taskArgs, hre) => {
-
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
-
-        const result = await clientManager.getLatestHeight(taskArgs.chain)
-
-        console.log(await result.wait());
+        await fs.readEnv(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const result = await clientManager.getLatestHeight(taskArgs.chain)
+            console.log(await result.wait());
+        })
     });
 
 module.exports = {};

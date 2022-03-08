@@ -6,12 +6,17 @@ function writeEnv(content:Object) {
 }
 
 async function readAndWriteEnv(callback:Function) {
-    let env = readEnv();
+    let env = readEnvSync();
     await callback(env);
     writeEnv(env);
 }
 
-function readEnv() {
+async function readEnv(callback: Function) {
+    let env = readEnvSync();
+    await callback(env);
+}
+
+function readEnvSync() {
     try { 
         let rawdata = fs.readFileSync('./env.json');
         return JSON.parse(rawdata);
@@ -22,7 +27,6 @@ function readEnv() {
 }
 
 export = {
-    writeEnv,
     readEnv,
     readAndWriteEnv,
 };
