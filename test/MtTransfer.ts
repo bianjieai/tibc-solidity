@@ -90,8 +90,53 @@ describe('MtTransfer', () => {
         expect(balance).to.eq(0);
     })
 
-    
+    // The test need fix the tokenID in the refundToken
+    it("onAcknowledgementPacket when awayFromOrigin is false", async function () {
+        let sender = (await accounts[0].getAddress()).toString();
+        let receiver = (await accounts[1].getAddress()).toString();
 
+        // send nft from irishub to ethereum
+        let data = {
+            class: "mt/wenchang/irishub/kitty",
+            id: "tokenid",
+            data: Buffer.from("www.test.com"),
+            sender: sender,
+            receiver: receiver,
+            awayFromOrigin: true,
+            destContract: erc1155bank.address,
+            amount: 1,
+        }
+        let packet = {
+            sequence: 1,
+            port: "MT",
+            sourceChain: "irishub",
+            destChain: "ethereum",
+            relayChain: "",
+            data: mt.MtTransfer.encode(data).finish(),
+        };
+        let height = {
+            revision_number: 1,
+            revision_height: 100
+        }
+
+        await mockPacket.recvPacket(packet, Buffer.from(""), height);
+
+        let expTokenId = "6964473807575098713415768244349403652883002607893830340325881452459311473984"
+
+        let scMT = await transfer.getBinding(expTokenId)
+        expect(scMT.id).to.eq(data.id);
+        expect(scMT.data).to.eq("0x" + Buffer.from(data.data).toString("hex"));
+        expect(scMT.class).to.eq("mt/wenchang/irishub/ethereum/kitty");
+
+        let acknowledgement = {
+            result: Buffer.from("01", "hex"),
+        }
+
+        let dd = ack.Acknowledgement.encode(acknowledgement).finish();
+        await mockPacket.acknowledgePacket(packet, dd, Buffer.from(""), height);
+        let balance1 = await erc1155bank.balanceOf(sender, expTokenId);
+        expect(balance1).to.eq(0);
+    })
     const createClient = async function (chainName: string, lightClientAddress: any, clientState: any, consensusState: any) {
         let clientStateBuf = client.ClientState.encode(clientState).finish();
         let consensusStateBuf = client.ConsensusState.encode(consensusState).finish();
