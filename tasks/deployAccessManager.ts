@@ -1,6 +1,6 @@
 import "@nomiclabs/hardhat-web3";
 import { task } from "hardhat/config"
-const fs = require('./utils')
+const config = require('./config')
 
 task("deployAcessManager", "Deploy acessManager")
     .addParam("wallet", "multi sign address")
@@ -10,9 +10,9 @@ task("deployAcessManager", "Deploy acessManager")
             [taskArgs.wallet]);
         await accessManager.deployed();
         console.log("AccessManager deployed to:", accessManager.address);
-        await fs.readAndWriteEnv(function (env: any) {
+        await config.load(function (env: any) {
             env.ACCESS_MANAGER_ADDRES = accessManager.address
-        })
+        },true)
     });
 
 module.exports = {};

@@ -2,7 +2,7 @@ import "@nomiclabs/hardhat-web3";
 import { ethers, upgrades } from "hardhat";
 import { task, types } from "hardhat/config"
 import { readFileSync } from 'fs';
-const fs = require('./utils')
+const config = require('./config')
 
 const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
 const ACCESS_MANAGER_ADDRES = process.env.ACCESS_MANAGER_ADDRES;
@@ -12,7 +12,7 @@ let client = require("../test/proto/compiled.js");
 task("deployClientManager", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .setAction(async (taskArgs, hre) => {
-        await fs.readAndWriteEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
                 taskArgs.chain,
@@ -21,7 +21,7 @@ task("deployClientManager", "Deploy Client Manager")
             await clientManager.deployed();
             console.log("Client Manager deployed to:", clientManager.address);
             env.CLIENT_MANAGER_ADDRES = clientManager.address
-        })
+        },true)
     });
 
 task("upgradeClientManager", "Upgrade Client Manager")
@@ -103,7 +103,7 @@ task("createClient", "Deploy Client Manager")
     .addParam("clientstate", "HEX encoding client client")
     .addParam("consensusstate", "HEX encoding consensus state")
     .setAction(async (taskArgs, hre) => {
-        await fs.readEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
             const clientStatebytes = Buffer.from(taskArgs.clientstate, "hex")
@@ -147,14 +147,14 @@ task("createClient", "Deploy Client Manager")
                 clientState,
                 consensusState);
             console.log(result);
-        })
+        },true)
     });
 
 task("registerRelayer", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
-        await fs.readEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
             const result = await clientManager.registerRelayer(taskArgs.chain, taskArgs.relayer);
@@ -166,7 +166,7 @@ task("updateClient", "Deploy Client Manager")
     .addParam("chain", "chain name")
     .addParam("header", "HEX encoding header")
     .setAction(async (taskArgs, hre) => {
-        await fs.readEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
             const result = await clientManager.updateClient(taskArgs.chain, Buffer.from(taskArgs.header, "hex"))
@@ -177,7 +177,7 @@ task("getRelayers", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
-        await fs.readEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
             const result = await clientManager.relayers(taskArgs.chain, taskArgs.relayer)
@@ -188,7 +188,7 @@ task("getRelayers", "Deploy Client Manager")
 task("lastheight", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
     .setAction(async (taskArgs, hre) => {
-        await fs.readEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
             const result = await clientManager.getLatestHeight(taskArgs.chain)

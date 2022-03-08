@@ -2,11 +2,11 @@ import "@nomiclabs/hardhat-web3";
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
 
-const fs = require('./utils')
+const config = require('./config')
 
 task("deployMtTransfer", "Deploy MT Transfer")
     .setAction(async (taskArgs, hre) => {
-        await fs.readAndWriteEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const transferFactory = await hre.ethers.getContractFactory('MultiTokenTransfer')
             const transfer = await hre.upgrades.deployProxy(transferFactory,
                 [
@@ -16,7 +16,7 @@ task("deployMtTransfer", "Deploy MT Transfer")
             await transfer.deployed();
             console.log("MtTransfer deployed to:", transfer.address);
             env.MTTRANSFER_ADDRES = transfer.address
-        })
+        },true)
     });
 
 task("transferMT", "Sender MT")

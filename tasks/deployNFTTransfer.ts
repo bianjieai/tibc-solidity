@@ -1,14 +1,11 @@
 import "@nomiclabs/hardhat-web3";
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
-const fs = require('./utils')
-
-const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
-const PACKET_ADDRES = process.env.PACKET_ADDRES;
+const config = require('./config')
 
 task("deployNFTTransfer", "Deploy NFT Transfer")
     .setAction(async (taskArgs, hre) => {
-        await fs.readAndWriteEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const transferFactory = await hre.ethers.getContractFactory('Transfer')
             const transfer = await hre.upgrades.deployProxy(transferFactory,
                 [
@@ -18,7 +15,7 @@ task("deployNFTTransfer", "Deploy NFT Transfer")
             await transfer.deployed();
             console.log("Transfer deployed to:", transfer.address);
             env.TRANSFER_ADDRES = transfer.address
-        })
+        },true)
     });
 
 task("transferNFT", "Sender NFT")

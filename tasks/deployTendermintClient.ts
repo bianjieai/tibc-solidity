@@ -1,10 +1,10 @@
 import "@nomiclabs/hardhat-web3";
 import { task } from "hardhat/config"
-const fs = require('./utils')
+const config = require('./config')
 
 task("deployTendermint", "Deploy Tendermint Client")
     .setAction(async (taskArgs, hre) => {
-        await fs.readAndWriteEnv(async function (env: any) {
+        await config.load(async function (env: any) {
             const tendermintFactory = await hre.ethers.getContractFactory('Tendermint', {
                 libraries: {
                     ClientStateCodec: env.CLIENT_STATE_CODEC_ADDRES,
@@ -18,6 +18,6 @@ task("deployTendermint", "Deploy Tendermint Client")
             await tendermint.deployed();
             env.TENDERMINT_ADDRES = tendermint.address
             console.log("Tendermint deployed to:", tendermint.address);
-        })
+        },true)
     });
 module.exports = {};
