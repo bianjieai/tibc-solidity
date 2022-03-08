@@ -6,8 +6,6 @@ abi/
 cache
 artifacts
 typechain
-.openzeppelin/unknown-*.json
-
 
 # Node files
 yarn.lock
@@ -15,3 +13,5 @@ package-lock.json
 
 # IDE
 .idea
+.nyc_output/*
+coverage/*
