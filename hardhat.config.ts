@@ -16,7 +16,6 @@ import "./tasks/deployNFTTransfer"
 import "./tasks/deployMTTransfer"
 import "./tasks/deployAccessManager"
 import "./tasks/deployUptickGateway"
-import "./tasks/deployMtTransfer"
 
 module.exports = {
   defaultNetwork: 'hardhat',
@@ -39,7 +38,7 @@ module.exports = {
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
       gasPrice: 20000000000,
       chainId: 97,
-      accounts: [''],
+      accounts: ['f7e4030d552267038a858676c2a376f8379b6fc1f2dba914cb10ca705a622b03'],
     },
     bsc: {
       url: 'https://bsc-dataseed.binance.org',

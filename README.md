@@ -45,7 +45,7 @@ yarn hardhat deployAcessManager --network <ropsten> --wallet <walletAddress>
 * Deploy ClientManager
 
 ```shell
-yarn hardhat deployClientManager --network <ropsten> --chain <native-chain-name> --accm <acessManagerAddress>
+yarn hardhat deployClientManager --network <ropsten> --chain <native-chain-name>
 ```
 
 * Deploy Tendermint Client
@@ -58,7 +58,7 @@ yarn hardhat deployTendermint --network <ropsten>
 * Deploy Routing
 
 ```shell
-yarn hardhat deployRouting --network <ropsten> --accm <acessManagerAddress>
+yarn hardhat deployRouting --network <ropsten>
 ```
 
 * Deploy Packet
@@ -77,6 +77,12 @@ yarn hardhat deployERC1155Bank --network <ropsten>
 
 ```shell
 yarn hardhat deployNFTTransfer --network <ropsten>
+```
+
+* Deploy MT Transfer
+
+```shell
+yarn hardhat deployMtTransfer --network <ropsten>
 ```
 
 ### Transfer proxy contract ownership
@@ -118,7 +124,7 @@ Grant mint and burn permissions to the `<transfer-contract-address>`  EOA
 ### Create light client
 
 ```shell
-DEBUG=* yarn hardhat createClient --chain irishub-testnet --client <tendermint client contract address> --clientstate <encode-clientstate> --consensusstate <encode-consensusstate> --network <ropsten>
+DEBUG=* yarn hardhat createClient --chain irishub-testnet  --clientstate <encode-clientstate> --consensusstate <encode-consensusstate> --network <ropsten>
 ```
 
 ## Upgrade contract
