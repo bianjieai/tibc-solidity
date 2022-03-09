@@ -1,14 +1,15 @@
 {
-    "clientStateCodecAddress":"",
-    "consensusStateCodecAddress":"",
-    "proofCodecAddress":"",
-    "proofVerifierAddress":"",
-    "accessManagerAddress":"",
-    "clientManagerAddress":"",
-    "tmLightClientAddress":"",
-    "routingAddress":"",
-    "packetAddress":"",
-    "transferNFTAddress":"",
-    "transferMTAddress":"",
-    "erc1155BankAddress":""
+	"clientStateCodecAddress": "",
+	"consensusStateCodecAddress": "",
+	"proofCodecAddress": "",
+	"proofVerifierAddress": "",
+	"accessManagerAddress": "",
+	"clientManagerAddress": "",
+	"tmLightClientAddress": "",
+	"routingAddress": "",
+	"packetAddress": "",
+	"transferNFTAddress": "",
+	"transferMTAddress": "",
+	"erc1155BankAddress": "",
+	"multiSignWalletAddress": ""
 }

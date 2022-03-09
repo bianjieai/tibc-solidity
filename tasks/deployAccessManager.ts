@@ -3,14 +3,13 @@ import { task } from "hardhat/config"
 const config = require('./config')
 
 task("deployAcessManager", "Deploy acessManager")
-    .addParam("wallet", "multi sign address")
     .setAction(async (taskArgs, hre) => {
-        const accessManagerFactory = await hre.ethers.getContractFactory('AccessManager')
-        const accessManager = await hre.upgrades.deployProxy(accessManagerFactory,
-            [taskArgs.wallet]);
-        await accessManager.deployed();
-        console.log("AccessManager deployed to:", accessManager.address);
-        await config.load(function (env: any) {
+        await config.load(async function (env: any) {
+            const accessManagerFactory = await hre.ethers.getContractFactory('AccessManager')
+            const accessManager = await hre.upgrades.deployProxy(accessManagerFactory,
+                [env.multiSignWalletAddress]);
+            await accessManager.deployed();
+            console.log("AccessManager deployed to:", accessManager.address);
             env.accessManagerAddress = accessManager.address
         },true)
     });
