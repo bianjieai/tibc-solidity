@@ -30,10 +30,10 @@ task("deployLibraries", "Deploy All Libraries")
         console.log("Verifier deployed to:", verifierLib.address);
 
         await config.load(function (env: any) {
-            env.CLIENT_STATE_CODEC_ADDRES = clientStateCodec.address
-            env.CONSENSUS_STATE_CODEC_ADDRES = consensusStateCodec.address
-            env.PROOF_CODEC_ADDRES = proofCodec.address
-            env.VERIFIER_ADDRES = verifierLib.address
+            env.clientStateCodecAddress = clientStateCodec.address
+            env.consensusStateCodecAddress = consensusStateCodec.address
+            env.proofCodecAddress = proofCodec.address
+            env.proofVerifierAddress = verifierLib.address
         },true)
     });
 

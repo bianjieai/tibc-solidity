@@ -11,7 +11,7 @@ task("deployAcessManager", "Deploy acessManager")
         await accessManager.deployed();
         console.log("AccessManager deployed to:", accessManager.address);
         await config.load(function (env: any) {
-            env.ACCESS_MANAGER_ADDRES = accessManager.address
+            env.accessManagerAddress = accessManager.address
         },true)
     });
 

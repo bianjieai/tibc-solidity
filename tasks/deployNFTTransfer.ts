@@ -9,12 +9,12 @@ task("deployNFTTransfer", "Deploy NFT Transfer")
             const transferFactory = await hre.ethers.getContractFactory('Transfer')
             const transfer = await hre.upgrades.deployProxy(transferFactory,
                 [
-                    String(env.PACKET_ADDRES),
-                    String(env.CLIENT_MANAGER_ADDRES)
+                    String(env.packetAddress),
+                    String(env.clientManagerAddress)
                 ]);
             await transfer.deployed();
             console.log("Transfer deployed to:", transfer.address);
-            env.TRANSFER_ADDRES = transfer.address
+            env.transferNFTAddress = transfer.address
         },true)
     });
 

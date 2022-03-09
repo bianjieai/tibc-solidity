@@ -1,8 +1,8 @@
 const fs = require('fs')
 
 function writeConfig(content:Object) {
-    let data = JSON.stringify(content);
-    fs.writeFileSync('./env.json', data)
+    let data = JSON.stringify(content, null,'\t');
+    fs.writeFileSync('./tibcconfig.json', data)
 }
 
 async function load(callback: Function,override:Boolean = false) {
@@ -15,11 +15,10 @@ async function load(callback: Function,override:Boolean = false) {
 
 function loadSync() {
     try { 
-        let rawdata = fs.readFileSync('./env.json');
+        let rawdata = fs.readFileSync('./tibcconfig.json');
         return JSON.parse(rawdata);
     }catch(e) {
-        console.log("No env.json file found");
-        return {}
+        console.log("no tibcconfig.json file found");
     }
 }
 

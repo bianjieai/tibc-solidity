@@ -1,12 +1,9 @@
 import "@nomiclabs/hardhat-web3";
-import { ethers, upgrades } from "hardhat";
 import { task, types } from "hardhat/config"
 import { readFileSync } from 'fs';
 const config = require('./config')
 
-const CLIENT_MANAGER_ADDRES = process.env.CLIENT_MANAGER_ADDRES;
-const ACCESS_MANAGER_ADDRES = process.env.ACCESS_MANAGER_ADDRES;
-
+const clientManagerAddress = process.env.clientManagerAddress;
 let client = require("../test/proto/compiled.js");
 
 task("deployClientManager", "Deploy Client Manager")
@@ -16,11 +13,11 @@ task("deployClientManager", "Deploy Client Manager")
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
                 taskArgs.chain,
-                env.ACCESS_MANAGER_ADDRES
+                env.accessManagerAddress
             ]);
             await clientManager.deployed();
             console.log("Client Manager deployed to:", clientManager.address);
-            env.CLIENT_MANAGER_ADDRES = clientManager.address
+            env.clientManagerAddress = clientManager.address
         },true)
     });
 
@@ -29,10 +26,10 @@ task("upgradeClientManager", "Upgrade Client Manager")
     .setAction(async (taskArgs, hre) => {
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
 
-        const clientManager = await hre.upgrades.upgradeProxy(String(CLIENT_MANAGER_ADDRES), clientManagerFactory);
+        const clientManager = await hre.upgrades.upgradeProxy(String(clientManagerAddress), clientManagerFactory);
         await clientManager.deployed();
         console.log("Client Manager upgraded to:", clientManager.address);
-        console.log("export CLIENT_MANAGER_ADDRES=%s", clientManager.address);
+        console.log("export clientManagerAddress=%s", clientManager.address);
     });
 task("createClientFromFile", "Deploy Client Manager")
     .addParam("chain", "Chain Name")
@@ -49,7 +46,7 @@ task("createClientFromFile", "Deploy Client Manager")
 
         const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
 
-        const clientManager = await clientManagerFactory.attach(String(CLIENT_MANAGER_ADDRES));
+        const clientManager = await clientManagerFactory.attach(String(clientManagerAddress));
 
         const clientStateObj = JSON.parse(clientStatebytes.toString())
 
@@ -105,7 +102,7 @@ task("createClient", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
             const clientStatebytes = Buffer.from(taskArgs.clientstate, "hex")
             const clientStateObj = JSON.parse(clientStatebytes.toString())
             const clientStateEncode = {
@@ -156,7 +153,7 @@ task("registerRelayer", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
             const result = await clientManager.registerRelayer(taskArgs.chain, taskArgs.relayer);
             console.log(result);
         })
@@ -168,7 +165,7 @@ task("updateClient", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
             const result = await clientManager.updateClient(taskArgs.chain, Buffer.from(taskArgs.header, "hex"))
             console.log(await result.wait());
         })
@@ -179,7 +176,7 @@ task("getRelayers", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
             const result = await clientManager.relayers(taskArgs.chain, taskArgs.relayer)
             console.log(result);
         })
@@ -190,7 +187,7 @@ task("lastheight", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.CLIENT_MANAGER_ADDRES);
+            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
             const result = await clientManager.getLatestHeight(taskArgs.chain)
             console.log(await result.wait());
         })

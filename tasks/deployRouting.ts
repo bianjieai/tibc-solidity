@@ -6,10 +6,10 @@ task("deployRouting", "Deploy Routing")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const routingFactory = await hre.ethers.getContractFactory('Routing')
-            const routing = await hre.upgrades.deployProxy(routingFactory, [env.ACCESS_MANAGER_ADDRES]);
+            const routing = await hre.upgrades.deployProxy(routingFactory, [env.accessManagerAddress]);
             await routing.deployed();
             console.log("Routing deployed to:", routing.address);
-            env.ROUTING_ADDRES = routing.address
+            env.routingAddress = routing.address
         },true)
     });
 
@@ -18,7 +18,7 @@ task("setRoutingRules", "Set Routing Rules")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const routingFactory = await hre.ethers.getContractFactory('Routing')
-            const routing = await routingFactory.attach(env.ROUTING_ADDRES);
+            const routing = await routingFactory.attach(env.routingAddress);
             let rules: string[] = taskArgs.rules.split("|")
             const result = await routing.setRoutingRules(rules)
             console.log(result);
@@ -31,7 +31,7 @@ task("addRouting", "Add module routing")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const routingFactory = await hre.ethers.getContractFactory('Routing')
-            const routing = await routingFactory.attach(env.ROUTING_ADDRES);
+            const routing = await routingFactory.attach(env.routingAddress);
             const result = await routing.addRouting(taskArgs.module, taskArgs.address)
             console.log(result);
         })
