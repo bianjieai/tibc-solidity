@@ -9,7 +9,7 @@ task("deployClientManager", "Deploy Client Manager")
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
-                env.network.counterpartyChainName,
+                env.network.nativeChainName,
                 env.contract.accessManagerAddress
             ]);
             await clientManager.deployed();
@@ -104,6 +104,19 @@ task("updateClient", "Deploy Client Manager")
             console.log(await result.wait());
         })
     });
+
+task("getClient", "Deploy Client Manager")
+    .setAction(async (taskArgs, hre) => {
+        await config.load(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
+            const result = await clientManager.getClient(
+                env.network.counterpartyChainName,
+            )
+            console.log(await result.wait());
+        })
+    });
+
 task("getRelayers", "Deploy Client Manager")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
@@ -123,7 +136,7 @@ task("lastheight", "Deploy Client Manager")
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
             const result = await clientManager.getLatestHeight(env.network.counterpartyChainName)
-            console.log(await result.wait());
+            console.log(result);
         })
     });
 

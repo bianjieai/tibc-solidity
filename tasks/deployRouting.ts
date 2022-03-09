@@ -32,7 +32,7 @@ task("addRouting", "Add module routing")
             const routingFactory = await hre.ethers.getContractFactory('Routing')
             const routing = await routingFactory.attach(env.contract.routingAddress);
 
-            var moduleAddress = env.contract.modules[taskArgs.module]
+            var moduleAddress
             if (taskArgs.module == "NFT") {
                 moduleAddress = env.contract.transferNFTAddress
             } else if (taskArgs.module == "MT") {
