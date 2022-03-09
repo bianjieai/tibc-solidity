@@ -10,7 +10,7 @@ task("deployERC1155Bank", "Deploy ERC1155Bank")
             const bank = await hre.upgrades.deployProxy(erc1155BankFactory, [taskArgs.owner]);
             await bank.deployed();
             console.log("ERC1155Bank deployed to:", bank.address);
-            env.erc1155BankAddress = bank.address
+            env.contract.erc1155BankAddress = bank.address
         },true)
     });
 

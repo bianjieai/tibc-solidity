@@ -9,12 +9,12 @@ task("deployPacket", "Deploy Packet")
             const packetFactory = await hre.ethers.getContractFactory('Packet')
             const packet = await hre.upgrades.deployProxy(packetFactory,
                 [
-                    String(env.clientManagerAddress),
-                    String(env.routingAddress)
+                    env.contract.clientManagerAddress,
+                    env.contract.routingAddress
                 ]);
             await packet.deployed();
             console.log("Packet deployed to:", packet.address);
-            env.packetAddress = packet.address
+            env.contract.packetAddress = packet.address
         },true)
     });
 

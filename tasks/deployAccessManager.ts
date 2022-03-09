@@ -10,7 +10,7 @@ task("deployAcessManager", "Deploy acessManager")
                 [env.multiSignWalletAddress]);
             await accessManager.deployed();
             console.log("AccessManager deployed to:", accessManager.address);
-            env.accessManagerAddress = accessManager.address
+            env.contract.accessManagerAddress = accessManager.address
         },true)
     });
 

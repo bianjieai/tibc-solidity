@@ -7,16 +7,16 @@ task("deployTendermint", "Deploy Tendermint Client")
         await config.load(async function (env: any) {
             const tendermintFactory = await hre.ethers.getContractFactory('Tendermint', {
                 libraries: {
-                    ClientStateCodec: env.clientStateCodecAddress,
-                    ConsensusStateCodec: env.consensusStateCodecAddress,
-                    Verifier: env.proofVerifierAddress,
+                    ClientStateCodec: env.contract.clientStateCodecAddress,
+                    ConsensusStateCodec: env.contract.consensusStateCodecAddress,
+                    Verifier: env.contract.proofVerifierAddress,
                 }
             })
 
-            const tendermint = await hre.upgrades.deployProxy(tendermintFactory, [env.clientManagerAddress],
+            const tendermint = await hre.upgrades.deployProxy(tendermintFactory, [env.contract.clientManagerAddress],
                 { "unsafeAllowLinkedLibraries": true });
             await tendermint.deployed();
-            env.tmLightClientAddress = tendermint.address
+            env.contract.tmLightClientAddress = tendermint.address
             console.log("Tendermint deployed to:", tendermint.address);
         },true)
     });

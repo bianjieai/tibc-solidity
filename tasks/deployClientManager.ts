@@ -1,109 +1,43 @@
 import "@nomiclabs/hardhat-web3";
 import { task, types } from "hardhat/config"
-import { readFileSync } from 'fs';
 const config = require('./config')
 
-const clientManagerAddress = process.env.clientManagerAddress;
 let client = require("../test/proto/compiled.js");
 
 task("deployClientManager", "Deploy Client Manager")
-    .addParam("chain", "Chain Name")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await hre.upgrades.deployProxy(clientManagerFactory, [
-                taskArgs.chain,
-                env.accessManagerAddress
+                env.network.counterpartyChainName,
+                env.contract.accessManagerAddress
             ]);
             await clientManager.deployed();
             console.log("Client Manager deployed to:", clientManager.address);
-            env.clientManagerAddress = clientManager.address
-        },true)
+            env.contract.clientManagerAddress = clientManager.address
+        }, true)
     });
 
 task("upgradeClientManager", "Upgrade Client Manager")
     .addParam("chain", "Chain Name")
     .setAction(async (taskArgs, hre) => {
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await hre.upgrades.upgradeProxy(String(clientManagerAddress), clientManagerFactory);
-        await clientManager.deployed();
-        console.log("Client Manager upgraded to:", clientManager.address);
-        console.log("export clientManagerAddress=%s", clientManager.address);
+        await config.load(async function (env: any) {
+            const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
+            const clientManager = await hre.upgrades.upgradeProxy(
+                env.contract.clientManagerAddress,
+                clientManagerFactory
+            );
+            await clientManager.deployed();
+            console.log("Client Manager upgraded to:", clientManager.address);
+            env.contract.clientManagerAddress = clientManager.address
+        })
     });
-task("createClientFromFile", "Deploy Client Manager")
-    .addParam("chain", "Chain Name")
-    .addParam("client", "Client Address")
-    .addParam("clientstate", "HEX encoding client client")
-    .addParam("consensusstate", "HEX encoding consensus state")
-    .setAction(async (taskArgs, hre) => {
-
-        const clientStatebytesHex = await readFileSync(taskArgs.clientstate);
-        const clientStatebytes = Buffer.from(clientStatebytesHex.toString(), "hex");
-
-        const consensusStateBytesHex = await readFileSync(taskArgs.consensusstate);
-        const consensusStateBytes = Buffer.from(consensusStateBytesHex.toString(), "hex");
-
-        const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-
-        const clientManager = await clientManagerFactory.attach(String(clientManagerAddress));
-
-        const clientStateObj = JSON.parse(clientStatebytes.toString())
-
-        const clientStateEncode = {
-            chainId: clientStateObj.chainId,
-            trustLevel: {
-                numerator: clientStateObj.trustLevel.numerator,
-                denominator: clientStateObj.trustLevel.denominator
-            },
-
-            trustingPeriod: clientStateObj.trustingPeriod,
-            unbondingPeriod: clientStateObj.unbondingPeriod,
-            maxClockDrift: clientStateObj.maxClockDrift,
-            latestHeight: {
-                revisionNumber: clientStateObj.latestHeight.revisionNumber,
-                revisionHeight: clientStateObj.latestHeight.revisionHeight
-            },
-            merklePrefix: {
-                keyPrefix: Buffer.from("tibc"),
-            },
-            timeDelay: 10,
-        }
-
-
-        const clientState = client.ClientState.encode(clientStateEncode).finish();
-
-        const consensusStateObj = JSON.parse(consensusStateBytes.toString())
-
-        const consensusStateEncode = {
-            timestamp: {
-                secs: consensusStateObj.timestamp.secs,
-                nanos: consensusStateObj.timestamp.nanos,
-            },
-            root: Buffer.from(consensusStateObj.root, "hex"),
-            nextValidatorsHash: Buffer.from(consensusStateObj.nextValidatorsHash, "hex")
-        }
-
-        const consensusState = client.ConsensusState.encode(consensusStateEncode).finish();
-
-        const result = await clientManager.createClient(
-            taskArgs.chain,
-            taskArgs.client,
-            clientState,
-            consensusState);
-        console.log(result);
-
-    });
-
 task("createClient", "Deploy Client Manager")
-    .addParam("chain", "Chain Name")
-    .addParam("clientstate", "HEX encoding client client")
-    .addParam("consensusstate", "HEX encoding consensus state")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
-            const clientStatebytes = Buffer.from(taskArgs.clientstate, "hex")
+            const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
+            const clientStatebytes = Buffer.from(env.network.clientstate, "hex")
             const clientStateObj = JSON.parse(clientStatebytes.toString())
             const clientStateEncode = {
                 chainId: clientStateObj.chainId,
@@ -127,7 +61,7 @@ task("createClient", "Deploy Client Manager")
 
 
             const clientState = client.ClientState.encode(clientStateEncode).finish();
-            const consensusStateBytes = Buffer.from(taskArgs.consensusstate, "hex")
+            const consensusStateBytes = Buffer.from(env.network.consensusstate, "hex")
             const consensusStateObj = JSON.parse(consensusStateBytes.toString())
             const consensusStateEncode = {
                 timestamp: {
@@ -139,56 +73,56 @@ task("createClient", "Deploy Client Manager")
             }
             const consensusState = client.ConsensusState.encode(consensusStateEncode).finish();
             const result = await clientManager.createClient(
-                taskArgs.chain,
-                taskArgs.client,
+                env.network.counterpartyChainName,
+                env.contract.tmLightClientAddress,
                 clientState,
                 consensusState);
             console.log(result);
-        },true)
+        }, true)
     });
 
 task("registerRelayer", "Deploy Client Manager")
-    .addParam("chain", "Chain Name")
-    .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
-            const result = await clientManager.registerRelayer(taskArgs.chain, taskArgs.relayer);
+            const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
+            const result = await clientManager.registerRelayer(
+                env.network.counterpartyChainName,
+                env.network.relayerAddress
+            );
             console.log(result);
         })
     });
 
 task("updateClient", "Deploy Client Manager")
-    .addParam("chain", "chain name")
     .addParam("header", "HEX encoding header")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
-            const result = await clientManager.updateClient(taskArgs.chain, Buffer.from(taskArgs.header, "hex"))
+            const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
+            const result = await clientManager.updateClient(env.network.counterpartyChainName, Buffer.from(taskArgs.header, "hex"))
             console.log(await result.wait());
         })
     });
 task("getRelayers", "Deploy Client Manager")
-    .addParam("chain", "Chain Name")
-    .addParam("relayer", "Relayer Address")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
-            const result = await clientManager.relayers(taskArgs.chain, taskArgs.relayer)
+            const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
+            const result = await clientManager.relayers(
+                env.network.counterpartyChainName,
+                env.network.relayerAddress
+            )
             console.log(result);
         })
     });
 
 task("lastheight", "Deploy Client Manager")
-    .addParam("chain", "Chain Name")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
-            const clientManager = await clientManagerFactory.attach(env.clientManagerAddress);
-            const result = await clientManager.getLatestHeight(taskArgs.chain)
+            const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
+            const result = await clientManager.getLatestHeight(env.network.counterpartyChainName)
             console.log(await result.wait());
         })
     });

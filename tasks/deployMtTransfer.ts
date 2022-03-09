@@ -10,12 +10,12 @@ task("deployMtTransfer", "Deploy MT Transfer")
             const transferFactory = await hre.ethers.getContractFactory('MultiTokenTransfer')
             const transfer = await hre.upgrades.deployProxy(transferFactory,
                 [
-                    env.packetAddress,
-                    env.clientManagerAddress
+                    env.contract.packetAddress,
+                    env.contract.clientManagerAddress
                 ]);
             await transfer.deployed();
             console.log("MtTransfer deployed to:", transfer.address);
-            env.transferMTAddress = transfer.address
+            env.contract.transferMTAddress = transfer.address
         },true)
     });
 
