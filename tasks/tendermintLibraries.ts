@@ -1,5 +1,6 @@
 import "@nomiclabs/hardhat-web3";
 import { task } from "hardhat/config"
+const config = require('./config')
 
 task("deployLibraries", "Deploy All Libraries")
     .setAction(async (taskArgs, hre) => {
@@ -28,10 +29,12 @@ task("deployLibraries", "Deploy All Libraries")
         console.log("ProofCodec deployed to:", proofCodec.address);
         console.log("Verifier deployed to:", verifierLib.address);
 
-        console.log("export CLIENT_STATE_CODEC_ADDRES=%s", clientStateCodec.address);
-        console.log("export CONSENSUS_STATE_CODEC_ADDRES=%s", consensusStateCodec.address);
-        console.log("export PROOF_CODEC_ADDRES=%s", proofCodec.address);
-        console.log("export VERIFIER_ADDRES=%s", verifierLib.address);
+        await config.load(function (env: any) {
+            env.contract.clientStateCodecAddress = clientStateCodec.address
+            env.contract.consensusStateCodecAddress = consensusStateCodec.address
+            env.contract.proofCodecAddress = proofCodec.address
+            env.contract.proofVerifierAddress = verifierLib.address
+        },true)
     });
 
 module.exports = {};

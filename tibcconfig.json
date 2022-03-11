@@ -1,0 +1,25 @@
+{
+	"contract": {
+		"clientStateCodecAddress": "",
+		"consensusStateCodecAddress": "",
+		"proofCodecAddress": "",
+		"proofVerifierAddress": "",
+		"accessManagerAddress": "",
+		"clientManagerAddress": "",
+		"tmLightClientAddress": "",
+		"routingAddress": "",
+		"packetAddress": "",
+		"transferNFTAddress": "",
+		"transferMTAddress": "",
+		"erc1155BankAddress": ""
+	},
+	"multiSignWalletAddress": "",
+	"network":{
+		"counterpartyChainName": "",
+		"nativeChainName": "",
+		"relayerAddress":"",
+		"rules":"",
+		"clientstate":"",
+		"consensusstate":""
+	}
+}

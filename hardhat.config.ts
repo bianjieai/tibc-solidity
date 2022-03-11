@@ -6,15 +6,16 @@ import "@typechain/hardhat"
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer"
 import "hardhat-abi-exporter"
-import "./tasks/deployLibraries"
-import "./tasks/deployTendermintClient"
-import "./tasks/deployClientManager"
-import "./tasks/deployPacket"
-import "./tasks/deployRouting"
-import "./tasks/deployERC1155Bank"
-import "./tasks/deployNFTTransfer"
-import "./tasks/deployAccessManager"
-import "./tasks/deployUptickGateway"
+import "./tasks/tendermintLibraries"
+import "./tasks/tendermintClient"
+import "./tasks/clientManager"
+import "./tasks/packet"
+import "./tasks/routing"
+import "./tasks/erc1155Bank"
+import "./tasks/nftTransfer"
+import "./tasks/mtTransfer"
+import "./tasks/accessManager"
+import "./tasks/uptickGateway"
 
 module.exports = {
   defaultNetwork: 'hardhat',
@@ -33,18 +34,18 @@ module.exports = {
     //   gas: 4100000,
     //   accounts: [''],
     // },
-    bsctestnet: {
-      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
-      gasPrice: 20000000000,
-      chainId: 97,
-      //accounts: [''],
-    },
-    bsc: {
-      url: 'https://bsc-dataseed.binance.org',
-      gasPrice: 20000000000,
-      chainId: 56,
-      //accounts: [''],
-    },
+    // bsctestnet: {
+    //   url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+    //   gasPrice: 20000000000,
+    //   chainId: 97,
+    //   accounts: [''],
+    // },
+    // bsc: {
+    //   url: 'https://bsc-dataseed.binance.org',
+    //   gasPrice: 20000000000,
+    //   chainId: 56,
+    //   //accounts: [''],
+    // },
   },
   solidity: {
     version: '0.6.8',
