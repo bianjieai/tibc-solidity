@@ -110,10 +110,10 @@ task("getClient", "Deploy Client Manager")
         await config.load(async function (env: any) {
             const clientManagerFactory = await hre.ethers.getContractFactory('ClientManager')
             const clientManager = await clientManagerFactory.attach(env.contract.clientManagerAddress);
-            const result = await clientManager.getClient(
+            const result = await clientManager.clients(
                 env.network.counterpartyChainName,
             )
-            console.log(await result.wait());
+            console.log(await result);
         })
     });
 
