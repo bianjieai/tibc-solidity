@@ -34,12 +34,12 @@ module.exports = {
     //   gas: 4100000,
     //   accounts: [''],
     // },
-    // bsctestnet: {
-    //   url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
-    //   gasPrice: 20000000000,
-    //   chainId: 97,
-    //   accounts: [''],
-    // },
+    bsctestnet: {
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      gasPrice: 20000000000,
+      chainId: 97,
+      accounts: [''],
+    },
     // bsc: {
     //   url: 'https://bsc-dataseed.binance.org',
     //   gasPrice: 20000000000,
