@@ -78,7 +78,24 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
 
         NftTransfer.Data memory packetData;
         if (awayFromOrigin) {
-            // not support
+            IERC1155Transferable erc1155 = IERC1155Transferable(transferData.class.parseAddr());
+            //lock token
+            erc1155.safeTransferFrom(
+                msg.sender,
+                address(this),
+                transferData.tokenId,
+                1,
+                bytes("")
+            );
+            packetData = NftTransfer.Data({
+                class: transferData.class,
+                id: transferData.tokenId.toString(),
+                uri: erc1155.uri(transferData.tokenId),
+                sender: Bytes.addressToString(msg.sender),
+                receiver: transferData.receiver,
+                awayFromOrigin: awayFromOrigin,
+                destContract: transferData.destContract
+            });
         } else {
             // nft is be closed to origin
             // burn nft
@@ -219,7 +236,16 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");
         }
         // go back to source chain
-        // not support
+        IERC1155Transferable erc1155 = IERC1155Transferable(data.destContract.parseAddr());
+        //unlock token
+        erc1155.safeTransferFrom(
+            address(this),
+            data.receiver.parseAddr(),
+            data.id.parseInt(),
+            1,
+            bytes("")
+        );
+        return _newAcknowledgement(true, "");
     }
 
     /**
