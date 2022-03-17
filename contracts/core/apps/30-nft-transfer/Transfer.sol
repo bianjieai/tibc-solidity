@@ -15,6 +15,8 @@ import "../../../interfaces/IERC1155Bank.sol";
 import "../../../interfaces/IAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721MetadataUpgradeable.sol";
 
 contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
     using Strings for *;
@@ -49,10 +51,10 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
         _;
     }
 
-    function initialize(
-        address packetContract,
-        address clientMgrContract
-    ) public initializer {
+    function initialize(address packetContract, address clientMgrContract)
+        public
+        initializer
+    {
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
     }
@@ -78,19 +80,32 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
 
         NftTransfer.Data memory packetData;
         if (awayFromOrigin) {
-            IERC1155Transferable erc1155 = IERC1155Transferable(transferData.class.parseAddr());
-            //lock token
-            erc1155.safeTransferFrom(
-                msg.sender,
-                address(this),
-                transferData.tokenId,
-                1,
-                bytes("")
+            IERC721Upgradeable erc721 = IERC721Upgradeable(
+                transferData.class.parseAddr()
             );
+
+            require(
+                isApproved(
+                    erc721,
+                    transferData.owner.parseAddr(),
+                    msg.sender,
+                    transferData.tokenId
+                ),
+                "no authorized"
+            );
+
+            string memory tokenURI = "";
+            // bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
+            if (erc721.supportsInterface(0xc87b56dd)) {
+                tokenURI = IERC721MetadataUpgradeable(
+                    transferData.class.parseAddr()
+                ).tokenURI(transferData.tokenId);
+            }
+
             packetData = NftTransfer.Data({
                 class: transferData.class,
                 id: transferData.tokenId.toString(),
-                uri: erc1155.uri(transferData.tokenId),
+                uri: tokenURI,
                 sender: Bytes.addressToString(msg.sender),
                 receiver: transferData.receiver,
                 awayFromOrigin: awayFromOrigin,
@@ -236,13 +251,14 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");
         }
         // go back to source chain
-        IERC1155Transferable erc1155 = IERC1155Transferable(data.destContract.parseAddr());
+        IERC721Upgradeable erc721 = IERC721Upgradeable(
+            data.destContract.parseAddr()
+        );
         //unlock token
-        erc1155.safeTransferFrom(
+        erc721.safeTransferFrom(
             address(this),
             data.receiver.parseAddr(),
             data.id.parseInt(),
-            1,
             bytes("")
         );
         return _newAcknowledgement(true, "");
@@ -435,5 +451,24 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
         returns (TransferDataTypes.OriginNFT memory)
     {
         return traces[tokenId];
+    }
+
+    function isApproved(
+        IERC721Upgradeable erc721,
+        address owner,
+        address operator,
+        uint256 tokenId
+    ) private returns (bool) {
+        address tokenOwner = erc721.ownerOf(tokenId);
+        if (operator == tokenOwner) {
+            return true;
+        }
+
+        address grantee = erc721.getApproved(tokenId);
+        if (grantee == operator) {
+            return true;
+        }
+
+        return erc721.isApprovedForAll(owner, operator);
     }
 }

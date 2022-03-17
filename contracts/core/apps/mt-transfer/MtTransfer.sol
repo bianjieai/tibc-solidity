@@ -85,25 +85,7 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
 
         MtTransfer.Data memory packetData;
         if (awayFromOrigin) {
-            IERC1155Transferable erc1155 = IERC1155Transferable(transferData.class.parseAddr());
-            //lock token
-            erc1155.safeTransferFrom(
-                msg.sender,
-                address(this),
-                transferData.tokenId,
-                transferData.amount,
-                bytes("")
-            );
-            packetData = MtTransfer.Data({
-                class: transferData.class,
-                id: transferData.tokenId.toString(),
-                data: bytes(erc1155.uri(transferData.tokenId)),
-                sender: Bytes.addressToString(msg.sender),
-                receiver: transferData.receiver,
-                awayFromOrigin: awayFromOrigin,
-                destContract: transferData.destContract,
-                amount: transferData.amount
-            });
+            //todo
         } else {
             // mt is be closed to origin
             // burn mt
@@ -244,16 +226,7 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
             return _newAcknowledgement(false, "onrecvPackt : mint mt error");
         }
         // go back to source chain
-        IERC1155Transferable erc1155 = IERC1155Transferable(data.destContract.parseAddr());
-        //unlock token
-        erc1155.safeTransferFrom(
-            address(this),
-            data.receiver.parseAddr(),
-            data.id.parseInt(),
-            data.amount,
-            bytes("")
-        );
-        return _newAcknowledgement(true, "");
+        // todo
     }
 
     /**
