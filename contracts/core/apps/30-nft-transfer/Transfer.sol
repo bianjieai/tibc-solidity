@@ -94,6 +94,14 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
                 "no authorized"
             );
 
+            // lock nft
+            erc721.safeTransferFrom(
+                transferData.owner.parseAddr(),
+                address(this),
+                transferData.tokenId,
+                bytes("")
+            );
+
             string memory tokenURI = "";
             // bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
             if (erc721.supportsInterface(0xc87b56dd)) {
