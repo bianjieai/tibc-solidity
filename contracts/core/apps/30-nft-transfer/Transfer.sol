@@ -114,7 +114,7 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
                 class: transferData.class,
                 id: transferData.tokenId.toString(),
                 uri: tokenURI,
-                sender: Bytes.addressToString(msg.sender),
+                sender: transferData.owner,
                 receiver: transferData.receiver,
                 awayFromOrigin: awayFromOrigin,
                 destContract: transferData.destContract
@@ -366,6 +366,18 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
      * @param data Data in the transmitted packet
      */
     function _refundTokens(NftTransfer.Data memory data) private {
+        if(data.awayFromOrigin) {
+            IERC721Upgradeable erc721 = IERC721Upgradeable(
+                data.class.parseAddr()
+            );
+            erc721.safeTransferFrom(
+                address(this),
+                data.sender.parseAddr(),
+                data.id.parseInt(),
+                bytes("")
+            );
+            return;
+        }
         uint256 tokenId = genTokenId(data.class, data.id);
         _mint(
             data.destContract.parseAddr(),
@@ -466,7 +478,7 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
         address owner,
         address operator,
         uint256 tokenId
-    ) private returns (bool) {
+    ) private view returns (bool) {
         address tokenOwner = erc721.ownerOf(tokenId);
         if (operator == tokenOwner) {
             return true;
