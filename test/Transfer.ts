@@ -78,6 +78,7 @@ describe('Transfer', () => {
         let receiverOnOtherChain = (await accounts[2].getAddress()).toString();
         let transferData = {
             tokenId: expTokenId,
+            owner: "",
             receiver: receiverOnOtherChain,
             class: "nft/wenchang/irishub/ethereum/kitty",
             destChain: "irishub",

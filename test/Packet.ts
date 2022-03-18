@@ -77,6 +77,7 @@ describe('Packet', () => {
         let pkt = {
             sequence: 1,
             port: "nft",
+            owner: "",
             sourceChain: destChainName,
             destChain: chainName,
             relayChain: relayChainName,
