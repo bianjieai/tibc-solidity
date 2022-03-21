@@ -40,12 +40,12 @@ module.exports = {
     //   chainId: 97,
     //   accounts: [''],
     // },
-    bsc: {
-      url: 'https://bsc-dataseed.binance.org',
-      gasPrice: 5500000000,
-      chainId: 56,
-      accounts: [''],
-    },
+    // bsc: {
+    //   url: 'https://bsc-dataseed.binance.org',
+    //   gasPrice: 5500000000,
+    //   chainId: 56,
+    //   accounts: [''],
+    // },
   },
   solidity: {
     version: '0.6.8',
