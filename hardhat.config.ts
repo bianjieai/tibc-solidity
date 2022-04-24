@@ -42,9 +42,9 @@ module.exports = {
     // },
     // bsc: {
     //   url: 'https://bsc-dataseed.binance.org',
-    //   gasPrice: 20000000000,
+    //   gasPrice: 5500000000,
     //   chainId: 56,
-    //   //accounts: [''],
+    //   accounts: [''],
     // },
   },
   solidity: {
@@ -77,6 +77,7 @@ module.exports = {
   },
   abiExporter: {
     path: './abi',
+    runOnCompile: true,
     clear: true,
     spacing: 2
   }
