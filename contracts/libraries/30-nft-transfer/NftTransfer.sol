@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 library TransferDataTypes {
     struct TransferData {
         uint256 tokenId;
+        string  owner;
         string  receiver;
         string  class;
         string  destChain;

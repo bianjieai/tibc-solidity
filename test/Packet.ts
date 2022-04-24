@@ -34,6 +34,7 @@ describe('Packet', () => {
         let dataByte = Buffer.from("wd", "utf-8")
         let transferData = {
             tokenId: 1,
+            owner : "",
             receiver: "",
             class: "",
             destChain: destChainName,
@@ -76,6 +77,7 @@ describe('Packet', () => {
         let pkt = {
             sequence: 1,
             port: "nft",
+            owner: "",
             sourceChain: destChainName,
             destChain: chainName,
             relayChain: relayChainName,

@@ -85,7 +85,7 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
 
         MtTransfer.Data memory packetData;
         if (awayFromOrigin) {
-            // not support
+            //todo
         } else {
             // mt is be closed to origin
             // burn mt
@@ -226,7 +226,7 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
             return _newAcknowledgement(false, "onrecvPackt : mint mt error");
         }
         // go back to source chain
-        // not support
+        // todo
     }
 
     /**

@@ -15,5 +15,4 @@ interface IERC1155Bank {
         uint256 id,
         uint256 amount
     ) external;
-
 }

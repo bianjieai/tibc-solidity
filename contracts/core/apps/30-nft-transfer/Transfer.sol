@@ -15,6 +15,8 @@ import "../../../interfaces/IERC1155Bank.sol";
 import "../../../interfaces/IAccessManager.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721MetadataUpgradeable.sol";
 
 contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
     using Strings for *;
@@ -49,10 +51,10 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
         _;
     }
 
-    function initialize(
-        address packetContract,
-        address clientMgrContract
-    ) public initializer {
+    function initialize(address packetContract, address clientMgrContract)
+        public
+        initializer
+    {
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
     }
@@ -78,7 +80,45 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
 
         NftTransfer.Data memory packetData;
         if (awayFromOrigin) {
-            // not support
+            IERC721Upgradeable erc721 = IERC721Upgradeable(
+                transferData.class.parseAddr()
+            );
+
+            require(
+                isApproved(
+                    erc721,
+                    transferData.owner.parseAddr(),
+                    msg.sender,
+                    transferData.tokenId
+                ),
+                "no authorized"
+            );
+
+            // lock nft
+            erc721.safeTransferFrom(
+                transferData.owner.parseAddr(),
+                address(this),
+                transferData.tokenId,
+                bytes("")
+            );
+
+            string memory tokenURI = "";
+            // bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
+            if (erc721.supportsInterface(0xc87b56dd)) {
+                tokenURI = IERC721MetadataUpgradeable(
+                    transferData.class.parseAddr()
+                ).tokenURI(transferData.tokenId);
+            }
+
+            packetData = NftTransfer.Data({
+                class: transferData.class,
+                id: transferData.tokenId.toString(),
+                uri: tokenURI,
+                sender: transferData.owner,
+                receiver: transferData.receiver,
+                awayFromOrigin: awayFromOrigin,
+                destContract: transferData.destContract
+            });
         } else {
             // nft is be closed to origin
             // burn nft
@@ -219,7 +259,17 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
             return _newAcknowledgement(false, "onrecvPackt : mint nft error");
         }
         // go back to source chain
-        // not support
+        IERC721Upgradeable erc721 = IERC721Upgradeable(
+            data.destContract.parseAddr()
+        );
+        //unlock token
+        erc721.safeTransferFrom(
+            address(this),
+            data.receiver.parseAddr(),
+            data.id.parseInt(),
+            bytes("")
+        );
+        return _newAcknowledgement(true, "");
     }
 
     /**
@@ -316,6 +366,18 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
      * @param data Data in the transmitted packet
      */
     function _refundTokens(NftTransfer.Data memory data) private {
+        if(data.awayFromOrigin) {
+            IERC721Upgradeable erc721 = IERC721Upgradeable(
+                data.class.parseAddr()
+            );
+            erc721.safeTransferFrom(
+                address(this),
+                data.sender.parseAddr(),
+                data.id.parseInt(),
+                bytes("")
+            );
+            return;
+        }
         uint256 tokenId = genTokenId(data.class, data.id);
         _mint(
             data.destContract.parseAddr(),
@@ -409,5 +471,24 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
         returns (TransferDataTypes.OriginNFT memory)
     {
         return traces[tokenId];
+    }
+
+    function isApproved(
+        IERC721Upgradeable erc721,
+        address owner,
+        address operator,
+        uint256 tokenId
+    ) private view returns (bool) {
+        address tokenOwner = erc721.ownerOf(tokenId);
+        if (operator == tokenOwner) {
+            return true;
+        }
+
+        address grantee = erc721.getApproved(tokenId);
+        if (grantee == operator) {
+            return true;
+        }
+
+        return erc721.isApprovedForAll(owner, operator);
     }
 }
