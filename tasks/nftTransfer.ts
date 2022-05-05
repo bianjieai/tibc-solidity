@@ -32,14 +32,15 @@ task("transferNFT", "Sender NFT")
         const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank')
         const erc1155Bank = await erc1155BankFactory.attach(taskArgs.erc1155);
         const originToken = await transfer.getBinding(tokenID);
-
+        
         let transferdata = {
-            tokenId: tokenID,
+            tokenId: taskArgs.nftid,
             receiver: taskArgs.receiver,
             class: originToken.class,
             destChain: taskArgs.destchain,
             relayChain: taskArgs.relaychain,
             destContract: erc1155Bank.address,
+            owner: "",
         }
         let res = await transfer.sendTransfer(transferdata);
         console.log(await res.wait())
