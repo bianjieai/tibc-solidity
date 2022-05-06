@@ -1,5 +1,6 @@
 import "@nomiclabs/hardhat-web3";
 import { task } from "hardhat/config";
+import { BigNumber } from "ethers";
 const config = require('./config');
 
 // transferRole
@@ -92,7 +93,9 @@ task("getNFTURI", "mint NFT")
         await config.load(async function (env: any) {
             const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank');
             const erc1155BankMnager = await erc1155BankFactory.attach(env.contract.erc1155BankAddress);
-            const result = await erc1155BankMnager.uri(taskArgs.id);
+            const tokenID = BigNumber.from(taskArgs.id)
+            console.log(tokenID)
+            const result = await erc1155BankMnager.uri(tokenID);
             console.log(result);
         }, true)
     });
