@@ -13,10 +13,16 @@ import "../interfaces/IPacket.sol";
 import "../interfaces/ITransfer.sol";
 import "../interfaces/IERC1155Bank.sol";
 import "../interfaces/IAccessManager.sol";
+import "../core/apps/30-nft-transfer/ERC721Holder.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract MockTransferUpgrade is Initializable, ITransfer, OwnableUpgradeable {
+contract MockTransferUpgrade is
+    Initializable,
+    ITransfer,
+    ERC721Holder,
+    OwnableUpgradeable
+{
     using Strings for *;
     using Bytes for *;
 
@@ -27,7 +33,7 @@ contract MockTransferUpgrade is Initializable, ITransfer, OwnableUpgradeable {
     IClientManager public clientManager;
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
-    
+
     uint256 public version;
 
     /**
@@ -55,10 +61,10 @@ contract MockTransferUpgrade is Initializable, ITransfer, OwnableUpgradeable {
         version = _version;
     }
 
-    function initialize(
-        address packetContract,
-        address clientMgrContract
-    ) public initializer {
+    function initialize(address packetContract, address clientMgrContract)
+        public
+        initializer
+    {
         packet = IPacket(packetContract);
         clientManager = IClientManager(clientMgrContract);
     }
@@ -138,8 +144,8 @@ contract MockTransferUpgrade is Initializable, ITransfer, OwnableUpgradeable {
         override
         returns (bytes memory)
     {
-       bind(uint256(1), "nft/irishub/dog", "taidy", "www.test.com");
-       return bytes("hello");
+        bind(uint256(1), "nft/irishub/dog", "taidy", "www.test.com");
+        return bytes("hello");
     }
 
     /**

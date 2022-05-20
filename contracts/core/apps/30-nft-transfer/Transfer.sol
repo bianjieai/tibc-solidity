@@ -13,12 +13,20 @@ import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/ITransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 import "../../../interfaces/IAccessManager.sol";
+import "../../../interfaces/ddc/DDC721/IDDC721.sol";
+import "./ERC721Holder.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721MetadataUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/introspection/IERC165Upgradeable.sol";
 
-contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
+contract Transfer is
+    Initializable,
+    ITransfer,
+    ERC721Holder,
+    OwnableUpgradeable
+{
     using Strings for *;
     using Bytes for *;
 
@@ -29,6 +37,12 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
     IClientManager public clientManager;
 
     mapping(uint256 => TransferDataTypes.OriginNFT) public traces;
+
+    bytes4 public constant IID_IERC165 = type(IERC165Upgradeable).interfaceId;
+    bytes4 public constant IID_IERC721 = type(IERC721Upgradeable).interfaceId;
+    bytes4 public constant IID_IDDC721 = type(IDDC721).interfaceId;
+    bytes4 public constant IID_IERC721MD =
+        type(IERC721MetadataUpgradeable).interfaceId;
 
     /**
      * @notice Event triggered when the nft mint
@@ -80,34 +94,68 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
 
         NftTransfer.Data memory packetData;
         if (awayFromOrigin) {
-            IERC721Upgradeable erc721 = IERC721Upgradeable(
-                transferData.class.parseAddr()
-            );
-
-            require(
-                isApproved(
-                    erc721,
-                    transferData.owner.parseAddr(),
-                    msg.sender,
-                    transferData.tokenId
-                ),
-                "no authorized"
-            );
-
-            // lock nft
-            erc721.safeTransferFrom(
-                transferData.owner.parseAddr(),
-                address(this),
-                transferData.tokenId,
-                bytes("")
-            );
-
             string memory tokenURI = "";
-            // bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
-            if (erc721.supportsInterface(0xc87b56dd)) {
-                tokenURI = IERC721MetadataUpgradeable(
-                    transferData.class.parseAddr()
-                ).tokenURI(transferData.tokenId);
+            IERC165Upgradeable erc165 = IERC165Upgradeable(
+                transferData.destContract.parseAddr()
+            );
+
+            if (
+                erc165.supportsInterface(IID_IERC721) &&
+                !erc165.supportsInterface(IID_IDDC721)
+            ) {
+                IERC721Upgradeable erc721 = IERC721Upgradeable(
+                    transferData.destContract.parseAddr()
+                );
+
+                require(
+                    isApproved(
+                        erc721,
+                        transferData.owner.parseAddr(),
+                        msg.sender,
+                        transferData.tokenId
+                    ),
+                    "no authorized"
+                );
+
+                // lock nft
+                erc721.safeTransferFrom(
+                    transferData.owner.parseAddr(),
+                    address(this),
+                    transferData.tokenId,
+                    bytes("")
+                );
+
+                // bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
+                IERC721MetadataUpgradeable erc721Md = IERC721MetadataUpgradeable(
+                        transferData.destContract.parseAddr()
+                    );
+                tokenURI = erc721Md.tokenURI(transferData.tokenId);
+            } else if (erc165.supportsInterface(IID_IDDC721)) {
+                IDDC721 ddc721 = IDDC721(transferData.destContract.parseAddr());
+                require(
+                    isApprovedForDDC(
+                        ddc721,
+                        transferData.owner.parseAddr(),
+                        msg.sender,
+                        transferData.tokenId
+                    ),
+                    "no authorized"
+                );
+
+                // lock nft
+                ddc721.safeTransferFrom(
+                    transferData.owner.parseAddr(),
+                    address(this),
+                    transferData.tokenId,
+                    bytes("")
+                );
+                tokenURI = ddc721.ddcURI(transferData.tokenId);
+            } else {
+                require(
+                    (erc165.supportsInterface(IID_IERC721) &&
+                        erc165.supportsInterface(IID_IDDC721)),
+                    "cannot be serialized"
+                );
             }
 
             packetData = NftTransfer.Data({
@@ -366,7 +414,7 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
      * @param data Data in the transmitted packet
      */
     function _refundTokens(NftTransfer.Data memory data) private {
-        if(data.awayFromOrigin) {
+        if (data.awayFromOrigin) {
             IERC721Upgradeable erc721 = IERC721Upgradeable(
                 data.class.parseAddr()
             );
@@ -490,5 +538,24 @@ contract Transfer is Initializable, ITransfer, OwnableUpgradeable {
         }
 
         return erc721.isApprovedForAll(owner, operator);
+    }
+
+    function isApprovedForDDC(
+        IDDC721 ddc721,
+        address owner,
+        address operator,
+        uint256 tokenId
+    ) private view returns (bool) {
+        address tokenOwner = ddc721.ownerOf(tokenId);
+        if (operator == tokenOwner) {
+            return true;
+        }
+
+        address grantee = ddc721.getApproved(tokenId);
+        if (grantee == operator) {
+            return true;
+        }
+
+        return ddc721.isApprovedForAll(owner, operator);
     }
 }

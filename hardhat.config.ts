@@ -16,6 +16,7 @@ import "./tasks/nftTransfer"
 import "./tasks/mtTransfer"
 import "./tasks/accessManager"
 import "./tasks/uptickGateway"
+import "./tasks/erc721Bank"
 
 module.exports = {
   defaultNetwork: 'hardhat',

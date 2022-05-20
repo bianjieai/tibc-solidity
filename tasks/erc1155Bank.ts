@@ -67,7 +67,7 @@ task("getRoleFromERC1155Bank", "grant Role For transfer MT ")
     });
 
 
-task("mintNFT", "mint NFT")
+task("mintMT", "mint MT")
     .addParam("account", "NFT Account ")
     .addParam("id", "NFT ID ")
     .addParam("amount", "NFT amount ")
@@ -87,7 +87,7 @@ task("mintNFT", "mint NFT")
     });
 
 
-task("getNFTURI", "mint NFT")
+task("getMTURI", "get MT URI")
     .addParam("id", "NFT ID ")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {
@@ -99,5 +99,42 @@ task("getNFTURI", "mint NFT")
             console.log(result);
         }, true)
     });
+
+task("getMTAmount", "get MT Amount")
+    .addParam("account", "NFT Account ")
+    .addParam("id", "NFT ID ")
+    .setAction(async (taskArgs, hre) => {
+        await config.load(async function (env: any) {
+            const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank');
+            const erc1155BankMnager = await erc1155BankFactory.attach(env.contract.erc1155BankAddress);
+            const tokenID = BigNumber.from(taskArgs.id)
+            const result = await erc1155BankMnager.balanceOf(taskArgs.account, tokenID);
+            console.log(result);
+        }, true)
+    });
+
+task("setApprovedFromERC1155", "set Approved")
+    .addParam("operator", " operator ")
+    .setAction(async (taskArgs, hre) => {
+        await config.load(async function (env: any) {
+            const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank');
+            const erc1155BankMnager = await erc1155BankFactory.attach(env.contract.erc1155BankAddress);
+            const result = await erc1155BankMnager.setApprovalForAll(taskArgs.operator, true);
+            console.log(result);
+        }, true)
+    });
+
+task("getApprovedFromERC1155", "get Approved")
+    .addParam("account", "NFT Account ")
+    .addParam("operator", "NFT operator ")
+    .setAction(async (taskArgs, hre) => {
+        await config.load(async function (env: any) {
+            const erc1155BankFactory = await hre.ethers.getContractFactory('ERC1155Bank');
+            const erc1155BankMnager = await erc1155BankFactory.attach(env.contract.erc1155BankAddress);
+            const result = await erc1155BankMnager.isApprovedForAll(taskArgs.account, taskArgs.operator);
+            console.log(result);
+        }, true)
+    });
+
 
 module.exports = {};

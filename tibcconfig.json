@@ -11,14 +11,15 @@
 		"packetAddress": "",
 		"transferNFTAddress": "",
 		"transferMTAddress": "",
-		"erc1155BankAddress": ""
+		"erc1155BankAddress": "",
+		"erc721BankAddress": ""
 	},
 	"multiSignWalletAddress": "",
 	"network": {
 		"counterpartyChainName": "",
 		"nativeChainName": "",
 		"relayerAddress": "",
-		"rules": "",
+		"rules": "*,*,*",
 		"clientstate": "",
 		"consensusstate": ""
 	}
