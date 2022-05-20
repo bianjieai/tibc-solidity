@@ -16,6 +16,7 @@ import "./tasks/nftTransfer"
 import "./tasks/mtTransfer"
 import "./tasks/accessManager"
 import "./tasks/uptickGateway"
+import "./tasks/erc721Bank"
 
 module.exports = {
   defaultNetwork: 'hardhat',
@@ -26,6 +27,25 @@ module.exports = {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
+    },
+    testnet: {
+      url: 'http://127.0.0.1:8545',
+      gasPrice: 1,
+      chainId: 1223,
+      gas: 4000000,
+      // 部署账户
+      // accounts: ['820BFE6664E4D529453410AA1A17C56851B68412A954772655267CCC092FAF73'],
+      // nft 用户
+      // accounts: ['224629AAF75CB93999D054C23ABB07DFEE31CD28FD57A87F106F09BF2B504835'],
+      // ddc 账户
+      accounts: ['DFD55CDE653ECD9EC0EFCB9443610550CA966970B44AA553C042903010211025'],
+    },
+    dev: {
+      url: 'http://192.168.150.42:8545',
+      gasPrice: 1,
+      chainId: 1223,
+      gas: 4000000,
+      accounts: ['2E71B23A00385B5B9A6BE8F3D5600A34A09F31E8AFC5AFE2193B14EB8AD0120F'],
     },
     // rinkeby: {
     //   url: 'https://rinkeby.infura.io/v3/',

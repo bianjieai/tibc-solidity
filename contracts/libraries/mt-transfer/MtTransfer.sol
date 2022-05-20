@@ -5,15 +5,16 @@ pragma experimental ABIEncoderV2;
 library TransferDataTypes {
     struct TransferData {
         uint256 tokenId;
-        string  receiver;
-        string  class;
-        string  destChain;
-        string  relayChain;
-        string  destContract;
-        uint64  amount;
+        string sender;
+        string receiver;
+        string class;
+        string destChain;
+        string relayChain;
+        string destContract;
+        uint64 amount;
     }
 
-     /*
+    /*
         keep track of class: tokenId -> nft/{source-chain}/{dest-chain}/nftclass
         keep track of id :   tokenId -> id
         keep track of uri :  tokenId -> uri

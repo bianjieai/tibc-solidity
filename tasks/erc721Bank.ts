@@ -85,7 +85,7 @@ task("mintNFT", "mint NFT")
     });
 
 
-task("getNFTURI", "mint NFT")
+task("getNFTURIFromERC721", "mint NFT")
     .addParam("id", "NFT ID ")
     .setAction(async (taskArgs, hre) => {
         await config.load(async function (env: any) {

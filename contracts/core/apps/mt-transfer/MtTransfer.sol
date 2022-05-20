@@ -13,10 +13,20 @@ import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/IMtTransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 import "../../../interfaces/IAccessManager.sol";
+import "../../../interfaces/ddc/DDC1155/IDDC1155.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/introspection/IERC165Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155MetadataURIUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 
-contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
+contract MultiTokenTransfer is
+    Initializable,
+    IMtTransfer,
+    OwnableUpgradeable,
+    ERC1155HolderUpgradeable
+{
     using Strings for *;
     using Bytes for *;
 
@@ -27,6 +37,10 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
     IClientManager public clientManager;
 
     mapping(uint256 => TransferDataTypes.OriginMT) public traces;
+
+    bytes4 public constant IID_IERC165 = type(IERC165Upgradeable).interfaceId;
+    bytes4 public constant IID_IERC1155 = type(IERC1155Upgradeable).interfaceId;
+    bytes4 public constant IID_IDDC1155 = type(IDDC1155).interfaceId;
 
     /**
      * @notice Event triggered when the mt mint
@@ -73,10 +87,7 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
             "sourceChain can't equal to destChain"
         );
 
-        require(
-            transferData.amount > 0,
-            "amount of mt must be greater than 0"
-        );
+        require(transferData.amount > 0, "amount of mt must be greater than 0");
 
         bool awayFromOrigin = isAwayFromOrigin(
             transferData.class,
@@ -86,6 +97,81 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
         MtTransfer.Data memory packetData;
         if (awayFromOrigin) {
             //todo
+            string memory tokenURI = "";
+            IERC165Upgradeable erc165 = IERC165Upgradeable(
+                transferData.destContract.parseAddr()
+            );
+            if (
+                erc165.supportsInterface(IID_IERC1155) &&
+                !erc165.supportsInterface(IID_IDDC1155)
+            ) {
+                IERC1155Upgradeable erc1155 = IERC1155Upgradeable(
+                    transferData.destContract.parseAddr()
+                );
+
+                address sender = transferData.sender.parseAddr();
+
+                // msg.sender == call sendTransfer user
+                require(
+                    sender == msg.sender ||
+                        isApproved(erc1155, sender, msg.sender),
+                    "no authorized"
+                );
+
+                // lock nft
+                // msg.sender == address(this)
+                erc1155.safeTransferFrom(
+                    sender,
+                    address(this),
+                    transferData.tokenId,
+                    transferData.amount,
+                    bytes("")
+                );
+
+                // bytes4(keccak256('uri(uint256)')) == 0x0e89341c
+                if (erc1155.supportsInterface(0x0e89341c)) {
+                    tokenURI = IERC1155MetadataURIUpgradeable(
+                        transferData.destContract.parseAddr()
+                    ).uri(transferData.tokenId);
+                }
+            } else if (erc165.supportsInterface(IID_IDDC1155)) {
+                IDDC1155 ddc1155 = IDDC1155(
+                    transferData.destContract.parseAddr()
+                );
+
+                address sender = transferData.sender.parseAddr();
+
+                require(
+                    sender == msg.sender ||
+                        isApprovedForDDC(ddc1155, sender, msg.sender),
+                    "no authorized"
+                );
+
+                // lock nft
+                ddc1155.safeTransferFrom(
+                    sender,
+                    address(this),
+                    transferData.tokenId,
+                    transferData.amount,
+                    bytes("")
+                );
+
+                tokenURI = ddc1155.ddcURI(transferData.tokenId);
+            } else {
+                require(
+                    (erc165.supportsInterface(IID_IERC1155) && 
+                    erc165.supportsInterface(IID_IDDC1155)),"cannot be serialized");
+            }
+            packetData = MtTransfer.Data({
+                class: transferData.class,
+                id: transferData.tokenId.toString(),
+                data: bytes(tokenURI),
+                sender: transferData.sender,
+                receiver: transferData.receiver,
+                awayFromOrigin: awayFromOrigin,
+                destContract: transferData.destContract,
+                amount: transferData.amount
+            });
         } else {
             // mt is be closed to origin
             // burn mt
@@ -110,7 +196,12 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
                 destContract: transferData.destContract,
                 amount: transferData.amount
             });
-            emit Burn(mt.id, transferData.tokenId, mt.data,transferData.amount);
+            emit Burn(
+                mt.id,
+                transferData.tokenId,
+                mt.data,
+                transferData.amount
+            );
         }
         // send packet
         PacketTypes.Packet memory crossPacket = PacketTypes.Packet({
@@ -146,10 +237,7 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
             data.destContract.parseAddr() != address(0),
             "transfer: invalid address"
         );
-        require(
-            data.amount > 0,
-            "amount of mt must be greater than 0"
-        );
+        require(data.amount > 0, "amount of mt must be greater than 0");
         string memory newClass;
         if (data.awayFromOrigin) {
             Strings.slice memory needle = "/".toSlice();
@@ -220,7 +308,7 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
             ) {
                 // keep trace of class and id and uri
                 bind(tokenId, newClass, data.id, data.data);
-                emit Mint(data.id, tokenId, data.data,data.amount);
+                emit Mint(data.id, tokenId, data.data, data.amount);
                 return _newAcknowledgement(true, "");
             }
             return _newAcknowledgement(false, "onrecvPackt : mint mt error");
@@ -416,5 +504,21 @@ contract MultiTokenTransfer is Initializable, IMtTransfer, OwnableUpgradeable {
         returns (TransferDataTypes.OriginMT memory)
     {
         return traces[tokenId];
+    }
+
+    function isApproved(
+        IERC1155Upgradeable erc1155,
+        address owner,
+        address operator
+    ) private view returns (bool) {
+        return erc1155.isApprovedForAll(owner, operator);
+    }
+
+    function isApprovedForDDC(
+        IDDC1155 ddc1155,
+        address owner,
+        address operator
+    ) private view returns (bool) {
+        return ddc1155.isApprovedForAll(owner, operator);
     }
 }
