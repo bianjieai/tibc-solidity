@@ -3,8 +3,8 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "./Auth.sol";
-import "../../../interfaces/IERC721Bank.sol";
+import "../core/apps/30-nft-transfer/Auth.sol";
+import "../interfaces/IERC721Bank.sol";
 
 contract ERC721Bank is ERC721Upgradeable, IERC721Bank, Auth {
     bytes32 public constant MINTER = keccak256("MINTER_ROLE");

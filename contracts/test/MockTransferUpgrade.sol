@@ -13,14 +13,14 @@ import "../interfaces/IPacket.sol";
 import "../interfaces/ITransfer.sol";
 import "../interfaces/IERC1155Bank.sol";
 import "../interfaces/IAccessManager.sol";
-import "../core/apps/30-nft-transfer/ERC721Holder.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 contract MockTransferUpgrade is
     Initializable,
     ITransfer,
-    ERC721Holder,
+    ERC721HolderUpgradeable,
     OwnableUpgradeable
 {
     using Strings for *;

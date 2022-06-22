@@ -7,7 +7,7 @@ import "../core/02-client/ClientManager.sol";
 import "../interfaces/IPacket.sol";
 import "../interfaces/ITransfer.sol";
 import "../interfaces/IERC1155Bank.sol";
-import "../core/apps/30-nft-transfer/ERC721Holder.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "hardhat/console.sol";
@@ -15,7 +15,7 @@ import "hardhat/console.sol";
 contract MockTransfer is
     Initializable,
     ITransfer,
-    ERC721Holder,
+    ERC721HolderUpgradeable,
     OwnableUpgradeable
 {
     string private constant PORT = "nft";

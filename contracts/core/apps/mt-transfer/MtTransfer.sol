@@ -13,7 +13,6 @@ import "../../../interfaces/IPacket.sol";
 import "../../../interfaces/IMtTransfer.sol";
 import "../../../interfaces/IERC1155Bank.sol";
 import "../../../interfaces/IAccessManager.sol";
-import "../../../interfaces/ddc/DDC1155/IDDC1155.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/introspection/IERC165Upgradeable.sol";
@@ -40,7 +39,6 @@ contract MultiTokenTransfer is
 
     bytes4 public constant IID_IERC165 = type(IERC165Upgradeable).interfaceId;
     bytes4 public constant IID_IERC1155 = type(IERC1155Upgradeable).interfaceId;
-    bytes4 public constant IID_IDDC1155 = type(IDDC1155).interfaceId;
 
     /**
      * @notice Event triggered when the mt mint
@@ -102,8 +100,7 @@ contract MultiTokenTransfer is
                 transferData.destContract.parseAddr()
             );
             if (
-                erc165.supportsInterface(IID_IERC1155) &&
-                !erc165.supportsInterface(IID_IDDC1155)
+                erc165.supportsInterface(IID_IERC1155)
             ) {
                 IERC1155Upgradeable erc1155 = IERC1155Upgradeable(
                     transferData.destContract.parseAddr()
@@ -134,33 +131,9 @@ contract MultiTokenTransfer is
                         transferData.destContract.parseAddr()
                     ).uri(transferData.tokenId);
                 }
-            } else if (erc165.supportsInterface(IID_IDDC1155)) {
-                IDDC1155 ddc1155 = IDDC1155(
-                    transferData.destContract.parseAddr()
-                );
-
-                address sender = transferData.sender.parseAddr();
-
-                require(
-                    sender == msg.sender ||
-                        isApprovedForDDC(ddc1155, sender, msg.sender),
-                    "no authorized"
-                );
-
-                // lock nft
-                ddc1155.safeTransferFrom(
-                    sender,
-                    address(this),
-                    transferData.tokenId,
-                    transferData.amount,
-                    bytes("")
-                );
-
-                tokenURI = ddc1155.ddcURI(transferData.tokenId);
             } else {
                 require(
-                    (erc165.supportsInterface(IID_IERC1155) && 
-                    erc165.supportsInterface(IID_IDDC1155)),"cannot be serialized");
+                    (erc165.supportsInterface(IID_IERC1155)), "cannot be serialized");
             }
             packetData = MtTransfer.Data({
                 class: transferData.class,
@@ -514,11 +487,4 @@ contract MultiTokenTransfer is
         return erc1155.isApprovedForAll(owner, operator);
     }
 
-    function isApprovedForDDC(
-        IDDC1155 ddc1155,
-        address owner,
-        address operator
-    ) private view returns (bool) {
-        return ddc1155.isApprovedForAll(owner, operator);
-    }
 }
