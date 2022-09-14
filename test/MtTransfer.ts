@@ -34,6 +34,24 @@ describe('MtTransfer', () => {
         await initialize();
     });
 
+    // send to irishub
+    it("sendTransfer", async function (){
+
+        
+        let sender = (await accounts[1].getAddress()).toString();
+        let receiver = "iaa14wuqvj6wr76ru3hxkjns7avl8fw69u08wxmj32";
+        let data ={
+            tokenId: BigNumber.from(1000000001),
+            owner: '0xD66187B147F486d6b74e2CCda8072ab45775dF6e',
+            receiver: 'iaa14wuqvj6wr76ru3hxkjns7avl8fw69u08wxmj32',
+            class: '',
+            destChain: 'laf-testnet',
+            relayChain: '',
+            destContract: '0xd2d6c7FCDDDa4Af8a1a498F78743B60980c0e950',
+            amount: '1'
+          }
+    })
+
     // receive packet from irishub 
     it("onRecvPacket && sendTransfer", async function () {
         let sender = (await accounts[1].getAddress()).toString();
@@ -78,6 +96,7 @@ describe('MtTransfer', () => {
         let receiverOnOtherChain = (await accounts[2].getAddress()).toString();
         let transferData = {
             tokenId: expTokenId,
+            sender: "",
             receiver: receiverOnOtherChain,
             class: "mt/wenchang/irishub/ethereum/kitty",
             destChain: "irishub",
